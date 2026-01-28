@@ -1,3 +1,4 @@
+// --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
 // --- 1. SUPABASE CONFIGURATION ---
 const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
 const supabaseKey = 'sb_publishable_xCxGjcAngmfd0hJYv2uphg_yB-pF3Hp';
