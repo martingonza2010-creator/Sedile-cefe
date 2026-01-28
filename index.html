@@ -8,12 +8,12 @@
     <title>SEDILE - HRA | Clinical Nutrition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-
-    <!-- Decorative Background (CSS Blobs) -->
+    <!-- Background Blobs -->
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
 
@@ -26,11 +26,9 @@
         </svg>
     </div>
 
-    <!-- Patient Menu Dropdown -->
+    <!-- Patient Menu -->
     <div class="patient-menu" id="patientMenu">
-        <div class="patient-list" id="patientList">
-            <!-- Patients injected here -->
-        </div>
+        <div class="patient-list" id="patientList"></div>
         <button class="add-patient-btn" id="btnAddPatient">+ Nuevo Paciente</button>
     </div>
 
@@ -39,198 +37,152 @@
             <div class="logo-area">
                 <img src="https://i.imgur.com/ugEhxa1.jpeg" alt="NutriMartin Logo" class="brand-logo">
             </div>
-
             <div class="title-text">
                 <h1>SEDILE - HRA</h1>
                 <p>Clinical Nutrition</p>
             </div>
-
-            <!-- Dynamic Product Image Display -->
-            <div class="product-display" id="productDisplay">
-                <!-- Image will be injected here by JS -->
+            <div class="product-display">
                 <img src="https://cdn-icons-png.flaticon.com/512/2927/2927347.png" alt="Product" class="product-img"
                     id="dynamicImg">
             </div>
         </header>
 
         <main>
-            <section class="input-section">
-                <form id="calcForm">
-                    <!-- Selector de Fórmula -->
-                    <div class="input-group">
-                        <label for="formulaSelect">Fórmula Láctea</label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                                    <path d="M16 10a4 4 0 0 1-8 0"></path>
-                                </svg>
-                            </span>
-                            <select id="formulaSelect" required>
-                                <option value="" disabled selected>Seleccione fórmula...</option>
-                                <!-- Opciones se llenan con JS -->
+            <!-- Stepper Navigation -->
+            <div class="stepper-container">
+                <div class="step active" data-step="0">
+                    <div class="step-circle">1</div>
+                    <span>Paciente</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="1">
+                    <div class="step-circle">2</div>
+                    <span>Simulación</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="2">
+                    <div class="step-circle">3</div>
+                    <span>Resumen</span>
+                </div>
+            </div>
+
+            <!-- VIEW 1: Patient Assessment -->
+            <section id="view-patient" class="view-section active">
+                <div class="input-card">
+                    <h3 class="section-title">Registro de Evaluación Nutricional</h3>
+                    <form id="form-paciente">
+                        <div class="input-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="nombre" placeholder="Nombre del paciente" required>
+                        </div>
+                        <div class="grid-2">
+                            <div class="input-group">
+                                <label>Edad (años)</label>
+                                <input type="number" id="edad" placeholder="Edad" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Sexo</label>
+                                <select id="sexo">
+                                    <option value="m">Masculino</option>
+                                    <option value="f">Femenino</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="input-group">
+                                <label>Peso (kg)</label>
+                                <input type="number" step="0.01" id="peso" placeholder="Peso" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Estatura (m)</label>
+                                <input type="number" step="0.01" id="estatura" placeholder="Ej: 1.70" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Factor de Actividad</label>
+                            <select id="actividad">
+                                <option value="1.2">1.2 - Reposo en cama</option>
+                                <option value="1.3">1.3 - Actividad ligera</option>
+                                <option value="1.5">1.5 - Actividad moderada</option>
+                                <option value="1.7">1.7 - Actividad alta</option>
                             </select>
                         </div>
+                        <button type="submit" class="action-btn">Guardar Paciente (Supabase)</button>
+                    </form>
+
+                    <p id="mensaje" style="text-align:center; margin-top:10px; font-weight:600;"></p>
+
+                    <div class="result-badge" id="bmiDisplay" style="display:none; margin-top:15px;">
+                        IMC: <span id="valBMI">--</span> <span id="txtBMIStatus"></span>
                     </div>
 
-                    <div class="row">
-                        <!-- Volumen -->
-                        <div class="input-group">
-                            <label for="volume">Volumen (ml)</label>
-                            <div class="input-wrapper">
-                                <span class="input-icon">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M9 3v15h6V3"></path>
-                                        <path d="M3 15h3"></path>
-                                        <path d="M18 15h3"></path>
-                                        <path d="M3 11h3"></path>
-                                        <path d="M18 11h3"></path>
-                                    </svg>
-                                </span>
-                                <input type="number" id="volume" placeholder="150" min="1" required>
-                            </div>
-                        </div>
-
-                        <!-- Dilución -->
-                        <div class="input-group">
-                            <label for="dilution">Dilución (%)</label>
-                            <div class="input-wrapper">
-                                <span class="input-icon">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <line x1="19" y1="5" x2="5" y2="19"></line>
-                                        <circle cx="6.5" cy="6.5" r="2.5"></circle>
-                                        <circle cx="17.5" cy="17.5" r="2.5"></circle>
-                                    </svg>
-                                </span>
-                                <input type="number" id="dilution" placeholder="13.5" step="0.1" min="0.1" required>
-                            </div>
-                        </div>
+                    <div class="result-badge primary-badge" id="tmtDisplay" style="display:none; margin-top:10px;">
+                        Meta Calórica Estimada: <span id="valTMT">--</span> Kcal/día
                     </div>
 
-                    <button type="submit" class="btn-calc">
-                        <span>Calcular Formulación</span>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 8px;">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                </form>
+                    <button class="action-btn secondary" id="btnToSim" style="margin-top:20px;">Continuar a Simulación
+                        ➔</button>
+                </div>
             </section>
 
-            <div id="results-area">
-                <!-- Instrucción Médica -->
-                <div class="instruction-card" id="card-instr">
-                    <div class="instruction-header">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                        <span>Indicación de Preparación</span>
+            <!-- VIEW 2: Formula Simulator -->
+            <section id="view-simulator" class="view-section">
+                <div class="simulation-header">
+                    <div class="mini-stat">
+                        <span>Meta</span>
+                        <strong id="simGoal">2000</strong>
                     </div>
-                    <div class="instruction-text" id="txtPrep"></div>
-                </div>
-
-                <!-- Dashboard de Resultados -->
-                <div class="dashboard-grid">
-                    <!-- Main KPI: Calorías -->
-                    <div class="stat-card full-width" id="card-kcal">
-                        <h3>CALORÍAS TOTALES</h3>
-                        <div class="value-container">
-                            <div class="value"><span class="count-up" id="valKcal">0</span> <span
-                                    class="unit">Kcal</span></div>
-                        </div>
-                        <div class="sub-info">Densidad Calórica: <span id="valDens">0</span> Kcal/ml</div>
+                    <div class="mini-progress">
+                        <div class="bar-fill" id="simBar" style="width:0%"></div>
                     </div>
-
-                    <!-- Macro: Proteínas -->
-                    <div class="stat-card" id="card-prot">
-                        <h3>Proteínas</h3>
-                        <div class="value"><span class="count-up" id="valProt">0</span> <span class="unit">g</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: 30%"></div>
-                        </div>
-                    </div>
-
-                    <!-- Macro: Lípidos -->
-                    <div class="stat-card" id="card-fat">
-                        <h3>Lípidos</h3>
-                        <div class="value"><span class="count-up" id="valFat">0</span> <span class="unit">g</span></div>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: 45%"></div>
-                        </div>
-                    </div>
-
-                    <!-- Macro: Carbohidratos -->
-                    <div class="stat-card" id="card-carb">
-                        <h3>Carbohidratos</h3>
-                        <div class="value"><span class="count-up" id="valCarb">0</span> <span class="unit">g</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: 60%"></div>
-                        </div>
-                    </div>
-
-                    <!-- Polvo a Pesar -->
-                    <div class="stat-card highlight" id="card-grams">
-                        <h3>Polvo a Pesar</h3>
-                        <div class="value"><span class="count-up" id="valGrams">0</span> <span class="unit">g</span>
-                        </div>
+                    <div class="mini-stat">
+                        <span>Actual</span>
+                        <strong id="simCurrent">0</strong>
                     </div>
                 </div>
 
-                <!-- Save Button -->
-                <button class="btn-save-prescription" id="btnSaveHistory">
-                    Guardar en Historial del Paciente
-                </button>
-            </div>
+                <div class="input-card">
+                    <h2 class="section-title">Selección de Fórmula o Intercambio</h2>
+                    <div class="input-group">
+                        <label>Producto Base</label>
+                        <select id="formulaSelect">
+                            <option value="">Seleccione Fórmula o Intercambio...</option>
+                        </select>
+                    </div>
 
-            <!-- History Section -->
-            <div class="history-section" id="historySection">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 style="color:var(--primary-dark); font-size:1rem;">Historial Clínico</h3>
-                    <span style="font-size:0.8rem; color:var(--text-light);" id="historyCount">0 registros</span>
+                    <div class="grid-2">
+                        <div class="input-group">
+                            <label>Volumen Total (ml)</label>
+                            <input type="number" id="volume" placeholder="Ej. 1000">
+                        </div>
+                        <div class="input-group">
+                            <label id="lblDilution">Dilución (%)</label>
+                            <input type="number" id="dilution" placeholder="Ej. 13.5">
+                        </div>
+                    </div>
+
+                    <button class="action-btn secondary" id="btnBackToPatient">🠔 Volver a Paciente</button>
+                    <button class="action-btn" id="btnCalculate">Calcular Aporte ➔</button>
                 </div>
-                <div id="historyList">
-                    <!-- History items injected here -->
+            </section>
+
+            <!-- VIEW 3: Summary -->
+            <section id="view-summary" class="view-section">
+                <div class="input-card">
+                    <h2 class="section-title">Resumen de Prescripción</h2>
+                    <div class="result-badge primary-badge" style="font-size:1.5rem; padding:20px;">
+                        Aporte Total: <span id="valKcal">0</span> Kcal
+                    </div>
+
+                    <button class="btn-save-prescription" id="btnSaveHistory">
+                        Guardar Prescripción en Supabase
+                    </button>
                 </div>
-            </div>
+            </section>
         </main>
 
-        <!-- Sección de Feedback -->
-        <section class="feedback-section">
-            <button id="toggleFeedback" class="btn-feedback-toggle">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                </svg>
-                ¿Sugerencias?
-            </button>
-
-            <div id="feedbackFormContainer" class="feedback-form-container">
-                <h3>Enviar Sugerencia</h3>
-                <p>¿Falta alguna fórmula? ¿Alguna mejora?</p>
-                <form id="feedbackForm">
-                    <div class="input-group">
-                        <textarea id="feedbackMessage" rows="3" placeholder="Escribe tu sugerencia aquí..."
-                            required></textarea>
-                    </div>
-                    <button type="submit" class="btn-send">Enviar por Correo</button>
-                </form>
-            </div>
-        </section>
-
         <footer>
-            <p>Sedile App © 2024 - Uso Clínico Profesional</p>
+            <p>Dr. Martín González - Nutrición Clínica</p>
         </footer>
     </div>
 
