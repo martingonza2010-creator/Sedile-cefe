@@ -265,3 +265,254 @@ function handleFeedback(e) {
         document.getElementById('feedbackFormContainer').style.display = 'none';
     }, 2000);
 }
+
+// --- 7. PATIENT MANAGER SYSTEM (ENHANCED) ---
+
+const PatientManager = {
+    patients: [],
+    activePatientId: null,
+    
+    init() {
+        this.loadPatients();
+        this.renderPatientUI();
+        this.initEventListeners();
+    },
+
+    loadPatients() {
+        if (typeof Storage === 'undefined') {
+            console.error('LocalStorage not supported');
+            return;
+        }
+
+        const stored = localStorage.getItem('sedile_patients');
+        if (stored) {
+            this.patients = JSON.parse(stored);
+        } else {
+            // Default Demo Patient
+            this.patients = [{ id: 1, name: 'Paciente Demo', history: [] }];
+        }
+        
+        const activeId = localStorage.getItem('sedile_active_patient');
+        this.activePatientId = activeId ? parseInt(activeId) : (this.patients.length > 0 ? this.patients[0].id : null);
+    },
+
+    saveData() {
+        localStorage.setItem('sedile_patients', JSON.stringify(this.patients));
+        if (this.activePatientId) {
+            localStorage.setItem('sedile_active_patient', this.activePatientId);
+        }
+    },
+
+    getActivePatient() {
+        return this.patients.find(p => p.id === this.activePatientId);
+    },
+
+    addPatient(name) {
+        if (!name) return;
+        const newPatient = {
+            id: Date.now(),
+            name: name,
+            history: []
+        };
+        this.patients.push(newPatient);
+        this.activePatientId = newPatient.id;
+        this.saveData();
+        this.renderPatientUI();
+        this.clearForm(); // Reset form for new patient
+    },
+
+    deletePatient(id, e) {
+        if(e) e.stopPropagation();
+        
+        if (!confirm('¿Seguro que deseas eliminar este paciente?')) return;
+
+        this.patients = this.patients.filter(p => p.id !== id);
+        
+        if (this.activePatientId === id) {
+            this.activePatientId = this.patients.length > 0 ? this.patients[0].id : null;
+        }
+        
+        this.saveData();
+        this.renderPatientUI();
+    },
+
+    switchPatient(id) {
+        this.activePatientId = id;
+        this.saveData();
+        this.renderPatientUI();
+        this.clearForm();
+    },
+
+    addHistoryEntry(entry) {
+        const patient = this.getActivePatient();
+        if (patient) {
+            patient.history.unshift(entry); // Add to top
+            if (patient.history.length > 50) patient.history.pop(); // Limit history
+            this.saveData();
+            this.renderHistory();
+            alert('¡Prescripción guardada para ' + patient.name + '!');
+        } else {
+            alert('Crea un paciente primero.');
+        }
+    },
+
+    clearForm() {
+        const inputs = ['volume', 'dilution'];
+        inputs.forEach(id => document.getElementById(id).value = '');
+        document.getElementById('formulaSelect').value = '';
+        document.getElementById('results-area').style.display = 'none';
+        
+        // Hide dynamic image if exists
+        const imgEl = document.getElementById('dynamicImg');
+        if (imgEl) imgEl.src = 'https://cdn-icons-png.flaticon.com/512/2927/2927347.png'; // Reset to placeholder
+        
+        this.renderHistory();
+    },
+
+    renderPatientUI() {
+        const patient = this.getActivePatient();
+        
+        const labelName = document.getElementById('currentPatientName');
+        const labelAvatar = document.getElementById('currentPatientAvatar');
+
+        if (patient) {
+            labelName.innerText = patient.name;
+            labelAvatar.innerText = patient.name.charAt(0).toUpperCase();
+        } else {
+            labelName.innerText = 'Pacientes';
+            labelAvatar.innerText = '+';
+        }
+
+        // Render List
+        const listContainer = document.getElementById('patientList');
+        listContainer.innerHTML = '';
+        
+        this.patients.forEach(p => {
+            const el = document.createElement('div');
+            el.className = 'patient-item ' + (p.id === this.activePatientId ? 'active-patient' : '');
+            
+            // Item Layout: Avatar + Name + Delete Button
+            el.innerHTML = 
+                <div style='display:flex; align-items:center; flex:1' onclick='PatientManager.switchPatient()'>
+                    <span class='patient-avatar' style='width:24px;height:24px;margin-right:10px;font-size:0.7rem'></span>
+                    <span style='font-weight:600; font-size:0.9rem'></span>
+                </div>
+                <button onclick='PatientManager.deletePatient(, event)' style='background:none; border:none; color:#ff5252; cursor:pointer; padding:5px;'>
+                    <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><polyline points='3 6 5 6 21 6'></polyline><path d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'></path></svg>
+                </button>
+            ;
+            listContainer.appendChild(el);
+        });
+
+        this.renderHistory();
+    },
+
+    renderHistory() {
+        const patient = this.getActivePatient();
+        const container = document.getElementById('historyList');
+        const countLabel = document.getElementById('historyCount');
+        const section = document.getElementById('historySection');
+        
+        if (!patient || !patient.history || patient.history.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        countLabel.innerText = patient.history.length + ' registros';
+        container.innerHTML = '';
+
+        patient.history.forEach(Entry => {
+            const card = document.createElement('div');
+            card.className = 'history-card prescription';
+            card.innerHTML = 
+                '<div class=\'history-header\'>' +
+                    '<span>' + new Date(Entry.date).toLocaleDateString() + '</span>' +
+                    '<span>' + Entry.formulaName + '</span>' +
+                '</div>' +
+                '<div class=\'history-details\'>' +
+                    'Vol: <strong>' + Entry.volume + 'ml</strong> | ' +
+                    (Entry.grams > 0 ? 'Polvo: <strong>' + Entry.grams + 'g</strong>' : 'Líquido Directo') +
+                '</div>' +
+                '<div style=\'font-size:0.75rem;margin-top:5px;color:#888\'>' +
+                    Entry.calories.toFixed(0) + ' Kcal total' +
+                '</div>';
+            
+            container.appendChild(card);
+        });
+    },
+
+    initEventListeners() {
+        // Toggle Menu
+        const btn = document.getElementById('btnPatientToggle');
+        const menu = document.getElementById('patientMenu');
+        
+        if(btn) {
+            // Remove old listeners (cloning) to prevent duplicates if re-inited
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('active');
+            });
+        }
+
+        // Close menu on click outside
+        document.addEventListener('click', (e) => {
+            if (menu && btn && !menu.contains(e.target) && !e.target.closest('#btnPatientToggle')) {
+                menu.classList.remove('active');
+            }
+        });
+
+        // Add Patient
+        const btnAdd = document.getElementById('btnAddPatient');
+        if(btnAdd) {
+            const newAdd = btnAdd.cloneNode(true);
+            btnAdd.parentNode.replaceChild(newAdd, btnAdd);
+            
+            newAdd.addEventListener('click', () => {
+                const name = prompt('Nombre del nuevo paciente:');
+                if (name) this.addPatient(name);
+            });
+        }
+
+        // Save Button logic connection
+        const saveBtn = document.getElementById('btnSaveHistory');
+        if(saveBtn) {
+            // Check if listener already attached or use cloning trick
+            const newSave = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSave, saveBtn);
+
+            newSave.addEventListener('click', () => {
+                const kcalVal = document.getElementById('valKcal').innerText;
+                if (kcalVal === '0' || kcalVal === '0.0') {
+                    alert('Primero realiza un cálculo.');
+                    return;
+                }
+
+                const formulaSelect = document.getElementById('formulaSelect');
+                const formulaName = formulaSelect.options[formulaSelect.selectedIndex].text;
+                
+                const entry = {
+                    date: Date.now(),
+                    formulaName: formulaName,
+                    volume: document.getElementById('volume').value,
+                    grams: document.getElementById('valGrams').innerText,
+                    calories: parseFloat(kcalVal)
+                };
+                
+                this.addHistoryEntry(entry);
+            });
+        }
+    }
+};
+
+// Make accessible globally
+window.PatientManager = PatientManager;
+
+// Re-init system
+document.addEventListener('DOMContentLoaded', () => {
+    PatientManager.init();
+});
+
