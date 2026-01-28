@@ -12,22 +12,43 @@
 
 <body>
 
-    <!-- Decorative Background Images -->
-    <img src="formula_1.png" alt="Formula" class="bg-decoration left-decor">
-    <img src="formula_2.png" alt="Formula" class="bg-decoration right-decor">
+    <!-- Decorative Background (CSS Blobs) -->
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <!-- Patient Manager Toggle -->
+    <div class="patient-manager-toggle" id="btnPatientToggle">
+        <div class="patient-avatar" id="currentPatientAvatar">P</div>
+        <span class="patient-name" id="currentPatientName">Pacifico</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+    </div>
+
+    <!-- Patient Menu Dropdown -->
+    <div class="patient-menu" id="patientMenu">
+        <div class="patient-list" id="patientList">
+            <!-- Patients injected here -->
+        </div>
+        <button class="add-patient-btn" id="btnAddPatient">+ Nuevo Paciente</button>
+    </div>
 
     <div class="app-container">
         <header>
-            <div class="icon-medical">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2L12 22"></path>
-                    <path d="M17 7L7 17"></path>
-                    <path d="M7 7L17 17"></path>
-                </svg>
+            <div class="logo-area">
+                <img src="https://i.imgur.com/ugEhxa1.jpeg" alt="NutriMartin Logo" class="brand-logo">
+                <div class="title-text">
+                    <h1>SEDILE - HRA</h1>
+                    <p>Clinical Nutrition</p>
+                </div>
             </div>
-            <h1>SEDILE - HRA</h1>
-            <p>Calculadora Clínica Pediátrica</p>
+
+            <!-- Dynamic Product Image Display -->
+            <div class="product-display" id="productDisplay">
+                <!-- Image will be injected here by JS -->
+                <img src="https://cdn-icons-png.flaticon.com/512/2927/2927347.png" alt="Product" class="product-img"
+                    id="dynamicImg">
+            </div>
         </header>
 
         <main>
@@ -162,6 +183,22 @@
                         <div class="value"><span class="count-up" id="valGrams">0</span> <span class="unit">g</span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Save Button -->
+                <button class="btn-save-prescription" id="btnSaveHistory">
+                    Guardar en Historial del Paciente
+                </button>
+            </div>
+
+            <!-- History Section -->
+            <div class="history-section" id="historySection">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="color:var(--primary-dark); font-size:1rem;">Historial Clínico</h3>
+                    <span style="font-size:0.8rem; color:var(--text-light);" id="historyCount">0 registros</span>
+                </div>
+                <div id="historyList">
+                    <!-- History items injected here -->
                 </div>
             </div>
         </main>
