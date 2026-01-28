@@ -68,7 +68,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     initPatientLogic();
     initSimulatorLogic();
     updateFormulaSelect();
+    applyCircularFavicon();
 });
+
+async function applyCircularFavicon() {
+    const faviconUrl = 'favicon.jpg';
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = function () {
+        const canvas = document.createElement('canvas');
+        const size = Math.min(img.width, img.height);
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        // Draw circle clipping path
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+
+        // Draw image centered
+        ctx.drawImage(img, (size - img.width) / 2, (size - img.height) / 2);
+
+        // Update favicon link
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+        }
+        link.href = canvas.toDataURL("image/png");
+    };
+    img.src = faviconUrl;
+}
 
 async function checkUser() {
     const { data: { session } } = await supabase.auth.getSession();
