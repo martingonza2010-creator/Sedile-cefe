@@ -1,277 +1,64 @@
-// --- 1. BASE DE DATOS DE FÓRMULAS (Vademécum Master) ---
-const formulas = [
-    // --- PEDIATRÍA (POLVOS) ---
+// --- 1. SUPABASE CONFIGURATION ---
+const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
+const supabaseKey = 'sb_publishable_xCxGjcAngmfd0hJYv2uphg_yB-pF3Hp';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+console.log('Conexión con NutriSoporte establecida');
+
+// --- 2. FALLBACK DATABASE (Vademécum Local) ---
+const LOCAL_FORMULAS = [
     { cat: "Pediatría: Prematuros", id: "nan_prem", name: "Nan Prematuros", type: "p", dil: 16.1, k: 498, p: 14.4, f: 25.9, c: 53.2, img: "https://www.farmaciasahumada.cl/media/catalog/product/cache/f7259066601f034789547ce399435b5e/7/6/7613036929424_1.jpg" },
     { cat: "Pediatría: Prematuros", id: "sim_neo", name: "Similac Neosure", type: "p", dil: 14.6, k: 518, p: 13.3, f: 28.2, c: 52.8, img: "https://www.cruzverde.cl/dw/image/v2/BDPM_PRD/on/demandware.static/-/Sites-masterCatalog_Chile/default/dw15197828/images/large/292864-1-similac-neosure-polvo-370-g.jpg" },
-    { cat: "Pediatría: Prematuros", id: "nan_alprem", name: "Nan Alprem (Hidrolizada)", type: "p", dil: 15.9, k: 506, p: 14.5, f: 26.0, c: 53.6, img: "https://d2j6dbq0eux0bg.cloudfront.net/images/66619176/3133887140.jpg" },
-
     { cat: "Pediatría: Inicio (0-6m)", id: "nan_1", name: "Nan 1 Optipro", type: "p", dil: 12.9, k: 522, p: 9.5, f: 27.7, c: 58.7, img: "https://geant.vteximg.com.br/arquivos/ids/263228/671400.jpg?v=637482813962630000" },
-    { cat: "Pediatría: Inicio (0-6m)", id: "nidal_1", name: "Nidal 1", type: "p", dil: 12.9, k: 519, p: 9.5, f: 27.7, c: 57.8, img: "https://jumbo.vtexassets.com/arquivos/ids/444212/Leche-en-polvo-Nidal-Inicio-tarro-800-g.jpg?v=637584196162330000" },
-    { cat: "Pediatría: Inicio (0-6m)", id: "similac_1", name: "Similac 1", type: "p", dil: 14.2, k: 513, p: 10.6, f: 28.2, c: 53.0, img: "https://www.cruzverde.cl/dw/image/v2/BDPM_PRD/on/demandware.static/-/Sites-masterCatalog_Chile/default/dwa3c32b95/images/large/292862-Similac-1-Hmo-850-Gr-Lata.jpg" },
-
     { cat: "Pediatría: Continuación", id: "nan_2", name: "Nan 2", type: "p", dil: 13.8, k: 486, p: 15.0, f: 21.2, c: 58.8, img: "https://imagedelivery.net/4fYuQyy-r8_rpBpcY7lH_A/falabellaCL/5009848_1/w=1500,h=1500,fit=pad" },
-    { cat: "Pediatría: Continuación", id: "bebelac_2", name: "Bebelac 2", type: "p", dil: 15.3, k: 475, p: 15.0, f: 19.0, c: 60.0, img: "https://tofuu.getjusto.com/orioneat-prod/n348p3dJ8jje2sWdY-Bebelac%202.png" },
-    { cat: "Pediatría: Continuación", id: "enfamil_2", name: "Enfamil Premium 2", type: "p", dil: 13.8, k: 477, p: 14.6, f: 21.6, c: 56.0, img: "https://www.cruzverde.cl/dw/image/v2/BDPM_PRD/on/demandware.static/-/Sites-masterCatalog_Chile/default/dwc6c0f3a6/images/large/270428-enfamil-premium-etapa-2-sobre-800-g.jpg" },
-
     { cat: "Pediatría: Crecimiento", id: "nan_3", name: "Nan 3", type: "p", dil: 14.0, k: 438, p: 15.0, f: 17.0, c: 54.7, img: "https://jumbo.vtexassets.com/arquivos/ids/345262/Formula-l-ctea-NAN-3-Optipro-800-g-1-300435.jpg?v=637256247960300000" },
-    { cat: "Pediatría: Crecimiento", id: "nido_3", name: "Nido 3+", type: "p", dil: 13.0, k: 458, p: 17.0, f: 20.2, c: 52.0, img: "https://www.nestle.cl/sites/g/files/pydnoa311/files/Nido_3%2B.png" },
-
-    { cat: "PNAC / Estado", id: "purita", name: "Leche Purita Fortificada", type: "p", dil: 10.0, k: 439, p: 29.9, f: 15.2, c: 45.7, img: "https://www.minsal.cl/wp-content/uploads/2015/09/leche-purita-fortificada-1.jpg" },
-
-    { cat: "Especiales / Alergias", id: "nan_ar", name: "Nan AR (Anti-reflujo)", type: "p", dil: 13.5, k: 513, p: 9.8, f: 26.0, c: 59.9, img: "https://www.farmaciasahumada.cl/media/catalog/product/cache/f7259066601f034789547ce399435b5e/7/6/7613034927781_1_1.jpg" },
     { cat: "Especiales / Alergias", id: "nan_sl", name: "Nan Sin Lactosa", type: "p", dil: 13.5, k: 509, p: 10.9, f: 25.4, c: 59.0, img: "https://www.farmaciasahumada.cl/media/catalog/product/cache/f7259066601f034789547ce399435b5e/7/6/7613035133372_1.jpg" },
-    { cat: "Especiales / Alergias", id: "alfamino", name: "Alfamino (AA Libres)", type: "p", dil: 13.5, k: 503, p: 13.3, f: 24.6, c: 57.0, img: "https://www.cruzverde.cl/dw/image/v2/BDPM_PRD/on/demandware.static/-/Sites-masterCatalog_Chile/default/dw4f2b1d3a/images/large/287313-alfamino-polvo-400-g.jpg" },
-    { cat: "Especiales / Alergias", id: "althera", name: "Althera", type: "p", dil: 13.5, k: 506, p: 12.5, f: 26.0, c: 55.5, img: "https://www.cruzverde.cl/dw/image/v2/BDPM_PRD/on/demandware.static/-/Sites-masterCatalog_Chile/default/dw4f2b1d3a/images/large/287314-althera-polvo-400-g.jpg" },
-
-    // --- ADULTOS / ENTERAL (LÍQUIDOS) ---
     { cat: "Líquidos (Botella/RTH)", id: "fresubin_orig", name: "Fresubin Original", type: "l", k: 100, p: 3.8, f: 3.4, c: 13.8, img: "https://www.fresenius-kabi.com/cl/images/Fresubin_Original_Fibre.jpg" },
     { cat: "Líquidos (Botella/RTH)", id: "ensure_adv", name: "Ensure Advance Botella", type: "l", k: 105, p: 5.48, f: 3.37, c: 13.5, img: "https://jumbo.vtexassets.com/arquivos/ids/444222/Alimento-liquido-Ensure-Advance-vainilla-botella-237-ml.jpg" },
-    { cat: "Líquidos (Botella/RTH)", id: "glucerna_liq", name: "Glucerna Líquida", type: "l", k: 93, p: 4.6, f: 3.8, c: 10.0, img: "https://jumbo.vtexassets.com/arquivos/ids/410228/Glucerna-Liquido-Vainilla-237-Ml-Botella.jpg" },
     { cat: "Líquidos (Botella/RTH)", id: "nepro_ap", name: "Nepro AP (Renal)", type: "l", k: 180, p: 8.1, f: 9.6, c: 16.0, img: "https://www.cruzverde.cl/dw/image/v2/BDPM_PRD/on/demandware.static/-/Sites-masterCatalog_Chile/default/dw15197828/images/large/270438-nepro-ap-vainilla-237-ml.jpg" },
-    { cat: "Líquidos (Botella/RTH)", id: "enterex_renal_liq", name: "Enterex Renal Líquido", type: "l", k: 200, p: 8.4, f: 10.0, c: 19.0, img: "https://www.enterex.cl/wp-content/uploads/2020/06/Enterex-Renal-Vainilla-237ml.png" },
-    { cat: "Líquidos (Botella/RTH)", id: "fresubin_2kcal", name: "Fresubin 2 Kcal", type: "l", k: 200, p: 10.0, f: 7.8, c: 22.5, img: "https://www.fresenius-kabi.com/cl/images/Fresubin_2kcal_Drink_Vainilla.jpg" },
     { cat: "Líquidos (Botella/RTH)", id: "diben", name: "Diben (Diabetes)", type: "l", k: 150, p: 7.5, f: 7.0, c: 13.1, img: "https://www.fresenius-kabi.com/cl/images/Diben_Drink_Cappuccino.jpg" },
-    { cat: "Líquidos (Botella/RTH)", id: "supportan", name: "Supportan (Onco)", type: "l", k: 150, p: 10.0, f: 6.7, c: 11.6, img: "https://www.fresenius-kabi.com/cl/images/Supportan_Drink_Cappuccino.jpg" },
-
-    // --- ADULTOS (POLVOS) ---
-    { cat: "Polvos Adulto", id: "ensure_polvo", name: "Ensure Polvo (Estándar)", type: "p", dil: 22.0, k: 430, p: 15.9, f: 14.0, c: 60.0, img: "https://jumbo.vtexassets.com/arquivos/ids/444218/Alimento-en-polvo-Ensure-vainilla-lata-850-g.jpg" },
-    { cat: "Polvos Adulto", id: "enterex_polvo", name: "Enterex Polvo", type: "p", dil: 22.0, k: 450, p: 16.0, f: 15.0, c: 62.0, img: "https://www.enterex.cl/wp-content/uploads/2020/05/Enterex-Polvo-Vainilla-400g.png" },
-
-    // --- MÓDULOS ---
+    { cat: "Polvos Adulto", id: "ensure_polvo", name: "Ensure Polvo", type: "p", dil: 22.0, k: 430, p: 15.9, f: 14.0, c: 60.0, img: "https://jumbo.vtexassets.com/arquivos/ids/444218/Alimento-en-polvo-Ensure-vainilla-lata-850-g.jpg" },
     { cat: "Módulos", id: "malto", name: "Módulo Maltodextrina", type: "p", dil: 5.0, k: 380, p: 0, f: 0, c: 95.0, img: "https://cdn-icons-png.flaticon.com/512/2927/2927347.png" },
     { cat: "Módulos", id: "prot", name: "Módulo Proteína (Caseinato)", type: "p", dil: 5.0, k: 370, p: 90.0, f: 1.0, c: 1.0, img: "https://cdn-icons-png.flaticon.com/512/2927/2927347.png" }
 ];
 
-// --- 2. INICIALIZACIÓN ---
-document.addEventListener('DOMContentLoaded', () => {
-    initSelect();
-    initEventListeners();
+const EXCHANGE_DB = [
+    { id: 'cereal', name: 'Cereales', k: 70, p: 2, f: 0, c: 15 },
+    { id: 'veg', name: 'Verduras', k: 30, p: 1, f: 0, c: 5 },
+    { id: 'fruit', name: 'Frutas', k: 65, p: 0, f: 0, c: 15 },
+    { id: 'dairy_skim', name: 'Lácteos Descremados', k: 70, p: 7, f: 0, c: 10 },
+    { id: 'dairy_med', name: 'Lácteos Semi', k: 100, p: 7, f: 4, c: 10 },
+    { id: 'dairy_whole', name: 'Lácteos Enteros', k: 135, p: 7, f: 8, c: 10 },
+    { id: 'meat_lean', name: 'Carnes Magras', k: 50, p: 7, f: 2, c: 0 },
+    { id: 'oil', name: 'Aceites/Grasas', k: 45, p: 0, f: 5, c: 0 },
+    { id: 'sugar_sc', name: 'Azúcares', k: 20, p: 0, f: 0, c: 5 }
+];
+
+// --- 3. GLOBAL STATE ---
+const AppState = {
+    patient: { nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0 },
+    formulas: [],
+    exchanges: []
+};
+
+// --- 4. INICIALIZACIÓN ---
+document.addEventListener('DOMContentLoaded', async () => {
+    initViewNavigation();
+    initPatientLogic();
+    initSimulatorListeners();
+    PatientManager.init();
+    await loadFormulas();
+    await loadExchanges();
+
+    const btnSave = document.getElementById('btnSaveHistory');
+    if (btnSave) btnSave.addEventListener('click', savePrescriptionToSupabase);
 });
 
-function initSelect() {
-    const select = document.getElementById('formulaSelect');
-    const categories = [...new Set(formulas.map(item => item.cat))]; // Categorías únicas
-
-    categories.forEach(cat => {
-        const group = document.createElement('optgroup');
-        group.label = cat;
-        formulas.filter(i => i.cat === cat).forEach(prod => {
-            const opt = document.createElement('option');
-            opt.value = prod.id; // Usamos ID para buscar luego
-            // Icono visual según tipo
-            const icon = prod.type === 'l' ? "💧 " : "🥡 ";
-            opt.innerText = icon + prod.name;
-            group.appendChild(opt);
-        });
-        select.appendChild(group);
-    });
-}
-
-function initEventListeners() {
-    // Cambio de producto (Auto-fill dilución)
-    document.getElementById('formulaSelect').addEventListener('change', handleProductChange);
-
-    // Calculadora
-    document.getElementById('calcForm').addEventListener('submit', handleCalculation);
-
-    // Feedback Toggle
-    const btnToggle = document.getElementById('toggleFeedback');
-    const feedbackContainer = document.getElementById('feedbackFormContainer');
-
-    btnToggle.addEventListener('click', () => {
-        if (feedbackContainer.style.display === 'block') {
-            feedbackContainer.style.display = 'none';
-        } else {
-            feedbackContainer.style.display = 'block';
-            feedbackContainer.scrollIntoView({ behavior: 'smooth' });
-        }
-    });
-
-    // Enviar Feedback
-    document.getElementById('feedbackForm').addEventListener('submit', handleFeedback);
-}
-
-// --- 3. LÓGICA DE INTERACCIÓN ---
-function handleProductChange() {
-    const fID = document.getElementById('formulaSelect').value;
-    const dilInput = document.getElementById('dilution');
-
-    const formula = formulas.find(x => x.id === fID);
-    if (!formula) return;
-
-    if (formula.type === 'l') {
-        // Es líquido
-        dilInput.value = "";
-        dilInput.placeholder = "N/A (Líquido)";
-        dilInput.disabled = true;
-        dilInput.style.backgroundColor = "rgba(0,0,0,0.05)";
-        dilInput.style.cursor = "not-allowed";
-    } else {
-        // Es polvo
-        dilInput.value = formula.dil; // Poner dilución sugerida
-        dilInput.disabled = false;
-        dilInput.style.backgroundColor = "rgba(255,255,255,0.6)";
-        dilInput.style.cursor = "text";
-    }
-
-    // --- NEW: Update Image ---
-    const imgEl = document.getElementById('dynamicImg');
-    if (imgEl && formula.img) {
-        // Animation effect
-        imgEl.classList.add('change');
-        setTimeout(() => {
-            imgEl.src = formula.img;
-            imgEl.onload = () => {
-                imgEl.classList.remove('change');
-            };
-        }, 300);
-    }
-}
-
-// --- 4. LÓGICA DE CÁLCULO ---
-function handleCalculation(e) {
-    e.preventDefault();
-
-    const fID = document.getElementById('formulaSelect').value;
-    const vol = parseFloat(document.getElementById('volume').value);
-    let dil = parseFloat(document.getElementById('dilution').value);
-
-    const formula = formulas.find(x => x.id === fID);
-    if (!formula) return;
-
-    let grams = 0;
-    let kcal = 0, prot = 0, fat = 0, carb = 0, density = 0;
-    let instruction = "";
-
-    if (formula.type === 'l') {
-        // LÍQUIDO: Aportes por 100ml
-        const factor = vol / 100;
-
-        kcal = formula.k * factor;
-        prot = formula.p * factor;
-        fat = formula.f * factor;
-        carb = formula.c * factor;
-
-        density = formula.k / 100; // Kcal por ml
-        grams = 0; // No aplica peso
-
-        instruction = `Servir <strong>${vol} ml</strong> de <strong>${formula.name}</strong> directos del envase.`;
-
-    } else {
-        // POLVO: Aportes por 100g
-        if (!dil || isNaN(dil)) {
-            alert("Por favor ingresa una dilución válida.");
-            return;
-        }
-
-        grams = (vol * dil) / 100;
-        const factor = grams / 100;
-
-        kcal = formula.k * factor;
-        prot = formula.p * factor;
-        fat = formula.f * factor;
-        carb = formula.c * factor;
-
-        density = kcal / vol;
-
-        instruction = `Mezclar <strong>${grams.toFixed(1)} g</strong> de polvo con agua hasta alcanzar un volumen final de <strong>${vol} ml</strong>.`;
-    }
-
-    // Mostrar Resultados
-    const resultsArea = document.getElementById('results-area');
-    resultsArea.style.display = 'block';
-
-    // Actualizar Textos
-    document.getElementById('txtPrep').innerHTML = instruction;
-    document.getElementById('valDens').innerText = density.toFixed(2);
-
-    // Ocultar/Mostrar tarjeta de gramos según tipo
-    const cardGrams = document.getElementById('card-grams');
-    if (formula.type === 'l') {
-        cardGrams.style.display = 'none';
-    } else {
-        cardGrams.style.display = 'flex'; // O 'block' según CSS
-    }
-
-    // Animar Elementos
-    animateElements();
-
-    // Contadores
-    animateValue(document.getElementById('valKcal'), 0, kcal, 1500, false);
-    animateValue(document.getElementById('valProt'), 0, prot, 1200, true);
-    animateValue(document.getElementById('valFat'), 0, fat, 1200, true);
-    animateValue(document.getElementById('valCarb'), 0, carb, 1200, true);
-
-    if (formula.type !== 'l') {
-        animateValue(document.getElementById('valGrams'), 0, grams, 1000, true);
-    }
-
-    // Scroll
-    if (window.innerWidth < 600) {
-        resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-}
-
-// --- 5. ANIMACIONES ---
-function animateElements() {
-    const ids = ['card-instr', 'card-kcal', 'card-prot', 'card-fat', 'card-carb', 'card-grams'];
-
-    ids.forEach((id, index) => {
-        const el = document.getElementById(id);
-        if (el) { // Check existence (card-grams might be hidden)
-            el.classList.remove('animate-enter');
-            el.style.animationDelay = `${index * 0.05}s`;
-            void el.offsetWidth;
-            el.classList.add('animate-enter');
-        }
-    });
-}
-
-function animateValue(obj, start, end, duration, isFloat) {
-    let startTimestamp = null;
-    const step = (timestamp) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-        const current = start + (end - start) * ease;
-        obj.innerHTML = isFloat ? current.toFixed(1) : Math.round(current);
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        } else {
-            obj.innerHTML = isFloat ? end.toFixed(1) : Math.round(end);
-        }
-    };
-    window.requestAnimationFrame(step);
-}
-
-// --- 6. FEEDBACK ---
-function handleFeedback(e) {
-    e.preventDefault();
-    const message = document.getElementById('feedbackMessage').value;
-    const emailTo = "tu_correo@ejemplo.com";
-    const subject = "Sugerencia Sedile App";
-    const body = encodeURIComponent(message);
-    window.location.href = `mailto:${emailTo}?subject=${subject}&body=${body}`;
-
-    const btn = e.target.querySelector('button');
-    const originalText = btn.innerText;
-    btn.innerText = "¡Abriendo correo...";
-    btn.style.background = "#4caf50";
-
-    setTimeout(() => {
-        btn.innerText = originalText;
-        btn.style.background = "";
-        document.getElementById('feedbackMessage').value = "";
-        document.getElementById('feedbackFormContainer').style.display = 'none';
-    }, 2000);
-}
-
-// --- 7. PATIENT MANAGER SYSTEM (ENHANCED) ---
-
+// --- 5. PATIENT MANAGER SYSTEM ---
 const PatientManager = {
     patients: [],
     activePatientId: null,
-    
+
     init() {
         this.loadPatients();
         this.renderPatientUI();
@@ -279,28 +66,15 @@ const PatientManager = {
     },
 
     loadPatients() {
-        if (typeof Storage === 'undefined') {
-            console.error('LocalStorage not supported');
-            return;
-        }
-
         const stored = localStorage.getItem('sedile_patients');
-        if (stored) {
-            this.patients = JSON.parse(stored);
-        } else {
-            // Default Demo Patient
-            this.patients = [{ id: 1, name: 'Paciente Demo', history: [] }];
-        }
-        
+        this.patients = stored ? JSON.parse(stored) : [];
         const activeId = localStorage.getItem('sedile_active_patient');
         this.activePatientId = activeId ? parseInt(activeId) : (this.patients.length > 0 ? this.patients[0].id : null);
     },
 
     saveData() {
         localStorage.setItem('sedile_patients', JSON.stringify(this.patients));
-        if (this.activePatientId) {
-            localStorage.setItem('sedile_active_patient', this.activePatientId);
-        }
+        if (this.activePatientId) localStorage.setItem('sedile_active_patient', this.activePatientId);
     },
 
     getActivePatient() {
@@ -309,29 +83,18 @@ const PatientManager = {
 
     addPatient(name) {
         if (!name) return;
-        const newPatient = {
-            id: Date.now(),
-            name: name,
-            history: []
-        };
+        const newPatient = { id: Date.now(), name: name, history: [] };
         this.patients.push(newPatient);
         this.activePatientId = newPatient.id;
         this.saveData();
         this.renderPatientUI();
-        this.clearForm(); // Reset form for new patient
     },
 
     deletePatient(id, e) {
-        if(e) e.stopPropagation();
-        
-        if (!confirm('�Seguro que deseas eliminar este paciente?')) return;
-
+        if (e) e.stopPropagation();
+        if (!confirm('¿Eliminar paciente?')) return;
         this.patients = this.patients.filter(p => p.id !== id);
-        
-        if (this.activePatientId === id) {
-            this.activePatientId = this.patients.length > 0 ? this.patients[0].id : null;
-        }
-        
+        if (this.activePatientId === id) this.activePatientId = this.patients.length > 0 ? this.patients[0].id : null;
         this.saveData();
         this.renderPatientUI();
     },
@@ -340,179 +103,248 @@ const PatientManager = {
         this.activePatientId = id;
         this.saveData();
         this.renderPatientUI();
-        this.clearForm();
-    },
-
-    addHistoryEntry(entry) {
-        const patient = this.getActivePatient();
-        if (patient) {
-            patient.history.unshift(entry); // Add to top
-            if (patient.history.length > 50) patient.history.pop(); // Limit history
-            this.saveData();
-            this.renderHistory();
-            alert('�Prescripci�n guardada para ' + patient.name + '!');
-        } else {
-            alert('Crea un paciente primero.');
-        }
-    },
-
-    clearForm() {
-        const inputs = ['volume', 'dilution'];
-        inputs.forEach(id => document.getElementById(id).value = '');
-        document.getElementById('formulaSelect').value = '';
-        document.getElementById('results-area').style.display = 'none';
-        
-        // Hide dynamic image if exists
-        const imgEl = document.getElementById('dynamicImg');
-        if (imgEl) imgEl.src = 'https://cdn-icons-png.flaticon.com/512/2927/2927347.png'; // Reset to placeholder
-        
-        this.renderHistory();
     },
 
     renderPatientUI() {
         const patient = this.getActivePatient();
-        
         const labelName = document.getElementById('currentPatientName');
         const labelAvatar = document.getElementById('currentPatientAvatar');
 
-        if (patient) {
-            labelName.innerText = patient.name;
-            labelAvatar.innerText = patient.name.charAt(0).toUpperCase();
-        } else {
-            labelName.innerText = 'Pacientes';
-            labelAvatar.innerText = '+';
+        if (labelName && labelAvatar) {
+            if (patient) {
+                labelName.innerText = patient.name;
+                labelAvatar.innerText = patient.name.charAt(0).toUpperCase();
+            } else {
+                labelName.innerText = 'Pacientes';
+                labelAvatar.innerText = '+';
+            }
         }
 
-        // Render List
         const listContainer = document.getElementById('patientList');
-        listContainer.innerHTML = '';
-        
-        this.patients.forEach(p => {
-            const el = document.createElement('div');
-            el.className = 'patient-item ' + (p.id === this.activePatientId ? 'active-patient' : '');
-            
-            // Item Layout: Avatar + Name + Delete Button
-            el.innerHTML = 
-                <div style='display:flex; align-items:center; flex:1' onclick='PatientManager.switchPatient()'>
-                    <span class='patient-avatar' style='width:24px;height:24px;margin-right:10px;font-size:0.7rem'></span>
-                    <span style='font-weight:600; font-size:0.9rem'></span>
-                </div>
-                <button onclick='PatientManager.deletePatient(, event)' style='background:none; border:none; color:#ff5252; cursor:pointer; padding:5px;'>
-                    <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><polyline points='3 6 5 6 21 6'></polyline><path d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'></path></svg>
-                </button>
-            ;
-            listContainer.appendChild(el);
-        });
-
-        this.renderHistory();
-    },
-
-    renderHistory() {
-        const patient = this.getActivePatient();
-        const container = document.getElementById('historyList');
-        const countLabel = document.getElementById('historyCount');
-        const section = document.getElementById('historySection');
-        
-        if (!patient || !patient.history || patient.history.length === 0) {
-            section.style.display = 'none';
-            return;
+        if (listContainer) {
+            listContainer.innerHTML = '';
+            this.patients.forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'patient-item ' + (p.id === this.activePatientId ? 'active-patient' : '');
+                el.innerHTML = `
+                    <div style='display:flex; align-items:center; flex:1' onclick='PatientManager.switchPatient(${p.id})'>
+                        <span class='patient-avatar' style='width:24px;height:24px;margin-right:10px;font-size:0.7rem'>${p.name.charAt(0).toUpperCase()}</span>
+                        <span style='font-weight:600; font-size:0.9rem'>${p.name}</span>
+                    </div>
+                    <button onclick='PatientManager.deletePatient(${p.id}, event)' style='background:none; border:none; color:#ff5252; cursor:pointer; padding:5px;'>🗑️</button>
+                `;
+                listContainer.appendChild(el);
+            });
         }
-
-        section.style.display = 'block';
-        countLabel.innerText = patient.history.length + ' registros';
-        container.innerHTML = '';
-
-        patient.history.forEach(Entry => {
-            const card = document.createElement('div');
-            card.className = 'history-card prescription';
-            card.innerHTML = 
-                '<div class=\'history-header\'>' +
-                    '<span>' + new Date(Entry.date).toLocaleDateString() + '</span>' +
-                    '<span>' + Entry.formulaName + '</span>' +
-                '</div>' +
-                '<div class=\'history-details\'>' +
-                    'Vol: <strong>' + Entry.volume + 'ml</strong> | ' +
-                    (Entry.grams > 0 ? 'Polvo: <strong>' + Entry.grams + 'g</strong>' : 'L�quido Directo') +
-                '</div>' +
-                '<div style=\'font-size:0.75rem;margin-top:5px;color:#888\'>' +
-                    Entry.calories.toFixed(0) + ' Kcal total' +
-                '</div>';
-            
-            container.appendChild(card);
-        });
     },
 
     initEventListeners() {
-        // Toggle Menu
         const btn = document.getElementById('btnPatientToggle');
         const menu = document.getElementById('patientMenu');
-        
-        if(btn) {
-            // Remove old listeners (cloning) to prevent duplicates if re-inited
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            
-            newBtn.addEventListener('click', (e) => {
+        if (btn) {
+            btn.onclick = (e) => {
                 e.stopPropagation();
                 menu.classList.toggle('active');
-            });
+            };
         }
-
-        // Close menu on click outside
-        document.addEventListener('click', (e) => {
-            if (menu && btn && !menu.contains(e.target) && !e.target.closest('#btnPatientToggle')) {
+        document.onclick = (e) => {
+            if (menu && !menu.contains(e.target) && !e.target.closest('#btnPatientToggle')) {
                 menu.classList.remove('active');
             }
-        });
-
-        // Add Patient
+        };
         const btnAdd = document.getElementById('btnAddPatient');
-        if(btnAdd) {
-            const newAdd = btnAdd.cloneNode(true);
-            btnAdd.parentNode.replaceChild(newAdd, btnAdd);
-            
-            newAdd.addEventListener('click', () => {
+        if (btnAdd) {
+            btnAdd.onclick = () => {
                 const name = prompt('Nombre del nuevo paciente:');
                 if (name) this.addPatient(name);
-            });
-        }
-
-        // Save Button logic connection
-        const saveBtn = document.getElementById('btnSaveHistory');
-        if(saveBtn) {
-            // Check if listener already attached or use cloning trick
-            const newSave = saveBtn.cloneNode(true);
-            saveBtn.parentNode.replaceChild(newSave, saveBtn);
-
-            newSave.addEventListener('click', () => {
-                const kcalVal = document.getElementById('valKcal').innerText;
-                if (kcalVal === '0' || kcalVal === '0.0') {
-                    alert('Primero realiza un c�lculo.');
-                    return;
-                }
-
-                const formulaSelect = document.getElementById('formulaSelect');
-                const formulaName = formulaSelect.options[formulaSelect.selectedIndex].text;
-                
-                const entry = {
-                    date: Date.now(),
-                    formulaName: formulaName,
-                    volume: document.getElementById('volume').value,
-                    grams: document.getElementById('valGrams').innerText,
-                    calories: parseFloat(kcalVal)
-                };
-                
-                this.addHistoryEntry(entry);
-            });
+            };
         }
     }
 };
 
-// Make accessible globally
-window.PatientManager = PatientManager;
+// --- 6. VIEW NAVIGATION ---
+function initViewNavigation() {
+    const btns = { 'btnToSim': 1, 'btnBackToPatient': 0 };
+    Object.keys(btns).forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) btn.addEventListener('click', () => switchView(btns[btnId]));
+    });
 
-// Re-init system
-document.addEventListener('DOMContentLoaded', () => {
-    PatientManager.init();
-});
+    document.querySelectorAll('.step').forEach((el, idx) => {
+        el.addEventListener('click', () => switchView(idx));
+    });
+}
 
+function switchView(index) {
+    const steps = document.querySelectorAll('.step');
+    const sections = document.querySelectorAll('.view-section');
+    steps.forEach((s, i) => s.classList.toggle('active', i === index));
+    sections.forEach((sec, i) => {
+        sec.style.display = (i === index) ? 'block' : 'none';
+        sec.classList.toggle('active', i === index);
+    });
+}
+
+// --- 7. DATA LOADING ---
+async function loadFormulas() {
+    let formulas = [];
+    try {
+        const { data, error } = await supabase.from('formulas').select('*');
+        if (!error && data && data.length > 0) formulas = data;
+    } catch (e) { }
+
+    if (formulas.length === 0) formulas = LOCAL_FORMULAS;
+    AppState.formulas = formulas;
+    updateFormulaSelect();
+}
+
+async function loadExchanges() {
+    let exchanges = [];
+    try {
+        const { data, error } = await supabase.from('intercambios').select('*');
+        if (!error && data && data.length > 0) exchanges = data;
+    } catch (e) { }
+
+    if (exchanges.length === 0) exchanges = EXCHANGE_DB;
+    AppState.exchanges = exchanges;
+    updateFormulaSelect();
+}
+
+function updateFormulaSelect() {
+    const sel = document.getElementById('formulaSelect');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Seleccione Fórmula o Intercambio...</option>';
+
+    const cats = [...new Set(AppState.formulas.map(i => i.cat || 'General'))];
+    cats.forEach(cat => {
+        const group = document.createElement('optgroup');
+        group.label = cat;
+        AppState.formulas.filter(i => (i.cat || 'General') === cat).forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = 'for_' + item.id;
+            opt.innerText = item.name;
+            group.appendChild(opt);
+        });
+        sel.appendChild(group);
+    });
+
+    const excGroup = document.createElement('optgroup');
+    excGroup.label = "--- INTERCAMBIOS ---";
+    AppState.exchanges.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = 'exc_' + item.id;
+        opt.innerText = item.name;
+        excGroup.appendChild(opt);
+    });
+    sel.appendChild(excGroup);
+    sel.onchange = handleProductChange;
+}
+
+function handleProductChange() {
+    const val = document.getElementById('formulaSelect').value;
+    const imgEl = document.getElementById('dynamicImg');
+    const dilInput = document.getElementById('dilution');
+    const lblDil = document.getElementById('lblDilution');
+    if (val.startsWith('for_')) {
+        const id = val.replace('for_', '');
+        const f = AppState.formulas.find(x => x.id == id);
+        if (f) {
+            if (f.img) imgEl.src = f.img;
+            if (f.type === 'l') {
+                dilInput.disabled = true; dilInput.placeholder = "N/A (Líquido)";
+                if (lblDil) lblDil.innerText = "Dilución (Líquido)";
+            } else {
+                dilInput.disabled = false; dilInput.value = f.dil || '';
+                if (lblDil) lblDil.innerText = "Dilución (%)";
+            }
+        }
+    } else if (val.startsWith('exc_')) {
+        dilInput.disabled = true; dilInput.placeholder = "Cantidad/Porciones";
+        if (lblDil) lblDil.innerText = "Unidades/Porciones";
+    }
+}
+
+// --- 8. PATIENT LOGIC ---
+function initPatientLogic() {
+    ['nombre', 'edad', 'sexo', 'peso', 'estatura', 'actividad'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', calculateRequirements);
+    });
+    const form = document.getElementById('form-paciente');
+    if (form) {
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('mensaje');
+            msg.innerText = "Guardando...";
+            const data = {
+                nombre: document.getElementById('nombre').value,
+                edad: parseInt(document.getElementById('edad').value),
+                peso_kg: parseFloat(document.getElementById('peso').value),
+                estatura_m: parseFloat(document.getElementById('estatura').value)
+            };
+            const { error } = await supabase.from('pacientes').insert([data]);
+            if (error) { msg.innerText = "Error: " + error.message; msg.style.color = "red"; }
+            else { msg.innerText = "¡Guardado!"; msg.style.color = "green"; }
+        };
+    }
+}
+
+function calculateRequirements() {
+    const p = AppState.patient;
+    p.nombre = document.getElementById('nombre').value;
+    p.edad = parseFloat(document.getElementById('edad').value) || 0;
+    p.sexo = document.getElementById('sexo').value;
+    p.peso = parseFloat(document.getElementById('peso').value) || 0;
+    p.estatura = parseFloat(document.getElementById('estatura').value) || 0;
+    p.actividad = parseFloat(document.getElementById('actividad').value) || 1.2;
+    if (p.peso > 0 && p.estatura > 0) {
+        p.bmi = p.peso / (p.estatura * p.estatura);
+        document.getElementById('valBMI').innerText = p.bmi.toFixed(1);
+        document.getElementById('bmiDisplay').style.display = 'block';
+    }
+    if (p.peso > 0 && p.estatura > 0 && p.edad > 0) {
+        let bmr = (10 * p.peso) + (6.25 * (p.estatura * 100)) - (5 * p.edad);
+        bmr += (p.sexo === 'm' ? 5 : -161);
+        p.tmt = bmr * p.actividad;
+        document.getElementById('valTMT').innerText = Math.round(p.tmt);
+        document.getElementById('tmtDisplay').style.display = 'block';
+        document.getElementById('simGoal').innerText = Math.round(p.tmt);
+    }
+}
+
+// --- 9. SIMULATOR LOGIC ---
+function initSimulatorListeners() {
+    const btn = document.getElementById('btnCalculate');
+    if (btn) btn.onclick = runSimulation;
+}
+
+function runSimulation() {
+    const val = document.getElementById('formulaSelect').value;
+    const vol = parseFloat(document.getElementById('volume').value) || 0;
+    let k = 0;
+    if (val.startsWith('for_')) {
+        const id = val.replace('for_', '');
+        const item = AppState.formulas.find(x => x.id == id);
+        if (!item) return;
+        if (item.type === 'l') { k = (item.k || item.calories) * (vol / 100); }
+        else { k = (item.k || item.calories) * ((vol * (parseFloat(document.getElementById('dilution').value) || item.dil)) / 10000); }
+    } else if (val.startsWith('exc_')) {
+        const id = val.replace('exc_', '');
+        const item = AppState.exchanges.find(x => x.id == id);
+        if (item) { k = item.k * vol; }
+    }
+    document.getElementById('valKcal').innerText = Math.round(k);
+    document.getElementById('simCurrent').innerText = Math.round(k);
+    const goal = AppState.patient.tmt || 2000;
+    document.getElementById('simBar').style.width = Math.min((k / goal) * 100, 100) + '%';
+}
+
+async function savePrescriptionToSupabase() {
+    const payload = {
+        paciente_nombre: AppState.patient.nombre || 'Anónimo',
+        detalle: `Fórmula/Int: ${document.getElementById('formulaSelect').value}, Kcal: ${document.getElementById('valKcal').innerText}`,
+        fecha: new Date().toISOString()
+    };
+    const { error } = await supabase.from('prescripciones').insert([payload]);
+    alert(error ? "Error: " + error.message : "¡Prescripción guardada en la nube!");
+}
