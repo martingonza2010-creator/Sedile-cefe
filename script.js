@@ -114,6 +114,10 @@ async function checkUser() {
 }
 
 async function login() {
+    if (window.location.protocol === 'file:') {
+        alert("El login con Google no funciona abriendo el archivo localmente. Debes subirlo a Vercel o usar un servidor local (http).");
+        return;
+    }
     console.log("Iniciando proceso de login con Google...");
     try {
         const { error } = await supabase.auth.signInWithOAuth({
