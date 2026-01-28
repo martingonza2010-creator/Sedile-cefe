@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="favicon.jpg" type="image/jpeg">
-    <title>SEDILE - HRA | Clinical Nutrition</title>
+    <title>SEDILE HRA | Professional Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,177 +13,226 @@
 </head>
 
 <body>
-    <!-- Background Blobs -->
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
 
-    <!-- Patient Manager Toggle -->
-    <div class="patient-manager-toggle" id="btnPatientToggle">
-        <div class="patient-avatar" id="currentPatientAvatar">P</div>
-        <span class="patient-name" id="currentPatientName">Pacientes</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-    </div>
+    <!-- Info Protocol Button -->
+    <button class="protocol-fab" id="btnProtocolOpen" title="Protocolos Institucionales">
+        <span>i</span> Protocolos HRA
+    </button>
 
-    <!-- Patient Menu -->
-    <div class="patient-menu" id="patientMenu">
-        <div class="patient-list" id="patientList"></div>
-        <button class="add-patient-btn" id="btnAddPatient">+ Nuevo Paciente</button>
-    </div>
+    <div class="app-container compact-mode">
+        <!-- HEADER COMPACTO -->
+        <header class="main-header">
+            <div class="brand-box">
+                <img src="https://i.imgur.com/ugEhxa1.jpeg" alt="Logo" class="logo-small">
+                <div>
+                    <h1>SEDILE - HRA</h1>
+                    <p>Calculadora Clínica V2.5</p>
+                </div>
+            </div>
 
-    <div class="app-container">
-        <header>
-            <div class="logo-area">
-                <img src="https://i.imgur.com/ugEhxa1.jpeg" alt="NutriMartin Logo" class="brand-logo">
-            </div>
-            <div class="title-text">
-                <h1>SEDILE - HRA</h1>
-                <p>Clinical Nutrition</p>
-            </div>
-            <div class="product-display">
-                <img src="https://cdn-icons-png.flaticon.com/512/2927/2927347.png" alt="Product" class="product-img"
-                    id="dynamicImg">
+            <div class="patient-quick-access" id="btnPatientToggle">
+                <div class="p-avatar" id="currentPatientAvatar">P</div>
+                <div class="p-info">
+                    <span id="currentPatientName">Nuevo Paciente</span>
+                    <small>IMC: <b id="valBMI">--</b> | Meta: <b id="valTMT">--</b> Kcal</small>
+                </div>
             </div>
         </header>
 
-        <main>
-            <!-- Stepper Navigation -->
-            <div class="stepper-container">
-                <div class="step active" data-step="0">
-                    <div class="step-circle">1</div>
-                    <span>Paciente</span>
+        <main class="dashboard-grid">
+            <!-- SECCIÓN 1: EVALUACIÓN (COMPACTA) -->
+            <section class="card assessment-card">
+                <div class="card-header">
+                    <h3>Registro Evaluación</h3>
+                    <button class="btn-micro" id="btnAddPatient">+ Nuevo</button>
                 </div>
-                <div class="step-line"></div>
-                <div class="step" data-step="1">
-                    <div class="step-circle">2</div>
-                    <span>Simulación</span>
-                </div>
-                <div class="step-line"></div>
-                <div class="step" data-step="2">
-                    <div class="step-circle">3</div>
-                    <span>Resumen</span>
-                </div>
-            </div>
-
-            <!-- VIEW 1: Patient Assessment -->
-            <section id="view-patient" class="view-section active">
-                <div class="input-card">
-                    <h3 class="section-title">Registro de Evaluación Nutricional</h3>
-                    <form id="form-paciente">
-                        <div class="input-group">
-                            <label>Nombre Completo</label>
-                            <input type="text" id="nombre" placeholder="Nombre del paciente" required>
+                <form id="form-paciente" class="compact-form">
+                    <div class="input-row">
+                        <input type="text" id="nombre" placeholder="Nombre completo" required>
+                    </div>
+                    <div class="grid-col-4">
+                        <div class="mini-input">
+                            <label>Edad</label>
+                            <input type="number" id="edad" placeholder="0">
                         </div>
-                        <div class="grid-2">
-                            <div class="input-group">
-                                <label>Edad (años)</label>
-                                <input type="number" id="edad" placeholder="Edad" required>
-                            </div>
-                            <div class="input-group">
-                                <label>Sexo</label>
-                                <select id="sexo">
-                                    <option value="m">Masculino</option>
-                                    <option value="f">Femenino</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="grid-2">
-                            <div class="input-group">
-                                <label>Peso (kg)</label>
-                                <input type="number" step="0.01" id="peso" placeholder="Peso" required>
-                            </div>
-                            <div class="input-group">
-                                <label>Estatura (m)</label>
-                                <input type="number" step="0.01" id="estatura" placeholder="Ej: 1.70" required>
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label>Factor de Actividad</label>
-                            <select id="actividad">
-                                <option value="1.2">1.2 - Reposo en cama</option>
-                                <option value="1.3">1.3 - Actividad ligera</option>
-                                <option value="1.5">1.5 - Actividad moderada</option>
-                                <option value="1.7">1.7 - Actividad alta</option>
+                        <div class="mini-input">
+                            <label>Sexo</label>
+                            <select id="sexo">
+                                <option value="m">M</option>
+                                <option value="f">F</option>
                             </select>
                         </div>
-                        <button type="submit" class="action-btn">Guardar Paciente (Supabase)</button>
-                    </form>
-
-                    <p id="mensaje" style="text-align:center; margin-top:10px; font-weight:600;"></p>
-
-                    <div class="result-badge" id="bmiDisplay" style="display:none; margin-top:15px;">
-                        IMC: <span id="valBMI">--</span> <span id="txtBMIStatus"></span>
+                        <div class="mini-input">
+                            <label>Peso</label>
+                            <input type="number" step="0.1" id="peso" placeholder="kg">
+                        </div>
+                        <div class="mini-input">
+                            <label>Talla</label>
+                            <input type="number" step="0.01" id="estatura" placeholder="m">
+                        </div>
                     </div>
-
-                    <div class="result-badge primary-badge" id="tmtDisplay" style="display:none; margin-top:10px;">
-                        Meta Calórica Estimada: <span id="valTMT">--</span> Kcal/día
+                    <div class="input-row-multi">
+                        <select id="actividad" class="select-small">
+                            <option value="1.2">AF: 1.2 (Reposo)</option>
+                            <option value="1.3">AF: 1.3 (Ligero)</option>
+                            <option value="1.5">AF: 1.5 (Mod)</option>
+                        </select>
+                        <button type="submit" class="btn-save-small">Guardar</button>
                     </div>
-
-                    <button class="action-btn secondary" id="btnToSim" style="margin-top:20px;">Continuar a Simulación
-                        ➔</button>
-                </div>
+                </form>
             </section>
 
-            <!-- VIEW 2: Formula Simulator -->
-            <section id="view-simulator" class="view-section">
-                <div class="simulation-header">
-                    <div class="mini-stat">
-                        <span>Meta</span>
-                        <strong id="simGoal">2000</strong>
+            <!-- SECCIÓN 2: SIMULADOR INTEGRADO -->
+            <section class="card simulator-card">
+                <div class="sim-header-dashboard">
+                    <div class="mode-selector">
+                        <button class="mode-toggle active" data-mode="vol">Vol / Dil</button>
+                        <button class="mode-toggle" data-mode="grams">Gramaje</button>
                     </div>
-                    <div class="mini-progress">
-                        <div class="bar-fill" id="simBar" style="width:0%"></div>
-                    </div>
-                    <div class="mini-stat">
-                        <span>Actual</span>
-                        <strong id="simCurrent">0</strong>
+                    <div class="progress-container-mini">
+                        <div class="prog-label">Meta: <span id="simGoal">--</span> kcal</div>
+                        <div class="prog-track">
+                            <div class="prog-fill" id="simBar"></div>
+                        </div>
+                        <div class="prog-label">Cons: <span id="simCurrent">0</span> kcal</div>
                     </div>
                 </div>
 
-                <div class="input-card">
-                    <h2 class="section-title">Selección de Fórmula o Intercambio</h2>
+                <div class="sim-inputs">
                     <div class="input-group">
-                        <label>Producto Base</label>
-                        <select id="formulaSelect">
-                            <option value="">Seleccione Fórmula o Intercambio...</option>
-                        </select>
+                        <label>Fórmula / Leche HRA / RTH</label>
+                        <select id="formulaSelect" class="select-modern"></select>
                     </div>
-
-                    <div class="grid-2">
+                    <div class="grid-col-2">
                         <div class="input-group">
-                            <label>Volumen Total (ml)</label>
-                            <input type="number" id="volume" placeholder="Ej. 1000">
+                            <label>Volumen (ml)</label>
+                            <input type="number" id="volume" placeholder="ml">
                         </div>
                         <div class="input-group">
                             <label id="lblDilution">Dilución (%)</label>
-                            <input type="number" id="dilution" placeholder="Ej. 13.5">
+                            <input type="number" id="dilution" placeholder="%">
                         </div>
                     </div>
-
-                    <button class="action-btn secondary" id="btnBackToPatient">🠔 Volver a Paciente</button>
-                    <button class="action-btn" id="btnCalculate">Calcular Aporte ➔</button>
                 </div>
-            </section>
 
-            <!-- VIEW 3: Summary -->
-            <section id="view-summary" class="view-section">
-                <div class="input-card">
-                    <h2 class="section-title">Resumen de Prescripción</h2>
-                    <div class="result-badge primary-badge" style="font-size:1.5rem; padding:20px;">
-                        Aporte Total: <span id="valKcal">0</span> Kcal
+                <div class="macro-board">
+                    <div class="macro-item k">
+                        <label>Energía</label>
+                        <span id="valKcal">0</span><small>kcal</small>
                     </div>
-
-                    <button class="btn-save-prescription" id="btnSaveHistory">
-                        Guardar Prescripción en Supabase
-                    </button>
+                    <div class="macro-item p">
+                        <label>Prot</label>
+                        <span id="valProt">0</span><small>g</small>
+                    </div>
+                    <div class="macro-item c">
+                        <label>CHO</label>
+                        <span id="valCHO">0</span><small>g</small>
+                    </div>
+                    <div class="macro-item f">
+                        <label>Líp</label>
+                        <span id="valLip">0</span><small>g</small>
+                    </div>
                 </div>
+
+                <button class="btn-primary-wide" id="btnSaveHistory">Prescribir y Guardar Cloud</button>
             </section>
         </main>
 
-        <footer>
-            <p>Dr. Martín González - Nutrición Clínica</p>
-        </footer>
+        <!-- MODAL DE PROTOCOLOS (FLOTANTE LATERAL) -->
+        <div class="protocol-modal" id="protocolModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Protocolos Institucionales HRA</h2>
+                    <button class="btn-close" id="btnProtocolClose">&times;</button>
+                </div>
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchProtocolTab(0)">Velocidades RTH</button>
+                    <button class="tab-btn" onclick="switchProtocolTab(1)">Horarios de Entrega</button>
+                </div>
+
+                <div class="tab-content" id="tab-infusion" style="display:block;">
+                    <div class="table-scroll">
+                        <h3>Guía de Infusión Continua</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Capacidad</th>
+                                    <th>Velocidad (ml/h)</th>
+                                    <th>Duración</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-500">
+                                    <td>500 ml</td>
+                                    <td>20</td>
+                                    <td>24 Hrs</td>
+                                </tr>
+                                <tr class="bg-500">
+                                    <td>500 ml</td>
+                                    <td>40</td>
+                                    <td>12 Hrs</td>
+                                </tr>
+                                <tr class="bg-500">
+                                    <td>500 ml</td>
+                                    <td>60</td>
+                                    <td>8 Hrs</td>
+                                </tr>
+                                <tr class="bg-1000">
+                                    <td>1000 ml</td>
+                                    <td>40</td>
+                                    <td>24 Hrs</td>
+                                </tr>
+                                <tr class="bg-1000">
+                                    <td>1000 ml</td>
+                                    <td>80</td>
+                                    <td>12 Hrs</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="note">Hora de Entrega RTH: 14:00 - 18:00</p>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-delivery" style="display:none;">
+                    <div class="table-scroll">
+                        <h3>Distribución de Fórmulas Lácteas</h3>
+                        <table class="schedule-table">
+                            <tr>
+                                <td>Q3H (8 veces)</td>
+                                <td>03-06-09-12-15-18-21-24</td>
+                            </tr>
+                            <tr>
+                                <td>Q4H (6 veces)</td>
+                                <td>06-10-14-18-22-02</td>
+                            </tr>
+                            <tr>
+                                <td>Q6H (4 veces)</td>
+                                <td>06-12-18-24</td>
+                            </tr>
+                            <tr>
+                                <td>Régimen Licuado</td>
+                                <td>06-14-22</td>
+                            </tr>
+                            <tr>
+                                <td>Regimen Normal</td>
+                                <td>07-16-22</td>
+                            </tr>
+                        </table>
+                        <h3>Fórmulas Enterales</h3>
+                        <div class="time-chips">
+                            <span>08:00</span><span>10:00</span><span>16:00</span><span>22:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Elements for Patient Manager -->
+    <div id="patientMenu" class="hidden">
+        <div id="patientList"></div>
     </div>
 
     <script src="script.js"></script>
