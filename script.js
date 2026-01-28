@@ -114,10 +114,17 @@ async function checkUser() {
 }
 
 async function login() {
-    await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin }
-    });
+    console.log("Iniciando proceso de login con Google...");
+    try {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.origin }
+        });
+        if (error) throw error;
+    } catch (err) {
+        console.error("Error en Login:", err);
+        alert("Error al conectar con Google. Revisa si has configurado Client ID y Secret en el panel de Supabase. Detalles: " + err.message);
+    }
 }
 
 async function logout() {
