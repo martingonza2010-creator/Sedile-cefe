@@ -113,12 +113,20 @@ async function checkUser() {
     }
 }
 
-async function login() {
+// Make login available globally
+window.login = async function () {
+    console.log("Intentando login...");
+
     if (window.location.protocol === 'file:') {
-        alert("El login con Google no funciona abriendo el archivo localmente. Debes subirlo a Vercel o usar un servidor local (http).");
+        alert("⚠️ Error: Estás abriendo el archivo localmente (file://). Debes usar Vercel.");
         return;
     }
-    console.log("Iniciando proceso de login con Google...");
+
+    if (!supabase) {
+        alert("🔴 Error Crítico: Supabase no se cargó. Revisa tu conexión a internet.");
+        return;
+    }
+
     try {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -126,10 +134,9 @@ async function login() {
         });
         if (error) throw error;
     } catch (err) {
-        console.error("Error en Login:", err);
-        alert("Error al conectar con Google. Revisa si has configurado Client ID y Secret en el panel de Supabase. Detalles: " + err.message);
+        alert("Error Supabase: " + err.message);
     }
-}
+};
 
 async function logout() {
     await supabase.auth.signOut();
