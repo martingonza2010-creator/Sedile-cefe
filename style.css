@@ -423,3 +423,156 @@ header.main-header {
     font-size: 0.75rem;
     font-weight: 600;
 }
+/* --- FIXES & ENHANCEMENTS V2.5 --- */
+
+/* 1. Protocol Modal Mobile Fix */
+@media (max-width: 600px) {
+    .protocol-modal {
+        width: 100%;
+        padding: 20px;
+    }
+    
+    .protocol-fab {
+        right: 20px;
+        bottom: 80px;
+        top: auto;
+    }
+}
+
+/* 2. Patient Quick Access Bar (Redesigned) */
+.patient-quick-access {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid rgba(142, 68, 173, 0.1);
+    transition: 0.3s;
+}
+
+.patient-quick-access:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(142, 68, 173, 0.15);
+}
+
+.p-avatar {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--primary);
+    border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.p-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.p-info span {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--secondary);
+}
+
+.p-info small {
+    font-size: 0.7rem;
+    color: #888;
+}
+
+/* 3. Modern Formula Select */
+.select-modern {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    appearance: none;
+    /* background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=''http://www.w3.org/2000/svg'' viewBox=''0 0 24 24'' fill=''none'' stroke=''%238e44ad'' stroke-width=''2'' stroke-linecap=''round'' stroke-linejoin=''round''%3e%3cpolyline points=''6 9 12 15 18 9''%3e%3c/polyline%3e%3c/svg%3e'); */
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 16px;
+    transition: 0.3s;
+}
+
+.select-modern:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.1);
+}
+
+/* 4. Missing Simulator Styles */
+.sim-header-dashboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.mode-selector {
+    display: flex;
+    background: #f0f2f5;
+    padding: 4px;
+    border-radius: 12px;
+    gap: 4px;
+}
+
+.mode-toggle {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #666;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.mode-toggle.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.progress-container-mini {
+    flex: 1;
+    margin-left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 10px;
+}
+
+.prog-track {
+    flex: 1;
+    height: 8px;
+    background: #eee;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.prog-fill {
+    height: 100%;
+    background: var(--bg-gradient);
+    border-radius: 4px;
+    width: 0%;
+    transition: 0.5s ease-out;
+}
+
+.prog-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #888;
+    white-space: nowrap;
+}
+

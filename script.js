@@ -343,8 +343,8 @@ function runSimulation() {
         const grams = v2;
         k = formula.k * (grams / 100);
         p = formula.p * (grams / 100);
-        c = formula.c * (gramsInput / 100); // Fixed naming error in grams calc
-        l = formula.f * (gramsInput / 100);
+        c = formula.c * (grams / 100);
+        l = formula.f * (grams / 100);
     }
 
     document.getElementById('valKcal').innerText = Math.round(k);
