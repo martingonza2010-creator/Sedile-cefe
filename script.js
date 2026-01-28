@@ -147,7 +147,9 @@ async function logout() {
 function showApp() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
-    document.getElementById('userNameDisplay').innerText = `Nutricionista: ${AppState.user.user_metadata.full_name || 'Dr.'}`;
+    const name = AppState.user.user_metadata.full_name || 'Usuario';
+    const shortName = name.split(' ')[0]; // Take first name only for cleaner look
+    document.getElementById('userNameDisplay').innerHTML = `Nutricionista <b>${name}</b>`;
 }
 
 function showLogin() {

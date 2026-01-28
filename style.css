@@ -576,3 +576,27 @@ header.main-header {
     white-space: nowrap;
 }
 
+/* 5. New Purple Background & Top User Bar */
+body {
+    background: linear-gradient(135deg, #fdfbfd 0%, #e6e9f0 100%); /* Fallback light */
+}
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 10% 20%, rgb(242, 235, 243) 0%, rgb(234, 218, 255) 90%);
+    z-index: -2;
+}
+/* Enhanced User Pill */
+#userNameDisplay {
+    background: white;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+    box-shadow: 0 4px 10px rgba(142, 68, 173, 0.1);
+    border: 1px solid rgba(142, 68, 173, 0.2);
+    display: inline-block;
+    margin-top: 5px;
+}
