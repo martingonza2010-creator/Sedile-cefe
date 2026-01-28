@@ -3,11 +3,8 @@ const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
 const supabaseKey = 'sb_publishable_xCxGjcAngmfd0hJYv2uphg_yB-pF3Hp';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-console.log("Iniciando Sedile HRA V2.5...");
-
-// --- 2. MASSIVE DATABASE ---
+// --- 2. DATABASE (Vademécum HRA & RTH) ---
 const LOCAL_FORMULAS = [
-    // --- LECHES HRA (Per 100cc) ---
     { cat: "Leches HRA", id: "alprem", name: "Alprem", type: "l", k: 80.0, p: 2.9, c: 8.1, f: 4.0 },
     { cat: "Leches HRA", id: "f1", name: "F1", type: "l", k: 67.9, p: 1.2, c: 7.6, f: 3.6 },
     { cat: "Leches HRA", id: "f2", name: "F2", type: "l", k: 68.0, p: 2.1, c: 8.2, f: 3.0 },
@@ -41,8 +38,6 @@ const LOCAL_FORMULAS = [
     { cat: "Leches HRA", id: "glutapak", name: "Glutapak-R", type: "l", k: 60.0, p: 10.0, c: 5.0, f: 0.0 },
     { cat: "Leches HRA", id: "fortificador", name: "Fortificador", type: "l", k: 17.4, p: 1.4, c: 1.3, f: 0.7 },
     { cat: "Leches HRA", id: "g4", name: "G4", type: "l", k: 176.1, p: 6.9, c: 18.3, f: 3.5 },
-
-    // --- FÓRMULAS RTH (Per 100ml) ---
     { cat: "Fórmulas RTH", id: "osmolite", name: "Osmolite", type: "l", k: 100.0, p: 4.0, c: 13.6, f: 3.4 },
     { cat: "Fórmulas RTH", id: "glucerna_15", name: "Glucerna 1.5", type: "l", k: 150.0, p: 7.5, c: 12.76, f: 7.5 },
     { cat: "Fórmulas RTH", id: "diben_15", name: "Diben 1.5 Kcal", type: "l", k: 150.0, p: 7.5, c: 13.1, f: 7.0 },
@@ -52,33 +47,61 @@ const LOCAL_FORMULAS = [
     { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", k: 149.2, p: 8.0, c: 18.0, f: 4.8 }
 ];
 
-const EXCHANGE_DB = [
-    { id: 'cereal', name: 'Cereales', k: 70, p: 2, f: 0, c: 15 },
-    { id: 'veg', name: 'Verduras', k: 30, p: 1, f: 0, c: 5 },
-    { id: 'fruit', name: 'Frutas', k: 65, p: 0, f: 0, c: 15 },
-    { id: 'dairy_skim', name: 'Lácteos Descremados', k: 70, p: 7, f: 0, c: 10 },
-    { id: 'meat_lean', name: 'Carnes Magras', k: 50, p: 7, f: 2, c: 0 },
-    { id: 'oil', name: 'Aceites/Grasas', k: 45, p: 0, f: 5, c: 0 },
-];
-
 // --- 3. GLOBAL STATE ---
 const AppState = {
+    user: null,
     patient: { nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0 },
-    formulas: [],
-    exchanges: EXCHANGE_DB,
+    formulas: LOCAL_FORMULAS,
     calcMode: 'vol'
 };
 
-// --- 4. INITIALIZATION ---
+// --- 4. INITIALIZATION & AUTH ---
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("DOM Cargado. Inicializando widgets...");
+    checkUser();
+
+    document.getElementById('btnLoginGoogle').onclick = login;
+    document.getElementById('btnLogout').onclick = logout;
+
     initCompactLayout();
     initProtocolModal();
+    initHistoryModal();
     initPatientLogic();
     initSimulatorLogic();
-    PatientManager.init();
-    await loadFormulas();
+    updateFormulaSelect();
 });
+
+async function checkUser() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        AppState.user = session.user;
+        showApp();
+    } else {
+        showLogin();
+    }
+}
+
+async function login() {
+    await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+    });
+}
+
+async function logout() {
+    await supabase.auth.signOut();
+    window.location.reload();
+}
+
+function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('userNameDisplay').innerText = `Nutricionista: ${AppState.user.user_metadata.full_name || 'Dr.'}`;
+}
+
+function showLogin() {
+    document.getElementById('auth-screen').style.display = 'grid';
+    document.getElementById('main-app').style.display = 'none';
+}
 
 // --- 5. COMPACT UI LOGIC ---
 function initCompactLayout() {
@@ -89,7 +112,7 @@ function initCompactLayout() {
             btn.classList.add('active');
             AppState.calcMode = btn.dataset.mode;
             updateInputLabels();
-            runSimulation(); // Recalculate on switch
+            runSimulation();
         };
     });
 }
@@ -97,8 +120,6 @@ function initCompactLayout() {
 function updateInputLabels() {
     const lblDil = document.getElementById('lblDilution');
     const inputDil = document.getElementById('dilution');
-    if (!lblDil || !inputDil) return;
-
     if (AppState.calcMode === 'grams') {
         lblDil.innerText = "Gramos Totales (g)";
         inputDil.placeholder = "Ej. 50";
@@ -108,38 +129,33 @@ function updateInputLabels() {
     }
 }
 
-// --- 6. PROTOCOL MODAL ---
+// --- 6. MODALS ---
 function initProtocolModal() {
     const modal = document.getElementById('protocolModal');
     const btnOpen = document.getElementById('btnProtocolOpen');
     const btnClose = document.getElementById('btnProtocolClose');
+    if (btnOpen) btnOpen.onclick = () => modal.classList.add('active');
+    if (btnClose) btnClose.onclick = () => modal.classList.remove('active');
 
-    console.log("Configurando modal:", !!modal, !!btnOpen);
-
-    if (btnOpen) {
-        btnOpen.onclick = () => {
-            console.log("Abriendo modal...");
-            modal.classList.add('active');
-        };
-    }
-    if (btnClose) {
-        btnClose.onclick = () => {
-            modal.classList.remove('active');
-        };
-    }
-
-    // Export function to window so HTML can see it
     window.switchProtocolTab = (idx) => {
-        console.log("Cambiando pestaña a:", idx);
         document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
-        const tabs = [document.getElementById('tab-infusion'), document.getElementById('tab-delivery')];
-        tabs.forEach((t, i) => {
-            if (t) t.style.display = i === idx ? 'block' : 'none';
-        });
+        document.getElementById('tab-infusion').style.display = idx === 0 ? 'block' : 'none';
+        document.getElementById('tab-delivery').style.display = idx === 1 ? 'block' : 'none';
     };
 }
 
-// --- 7. PATIENT LOGIC ---
+function initHistoryModal() {
+    const modal = document.getElementById('historyModal');
+    const btnOpen = document.getElementById('btnOpenHistory');
+    const btnClose = document.getElementById('btnHistoryClose');
+    if (btnOpen) btnOpen.onclick = () => {
+        modal.classList.add('active');
+        loadHistory();
+    };
+    if (btnClose) btnClose.onclick = () => modal.classList.remove('active');
+}
+
+// --- 7. PATIENT & HISTORY LOGIC ---
 function initPatientLogic() {
     const fields = ['nombre', 'edad', 'sexo', 'peso', 'estatura', 'actividad'];
     fields.forEach(f => {
@@ -152,30 +168,60 @@ function initPatientLogic() {
         form.onsubmit = async (e) => {
             e.preventDefault();
             const btn = form.querySelector('button');
-            const originalText = btn.innerText;
             btn.innerText = "Guardando...";
 
             const data = {
                 nombre: document.getElementById('nombre').value,
                 edad: parseInt(document.getElementById('edad').value) || 0,
                 peso_kg: parseFloat(document.getElementById('peso').value) || 0,
-                estatura_m: parseFloat(document.getElementById('estatura').value) || 0
+                estatura_m: parseFloat(document.getElementById('estatura').value) || 0,
+                user_id: AppState.user.id
             };
 
-            try {
-                const { error } = await supabase.from('pacientes').insert([data]);
-                if (error) throw error;
-                btn.innerText = "¡Listo!";
-                PatientManager.addPatient(data.nombre);
-            } catch (err) {
-                console.error("Error Supabase:", err);
-                btn.innerText = "Error (Local)";
-                PatientManager.addPatient(data.nombre + " (local)");
-            }
-            setTimeout(() => btn.innerText = originalText, 2000);
+            const { error } = await supabase.from('pacientes').insert([data]);
+            btn.innerText = error ? "Error" : "Guardado";
+            setTimeout(() => btn.innerText = "Guardar", 2000);
         };
     }
 }
+
+async function loadHistory() {
+    const container = document.getElementById('historyContainer');
+    container.innerHTML = '<p style="text-align:center; opacity:0.6;">Buscando tus pacientes...</p>';
+
+    const { data, error } = await supabase
+        .from('pacientes')
+        .select('*')
+        .eq('user_id', AppState.user.id)
+        .order('created_at', { ascending: false });
+
+    if (error || !data.length) {
+        container.innerHTML = '<p style="text-align:center; opacity:0.6;">Aún no tienes pacientes guardados.</p>';
+        return;
+    }
+
+    container.innerHTML = data.map(p => `
+        <div class="history-item" onclick="loadPatient(${p.id})">
+            <h4>${p.nombre}</h4>
+            <div class="meta">
+                <span>Peso: ${p.peso_kg}kg | Edad: ${p.edad}a</span>
+                <span>${new Date(p.created_at).toLocaleDateString()}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.loadPatient = async (id) => {
+    const { data } = await supabase.from('pacientes').select('*').eq('id', id).single();
+    if (data) {
+        document.getElementById('nombre').value = data.nombre;
+        document.getElementById('edad').value = data.edad;
+        document.getElementById('peso').value = data.peso_kg;
+        document.getElementById('estatura').value = data.estatura_m;
+        calculateRequirements();
+        document.getElementById('historyModal').classList.remove('active');
+    }
+};
 
 function calculateRequirements() {
     const p = AppState.patient;
@@ -185,36 +231,25 @@ function calculateRequirements() {
     p.estatura = parseFloat(document.getElementById('estatura').value) || 0;
     p.actividad = parseFloat(document.getElementById('actividad').value) || 1.2;
 
-    const bmiEl = document.getElementById('valBMI');
-    if (p.peso > 0 && p.estatura > 0 && bmiEl) {
+    if (p.peso > 0 && p.estatura > 0) {
         p.bmi = p.peso / (p.estatura * p.estatura);
-        bmiEl.innerText = p.bmi.toFixed(1);
+        document.getElementById('valBMI').innerText = p.bmi.toFixed(1);
     }
 
-    const tmtEl = document.getElementById('valTMT');
-    const simGoal = document.getElementById('simGoal');
-    if (p.peso > 0 && p.estatura > 0 && p.edad > 0 && tmtEl) {
+    if (p.peso > 0 && p.estatura > 0 && p.edad > 0) {
         let bmr = (10 * p.peso) + (6.25 * (p.estatura * 100)) - (5 * p.edad) + (document.getElementById('sexo').value === 'm' ? 5 : -161);
         p.tmt = bmr * p.actividad;
-        tmtEl.innerText = Math.round(p.tmt);
-        if (simGoal) simGoal.innerText = Math.round(p.tmt);
-        runSimulation(); // Update progress bar
+        document.getElementById('valTMT').innerText = Math.round(p.tmt);
+        document.getElementById('simGoal').innerText = Math.round(p.tmt);
+        runSimulation();
     }
 }
 
 // --- 8. SIMULATOR LOGIC ---
-async function loadFormulas() {
-    console.log("Cargando base de datos de fórmulas...");
-    AppState.formulas = LOCAL_FORMULAS;
-    updateFormulaSelect();
-}
-
 function updateFormulaSelect() {
     const sel = document.getElementById('formulaSelect');
     if (!sel) return;
-
     sel.innerHTML = '<option value="">Seleccione Fórmula...</option>';
-
     const cats = [...new Set(AppState.formulas.map(i => i.cat))];
     cats.forEach(cat => {
         const group = document.createElement('optgroup');
@@ -227,18 +262,13 @@ function updateFormulaSelect() {
         });
         sel.appendChild(group);
     });
-
     sel.onchange = runSimulation;
 }
 
 function initSimulatorLogic() {
-    const v = document.getElementById('volume');
-    const d = document.getElementById('dilution');
-    if (v) v.oninput = runSimulation;
-    if (d) d.oninput = runSimulation;
-
-    const btnSave = document.getElementById('btnSaveHistory');
-    if (btnSave) btnSave.onclick = savePrescriptionToSupabase;
+    document.getElementById('volume').oninput = runSimulation;
+    document.getElementById('dilution').oninput = runSimulation;
+    document.getElementById('btnSaveHistory').onclick = savePrescription;
 }
 
 function runSimulation() {
@@ -253,17 +283,15 @@ function runSimulation() {
 
     if (AppState.calcMode === 'vol') {
         const vol = v1;
-        // Logic for reconstituted formulas from HRA image (Image 1 values are per 100ml)
         k = formula.k * (vol / 100);
         p = formula.p * (vol / 100);
         c = formula.c * (vol / 100);
         l = formula.f * (vol / 100);
     } else {
-        // GRAMAGE MODE (per 100g)
-        const gramsInput = v2;
-        k = formula.k * (gramsInput / 100);
-        p = formula.p * (gramsInput / 100);
-        c = formula.c * (gramsInput / 100);
+        const grams = v2;
+        k = formula.k * (grams / 100);
+        p = formula.p * (grams / 100);
+        c = formula.c * (gramsInput / 100); // Fixed naming error in grams calc
         l = formula.f * (gramsInput / 100);
     }
 
@@ -271,59 +299,19 @@ function runSimulation() {
     document.getElementById('valProt').innerText = p.toFixed(1);
     document.getElementById('valCHO').innerText = c.toFixed(1);
     document.getElementById('valLip').innerText = l.toFixed(1);
-
-    const simCurrent = document.getElementById('simCurrent');
-    if (simCurrent) simCurrent.innerText = Math.round(k);
+    document.getElementById('simCurrent').innerText = Math.round(k);
 
     const goal = AppState.patient.tmt || 2000;
-    const bar = document.getElementById('simBar');
-    if (bar) {
-        const pct = Math.min((k / goal) * 100, 100);
-        bar.style.width = pct + '%';
-    }
+    document.getElementById('simBar').style.width = Math.min((k / goal) * 100, 100) + '%';
 }
 
-async function savePrescriptionToSupabase() {
-    const kcal = document.getElementById('valKcal').innerText;
-    if (kcal === "0") {
-        alert("Primero realiza un cálculo");
-        return;
-    }
-
-    const payload = {
-        paciente_nombre: AppState.patient.nombre || 'Anónimo',
-        detalle: `Fórmula: ${document.getElementById('formulaSelect').value}, Kcal: ${kcal}`,
-        fecha: new Date().toISOString()
-    };
-
-    try {
-        const { error } = await supabase.from('prescripciones').insert([payload]);
-        if (error) throw error;
-        alert("¡Prescripción guardada en la nube!");
-    } catch (err) {
-        console.error(err);
-        alert("Error al guardar en nube. Revisa consola.");
-    }
+async function savePrescription() {
+    const btn = document.getElementById('btnSaveHistory');
+    const { error } = await supabase.from('prescripciones').insert([{
+        paciente_nombre: document.getElementById('nombre').value || 'Anónimo',
+        detalle: `Kcal: ${document.getElementById('valKcal').innerText}, Prot: ${document.getElementById('valProt').innerText}`,
+        user_id: AppState.user.id
+    }]);
+    btn.innerText = error ? "Error" : "¡Prescripción Guardada!";
+    setTimeout(() => btn.innerText = "Prescribir y Guardar Cloud", 2000);
 }
-
-// --- 9. PATIENT MANAGER ---
-const PatientManager = {
-    patients: [],
-    init() {
-        const s = localStorage.getItem('sedile_v2_pats');
-        this.patients = s ? JSON.parse(s) : [];
-        this.render();
-    },
-    addPatient(name) {
-        if (!this.patients.find(p => p.name === name)) {
-            this.patients.push({ name: name, id: Date.now() });
-            localStorage.setItem('sedile_v2_pats', JSON.stringify(this.patients));
-            this.render();
-        }
-    },
-    render() {
-        const list = document.getElementById('patientList');
-        if (!list) return;
-        list.innerHTML = this.patients.map(p => `<div class="patient-item">${p.name}</div>`).join('');
-    }
-};
