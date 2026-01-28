@@ -10,6 +10,7 @@
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
@@ -125,7 +126,11 @@
                 <div class="sim-inputs">
                     <div class="input-group">
                         <label>Fórmula / Leche HRA / RTH</label>
-                        <select id="formulaSelect" class="select-modern"></select>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <select id="formulaSelect" class="select-modern"></select>
+                            <button id="btnToggleFav" class="btn-micro" style="font-size:1.2rem; padding: 5px 10px;"
+                                title="Marcar como Favorita">☆</button>
+                        </div>
                     </div>
                     <div class="grid-col-2">
                         <div class="input-group">
@@ -147,6 +152,12 @@
                 </div>
 
                 <button class="btn-primary-wide" id="btnSaveHistory">Prescribir y Guardar Cloud</button>
+                <div id="pwaInstallContainer" style="display:none; text-align:center; margin-top:15px;">
+                    <span id="btnInstallApp"
+                        style="cursor:pointer; font-size:0.75rem; color:var(--primary); text-decoration:underline;">
+                        Dejar aplicación en pantalla de inicio 📱
+                    </span>
+                </div>
             </section>
         </main>
 
@@ -158,6 +169,12 @@
                     <button class="btn-close" id="btnHistoryClose">&times;</button>
                 </div>
                 <div class="history-list" id="historyContainer">
+                    <div id="chartContainer"
+                        style="display:none; margin-bottom: 20px; padding: 10px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <canvas id="evolutionChart" width="400" height="200"></canvas>
+                        <p style="text-align:center; font-size:0.7rem; color:#888; margin-top:5px;">Evolución de Peso
+                            (Últimos 5 registros)</p>
+                    </div>
                     <p style="text-align:center; opacity:0.6;">Cargando tus registros...</p>
                 </div>
             </div>

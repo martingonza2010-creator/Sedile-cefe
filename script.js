@@ -53,7 +53,8 @@ const AppState = {
     user: null,
     patient: { nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0 },
     formulas: LOCAL_FORMULAS,
-    calcMode: 'vol'
+    calcMode: 'vol',
+    favorites: JSON.parse(localStorage.getItem('sedile_favs') || '[]')
 };
 
 // --- 4. INITIALIZATION & AUTH ---
@@ -254,7 +255,20 @@ async function loadHistory() {
         return;
     }
 
-    container.innerHTML = data.map(p => `
+    // Draw Chart for the most recent patient name
+    if (data.length > 0) {
+        const topPatient = data[0];
+        const history = data.filter(p => p.nombre === topPatient.nombre).slice(0, 5).reverse();
+
+        if (history.length > 1) {
+            document.getElementById('chartContainer').style.display = 'block';
+            renderEvolutionChart(history);
+        } else {
+            document.getElementById('chartContainer').style.display = 'none';
+        }
+    }
+
+    container.innerHTML += data.map(p => `
         <div class="history-item" onclick="loadPatient(${p.id})">
             <h4>${p.nombre}</h4>
             <div class="meta">
@@ -263,6 +277,65 @@ async function loadHistory() {
             </div>
         </div>
     `).join('');
+}
+
+function renderEvolutionChart(history) {
+    const canvas = document.getElementById('evolutionChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const padding = 30;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw Axis
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+
+    if (history.length < 2) return;
+
+    // Normalize Data
+    const weights = history.map(h => h.peso_kg);
+    const maxW = Math.max(...weights) + 2;
+    const minW = Math.min(...weights) - 2;
+    const xStep = (width - 2 * padding) / (history.length - 1);
+
+    const getY = (w) => height - padding - ((w - minW) / (maxW - minW) * (height - 2 * padding));
+
+    // Draw Line
+    ctx.beginPath();
+    ctx.strokeStyle = '#8e44ad';
+    ctx.lineWidth = 3;
+    history.forEach((h, i) => {
+        const x = padding + i * xStep;
+        const y = getY(h.peso_kg);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Draw Points
+    ctx.fillStyle = '#8e44ad';
+    history.forEach((h, i) => {
+        const x = padding + i * xStep;
+        const y = getY(h.peso_kg);
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Label
+        ctx.fillStyle = '#333';
+        ctx.font = '10px Arial';
+        ctx.fillText(h.peso_kg + 'kg', x - 10, y - 10);
+        ctx.fillStyle = '#8e44ad';
+    });
 }
 
 window.loadPatient = async (id) => {
@@ -300,29 +373,81 @@ function calculateRequirements() {
 }
 
 // --- 8. SIMULATOR LOGIC ---
-function updateFormulaSelect() {
-    const sel = document.getElementById('formulaSelect');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Seleccione Fórmula...</option>';
-    const cats = [...new Set(AppState.formulas.map(i => i.cat))];
-    cats.forEach(cat => {
-        const group = document.createElement('optgroup');
-        group.label = cat;
-        AppState.formulas.filter(i => i.cat === cat).forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = item.id;
-            opt.innerText = item.name;
-            group.appendChild(opt);
-        });
-        sel.appendChild(group);
-    });
-    sel.onchange = runSimulation;
-}
-
 function initSimulatorLogic() {
     document.getElementById('volume').oninput = runSimulation;
     document.getElementById('dilution').oninput = runSimulation;
     document.getElementById('btnSaveHistory').onclick = savePrescription;
+
+    // Favorites Logic
+    const btnFav = document.getElementById('btnToggleFav');
+    if (btnFav) {
+        btnFav.onclick = () => {
+            const fId = document.getElementById('formulaSelect').value;
+            if (!fId) return;
+
+            if (AppState.favorites.includes(fId)) {
+                AppState.favorites = AppState.favorites.filter(id => id !== fId);
+            } else {
+                AppState.favorites.push(fId);
+            }
+            localStorage.setItem('sedile_favs', JSON.stringify(AppState.favorites));
+            updateFormulaSelect(); // Re-render to sort
+            document.getElementById('formulaSelect').value = fId; // Restore selection
+            checkFavoriteStatus();
+        };
+    }
+}
+
+function checkFavoriteStatus() {
+    const fId = document.getElementById('formulaSelect').value;
+    const btn = document.getElementById('btnToggleFav');
+    if (!btn) return;
+
+    if (AppState.favorites.includes(fId)) {
+        btn.innerText = '⭐';
+        btn.style.background = 'gold';
+        btn.style.color = 'white';
+        btn.style.borderColor = 'gold';
+    } else {
+        btn.innerText = '☆';
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--primary)';
+        btn.style.borderColor = 'var(--primary)';
+    }
+}
+
+function updateFormulaSelect() {
+    const sel = document.getElementById('formulaSelect');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Seleccione Fórmula...</option>';
+
+    // Sort logic: Favorites first, then by Category
+    const sortedFormulas = [...AppState.formulas].sort((a, b) => {
+        const aFav = AppState.favorites.includes(a.id);
+        const bFav = AppState.favorites.includes(b.id);
+        if (aFav && !bFav) return -1;
+        if (!aFav && bFav) return 1;
+        return 0; // Keep original order otherwise
+    });
+
+    const cats = [...new Set(sortedFormulas.map(i => i.cat))];
+    cats.forEach(cat => {
+        const group = document.createElement('optgroup');
+        group.label = cat;
+        sortedFormulas.filter(i => i.cat === cat).forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            const star = AppState.favorites.includes(item.id) ? '⭐ ' : '';
+            opt.innerText = star + item.name;
+            group.appendChild(opt);
+        });
+        sel.appendChild(group);
+    });
+
+    sel.onchange = () => {
+        runSimulation();
+        checkFavoriteStatus();
+    };
 }
 
 function runSimulation() {
@@ -369,3 +494,30 @@ async function savePrescription() {
     btn.innerText = error ? "Error" : "¡Prescripción Guardada!";
     setTimeout(() => btn.innerText = "Prescribir y Guardar Cloud", 2000);
 }
+
+// --- 9. PWA LOGIC ---
+let deferredPrompt;
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('SW registrado', reg))
+            .catch(err => console.log('SW error', err));
+    });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const container = document.getElementById('pwaInstallContainer');
+    if(container) container.style.display = 'block';
+});
+
+document.getElementById('btnInstallApp').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('User response:', outcome);
+    deferredPrompt = null;
+    document.getElementById('pwaInstallContainer').style.display = 'none';
+});
