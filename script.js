@@ -2,7 +2,7 @@
 // --- 1. SUPABASE CONFIGURATION ---
 const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
 const supabaseKey = 'sb_publishable_xCxGjcAngmfd0hJYv2uphg_yB-pF3Hp';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // --- 2. DATABASE (Vademécum HRA & RTH) ---
 const LOCAL_FORMULAS = [
@@ -105,7 +105,7 @@ async function applyCircularFavicon() {
 }
 
 async function checkUser() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
         AppState.user = session.user;
         showApp();
@@ -123,13 +123,13 @@ window.login = async function () {
         return;
     }
 
-    if (!supabase) {
+    if (!supabaseClient) {
         alert("🔴 Error Crítico: Supabase no se cargó. Revisa tu conexión a internet.");
         return;
     }
 
     try {
-        const { error } = await supabase.auth.signInWithOAuth({
+        const { error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo: window.location.origin }
         });
@@ -140,7 +140,7 @@ window.login = async function () {
 };
 
 async function logout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     window.location.reload();
 }
 
@@ -230,7 +230,7 @@ function initPatientLogic() {
                 user_id: AppState.user.id
             };
 
-            const { error } = await supabase.from('pacientes').insert([data]);
+            const { error } = await supabaseClient.from('pacientes').insert([data]);
             btn.innerText = error ? "Error" : "Guardado";
             setTimeout(() => btn.innerText = "Guardar", 2000);
         };
@@ -241,7 +241,7 @@ async function loadHistory() {
     const container = document.getElementById('historyContainer');
     container.innerHTML = '<p style="text-align:center; opacity:0.6;">Buscando tus pacientes...</p>';
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('pacientes')
         .select('*')
         .eq('user_id', AppState.user.id)
@@ -264,7 +264,7 @@ async function loadHistory() {
 }
 
 window.loadPatient = async (id) => {
-    const { data } = await supabase.from('pacientes').select('*').eq('id', id).single();
+    const { data } = await supabaseClient.from('pacientes').select('*').eq('id', id).single();
     if (data) {
         document.getElementById('nombre').value = data.nombre;
         document.getElementById('edad').value = data.edad;
@@ -359,7 +359,7 @@ function runSimulation() {
 
 async function savePrescription() {
     const btn = document.getElementById('btnSaveHistory');
-    const { error } = await supabase.from('prescripciones').insert([{
+    const { error } = await supabaseClient.from('prescripciones').insert([{
         paciente_nombre: document.getElementById('nombre').value || 'Anónimo',
         detalle: `Kcal: ${document.getElementById('valKcal').innerText}, Prot: ${document.getElementById('valProt').innerText}`,
         user_id: AppState.user.id
