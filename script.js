@@ -3,7 +3,9 @@ const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
 const supabaseKey = 'sb_publishable_xCxGjcAngmfd0hJYv2uphg_yB-pF3Hp';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// --- 2. MASSIVE DATABASE (Vademécum HRA & RTH) ---
+console.log("Iniciando Sedile HRA V2.5...");
+
+// --- 2. MASSIVE DATABASE ---
 const LOCAL_FORMULAS = [
     // --- LECHES HRA (Per 100cc) ---
     { cat: "Leches HRA", id: "alprem", name: "Alprem", type: "l", k: 80.0, p: 2.9, c: 8.1, f: 4.0 },
@@ -40,7 +42,7 @@ const LOCAL_FORMULAS = [
     { cat: "Leches HRA", id: "fortificador", name: "Fortificador", type: "l", k: 17.4, p: 1.4, c: 1.3, f: 0.7 },
     { cat: "Leches HRA", id: "g4", name: "G4", type: "l", k: 176.1, p: 6.9, c: 18.3, f: 3.5 },
 
-    // --- FÓRMULAS RTH (Per 100ml converted from 1000ml table) ---
+    // --- FÓRMULAS RTH (Per 100ml) ---
     { cat: "Fórmulas RTH", id: "osmolite", name: "Osmolite", type: "l", k: 100.0, p: 4.0, c: 13.6, f: 3.4 },
     { cat: "Fórmulas RTH", id: "glucerna_15", name: "Glucerna 1.5", type: "l", k: 150.0, p: 7.5, c: 12.76, f: 7.5 },
     { cat: "Fórmulas RTH", id: "diben_15", name: "Diben 1.5 Kcal", type: "l", k: 150.0, p: 7.5, c: 13.1, f: 7.0 },
@@ -64,11 +66,12 @@ const AppState = {
     patient: { nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0 },
     formulas: [],
     exchanges: EXCHANGE_DB,
-    calcMode: 'vol' // 'vol' or 'grams'
+    calcMode: 'vol'
 };
 
 // --- 4. INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log("DOM Cargado. Inicializando widgets...");
     initCompactLayout();
     initProtocolModal();
     initPatientLogic();
@@ -86,6 +89,7 @@ function initCompactLayout() {
             btn.classList.add('active');
             AppState.calcMode = btn.dataset.mode;
             updateInputLabels();
+            runSimulation(); // Recalculate on switch
         };
     });
 }
@@ -93,6 +97,8 @@ function initCompactLayout() {
 function updateInputLabels() {
     const lblDil = document.getElementById('lblDilution');
     const inputDil = document.getElementById('dilution');
+    if (!lblDil || !inputDil) return;
+
     if (AppState.calcMode === 'grams') {
         lblDil.innerText = "Gramos Totales (g)";
         inputDil.placeholder = "Ej. 50";
@@ -105,16 +111,31 @@ function updateInputLabels() {
 // --- 6. PROTOCOL MODAL ---
 function initProtocolModal() {
     const modal = document.getElementById('protocolModal');
-    const btn = document.getElementById('btnProtocolOpen');
-    const close = document.getElementById('btnProtocolClose');
+    const btnOpen = document.getElementById('btnProtocolOpen');
+    const btnClose = document.getElementById('btnProtocolClose');
 
-    if (btn) btn.onclick = () => modal.classList.add('active');
-    if (close) close.onclick = () => modal.classList.remove('active');
+    console.log("Configurando modal:", !!modal, !!btnOpen);
 
-    // Switch tabs inside modal
+    if (btnOpen) {
+        btnOpen.onclick = () => {
+            console.log("Abriendo modal...");
+            modal.classList.add('active');
+        };
+    }
+    if (btnClose) {
+        btnClose.onclick = () => {
+            modal.classList.remove('active');
+        };
+    }
+
+    // Export function to window so HTML can see it
     window.switchProtocolTab = (idx) => {
+        console.log("Cambiando pestaña a:", idx);
         document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
-        document.querySelectorAll('.tab-content').forEach((c, i) => c.style.display = i === idx ? 'block' : 'none');
+        const tabs = [document.getElementById('tab-infusion'), document.getElementById('tab-delivery')];
+        tabs.forEach((t, i) => {
+            if (t) t.style.display = i === idx ? 'block' : 'none';
+        });
     };
 }
 
@@ -131,16 +152,27 @@ function initPatientLogic() {
         form.onsubmit = async (e) => {
             e.preventDefault();
             const btn = form.querySelector('button');
+            const originalText = btn.innerText;
             btn.innerText = "Guardando...";
+
             const data = {
                 nombre: document.getElementById('nombre').value,
-                edad: parseInt(document.getElementById('edad').value),
-                peso_kg: parseFloat(document.getElementById('peso').value),
-                estatura_m: parseFloat(document.getElementById('estatura').value)
+                edad: parseInt(document.getElementById('edad').value) || 0,
+                peso_kg: parseFloat(document.getElementById('peso').value) || 0,
+                estatura_m: parseFloat(document.getElementById('estatura').value) || 0
             };
-            const { error } = await supabase.from('pacientes').insert([data]);
-            btn.innerText = error ? "Error!" : "Guardado";
-            setTimeout(() => btn.innerText = "Guardar", 2000);
+
+            try {
+                const { error } = await supabase.from('pacientes').insert([data]);
+                if (error) throw error;
+                btn.innerText = "¡Listo!";
+                PatientManager.addPatient(data.nombre);
+            } catch (err) {
+                console.error("Error Supabase:", err);
+                btn.innerText = "Error (Local)";
+                PatientManager.addPatient(data.nombre + " (local)");
+            }
+            setTimeout(() => btn.innerText = originalText, 2000);
         };
     }
 }
@@ -153,28 +185,34 @@ function calculateRequirements() {
     p.estatura = parseFloat(document.getElementById('estatura').value) || 0;
     p.actividad = parseFloat(document.getElementById('actividad').value) || 1.2;
 
-    if (p.peso > 0 && p.estatura > 0) {
+    const bmiEl = document.getElementById('valBMI');
+    if (p.peso > 0 && p.estatura > 0 && bmiEl) {
         p.bmi = p.peso / (p.estatura * p.estatura);
-        document.getElementById('valBMI').innerText = p.bmi.toFixed(1);
+        bmiEl.innerText = p.bmi.toFixed(1);
     }
 
-    if (p.peso > 0 && p.estatura > 0 && p.edad > 0) {
+    const tmtEl = document.getElementById('valTMT');
+    const simGoal = document.getElementById('simGoal');
+    if (p.peso > 0 && p.estatura > 0 && p.edad > 0 && tmtEl) {
         let bmr = (10 * p.peso) + (6.25 * (p.estatura * 100)) - (5 * p.edad) + (document.getElementById('sexo').value === 'm' ? 5 : -161);
         p.tmt = bmr * p.actividad;
-        document.getElementById('valTMT').innerText = Math.round(p.tmt);
-        document.getElementById('simGoal').innerText = Math.round(p.tmt);
+        tmtEl.innerText = Math.round(p.tmt);
+        if (simGoal) simGoal.innerText = Math.round(p.tmt);
+        runSimulation(); // Update progress bar
     }
 }
 
 // --- 8. SIMULATOR LOGIC ---
 async function loadFormulas() {
-    AppState.formulas = LOCAL_FORMULAS; // Institutional logic prioritizes local HRA data
+    console.log("Cargando base de datos de fórmulas...");
+    AppState.formulas = LOCAL_FORMULAS;
     updateFormulaSelect();
 }
 
 function updateFormulaSelect() {
     const sel = document.getElementById('formulaSelect');
     if (!sel) return;
+
     sel.innerHTML = '<option value="">Seleccione Fórmula...</option>';
 
     const cats = [...new Set(AppState.formulas.map(i => i.cat))];
@@ -194,46 +232,35 @@ function updateFormulaSelect() {
 }
 
 function initSimulatorLogic() {
-    document.getElementById('volume').oninput = runSimulation;
-    document.getElementById('dilution').oninput = runSimulation;
+    const v = document.getElementById('volume');
+    const d = document.getElementById('dilution');
+    if (v) v.oninput = runSimulation;
+    if (d) d.oninput = runSimulation;
+
+    const btnSave = document.getElementById('btnSaveHistory');
+    if (btnSave) btnSave.onclick = savePrescriptionToSupabase;
 }
 
 function runSimulation() {
     const fId = document.getElementById('formulaSelect').value;
     const formula = AppState.formulas.find(f => f.id === fId);
+    if (!formula) return;
+
     const v1 = parseFloat(document.getElementById('volume').value) || 0;
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
-
-    if (!formula) return;
 
     let k = 0, p = 0, c = 0, l = 0;
 
     if (AppState.calcMode === 'vol') {
         const vol = v1;
-        const dil = v2 || (formula.dil || 13.5);
-        if (formula.type === 'l') {
-            k = formula.k * (vol / 100);
-            p = formula.p * (vol / 100);
-            c = formula.c * (vol / 100);
-            l = formula.f * (vol / 100);
-        } else {
-            const grams = (vol * dil) / 100;
-            k = formula.k * (grams / 100); // Standardizing formulas to per 100g powder for 'p' type in future
-            // BUT user provided Image 1 per 100cc RECONSTITUTED.
-            // If type is 'l' or it's an HRA preparation, Image 1 values are per 100ml.
-            k = formula.k * (vol / 100);
-            p = formula.p * (vol / 100);
-            c = formula.c * (vol / 100);
-            l = formula.f * (vol / 100);
-        }
+        // Logic for reconstituted formulas from HRA image (Image 1 values are per 100ml)
+        k = formula.k * (vol / 100);
+        p = formula.p * (vol / 100);
+        c = formula.c * (vol / 100);
+        l = formula.f * (vol / 100);
     } else {
-        // GRAMAGE MODE (Input_Grams * (Value/100))
-        // Assuming user enters grams of powder. 
-        // We need 100g values. For HRA (reconstituted), we'll assume the input is for the 100ml base.
+        // GRAMAGE MODE (per 100g)
         const gramsInput = v2;
-        const volBase = v1;
-        // User logic: "in 100g there is 350kcal, in 50g how much?"
-        // I will use formula values as "per 100 units"
         k = formula.k * (gramsInput / 100);
         p = formula.p * (gramsInput / 100);
         c = formula.c * (gramsInput / 100);
@@ -245,21 +272,54 @@ function runSimulation() {
     document.getElementById('valCHO').innerText = c.toFixed(1);
     document.getElementById('valLip').innerText = l.toFixed(1);
 
-    // Progress Bar
+    const simCurrent = document.getElementById('simCurrent');
+    if (simCurrent) simCurrent.innerText = Math.round(k);
+
     const goal = AppState.patient.tmt || 2000;
-    const pct = Math.min((k / goal) * 100, 100);
-    document.getElementById('simBar').style.width = pct + '%';
-    document.getElementById('simCurrent').innerText = Math.round(k);
+    const bar = document.getElementById('simBar');
+    if (bar) {
+        const pct = Math.min((k / goal) * 100, 100);
+        bar.style.width = pct + '%';
+    }
+}
+
+async function savePrescriptionToSupabase() {
+    const kcal = document.getElementById('valKcal').innerText;
+    if (kcal === "0") {
+        alert("Primero realiza un cálculo");
+        return;
+    }
+
+    const payload = {
+        paciente_nombre: AppState.patient.nombre || 'Anónimo',
+        detalle: `Fórmula: ${document.getElementById('formulaSelect').value}, Kcal: ${kcal}`,
+        fecha: new Date().toISOString()
+    };
+
+    try {
+        const { error } = await supabase.from('prescripciones').insert([payload]);
+        if (error) throw error;
+        alert("¡Prescripción guardada en la nube!");
+    } catch (err) {
+        console.error(err);
+        alert("Error al guardar en nube. Revisa consola.");
+    }
 }
 
 // --- 9. PATIENT MANAGER ---
 const PatientManager = {
     patients: [],
-    activePatientId: null,
     init() {
         const s = localStorage.getItem('sedile_v2_pats');
         this.patients = s ? JSON.parse(s) : [];
         this.render();
+    },
+    addPatient(name) {
+        if (!this.patients.find(p => p.name === name)) {
+            this.patients.push({ name: name, id: Date.now() });
+            localStorage.setItem('sedile_v2_pats', JSON.stringify(this.patients));
+            this.render();
+        }
     },
     render() {
         const list = document.getElementById('patientList');
