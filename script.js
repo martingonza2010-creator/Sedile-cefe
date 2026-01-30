@@ -77,10 +77,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     initGoalLogic();
     initSimulatorLogic();
     initInfusionLogic();
+    initInfusionLogic();
     initHydrationLogic();
     initCompareLogic();
-    initSearchLogic(); // NEW
-    initChartSim();    // NEW
+    initSearchLogic();
+    initChartSim();
+    initAssessmentLogic(); // NEW
     updateFormulaSelect();
     applyCircularFavicon();
 });
@@ -962,4 +964,171 @@ function updateCompareResults(k1, p1, c1, l1) {
     const badgeP = diffP > 0 ? `<span class="diff-badge diff-pos">+${diffP}g Prot</span>` : `<span class="diff-badge diff-neg">${diffP}g Prot</span>`;
 
     box.innerHTML = `Vs: ${badgeK} ${badgeP}`;
+
+    // Update Secondary Stack Bar
+    const stackSec = document.getElementById('stackCompare');
+    if (stackSec) {
+        stackSec.style.display = 'flex';
+        setTimeout(() => { stackSec.style.opacity = '0.6'; stackSec.style.transform = 'translateY(18px)'; }, 50);
+
+        // Calculate % relative to Kcal Total (approx) or same scale as primary
+        // Primary scale: width% = (g * 4 / TotalKcal) * 100 ? No, usually stacked 100% of weight?
+        // Let's us simple distribution % for bar width
+        const totalK = k2 || 1;
+        const pPct = ((p2 * 4) / totalK) * 100;
+        const cPct = ((formulaB.c * (v1 / 100) * 4) / totalK) * 100; // approx
+        // Actually simpler: Just copy the logic from updateStackBar but for B
+        // We need 'c' and 'l' for formula B
+        const c2 = AppState.calcMode === 'vol' ? formulaB.c * (v1 / 100) : formulaB.c * (v2 / 100);
+        const l2 = AppState.calcMode === 'vol' ? formulaB.f * (v1 / 100) : formulaB.f * (v2 / 100);
+
+        // Distribution
+        const calP = p2 * 4;
+        const calC = c2 * 4;
+        const calL = l2 * 9;
+        const totalCal = calP + calC + calL || 1;
+
+        document.getElementById('barProtB').style.width = (calP / totalCal * 100) + "%";
+        document.getElementById('barCHOB').style.width = (calC / totalCal * 100) + "%";
+        document.getElementById('barLipB').style.width = (calL / totalCal * 100) + "%";
+    }
 }
+
+// --- 15. COMPLETE ASSESSMENT LOGIC (NEW) ---
+function initAssessmentLogic() {
+    // Navigation
+    const dashView = document.getElementById('view-dashboard');
+    const assessView = document.getElementById('view-assessment');
+
+    document.getElementById('btnOpenAssessment').onclick = () => {
+        dashView.classList.remove('active-view');
+        setTimeout(() => {
+            dashView.style.display = 'none';
+            assessView.style.display = 'block';
+            setTimeout(() => assessView.classList.add('active-view'), 10);
+        }, 300);
+    };
+
+    document.getElementById('btnBackToDash').onclick = () => {
+        assessView.classList.remove('active-view');
+        setTimeout(() => {
+            assessView.style.display = 'none';
+            dashView.style.display = 'block';
+            setTimeout(() => dashView.classList.add('active-view'), 10);
+        }, 300);
+    };
+
+    // Name Sync
+    document.getElementById('nombre').addEventListener('input', (e) => {
+        const val = e.target.value;
+        document.getElementById('currentPatientName').innerText = val || 'Nuevo Paciente';
+    });
+
+    // Evolution Logic
+    document.getElementById('goalKcalBox').addEventListener('input', (e) => {
+        const factor = parseFloat(e.target.value) || 0;
+        const weight = AppState.patient.peso || 0;
+        const badge = document.getElementById('evolutionBadge');
+        if (factor > 0 && weight > 0) {
+            badge.style.display = 'block';
+            badge.innerText = `${Math.round(factor * weight)} kcal`;
+        } else {
+            badge.style.display = 'none';
+        }
+    });
+
+    // TMB Logic
+    document.getElementById('btnCalcTMB').onclick = calcTMB_OMS;
+
+    // Nitrogen Logic
+    const fnBN = () => calcNitrogenBalance();
+    document.getElementById('valNUU').oninput = fnBN;
+    document.getElementById('valNFactor').oninput = fnBN;
+}
+
+function calcTMB_OMS() {
+    const p = AppState.patient;
+    if (p.edad <= 0 || p.peso <= 0) {
+        alert("Ingresa Edad y Peso primero.");
+        return;
+    }
+
+    let tmb = 0;
+    // OMS Formulas (simplified based on image ranges)
+    if (document.getElementById('sexo').value === 'm') {
+        // Males
+        if (p.edad < 3) tmb = 59.512 * p.peso - 30.4;
+        else if (p.edad <= 10) tmb = 22.706 * p.peso + 504.3;
+        else if (p.edad <= 18) tmb = 17.686 * p.peso + 658.2;
+        else if (p.edad <= 30) tmb = 15.057 * p.peso + 692.2;
+        else if (p.edad <= 60) tmb = 11.472 * p.peso + 873.1;
+        else tmb = 11.711 * p.peso + 587.7;
+    } else {
+        // Females
+        if (p.edad < 3) tmb = 58.317 * p.peso - 31.1;
+        else if (p.edad <= 10) tmb = 20.315 * p.peso + 485.9;
+        else if (p.edad <= 18) tmb = 13.384 * p.peso + 692.6;
+        else if (p.edad <= 30) tmb = 14.818 * p.peso + 486.6;
+        else if (p.edad <= 60) tmb = 8.126 * p.peso + 845.6;
+        else tmb = 9.082 * p.peso + 658.5;
+    }
+
+    const tmt = tmb * p.actividad;
+    if (confirm(`TMB (OMS): ${Math.round(tmb)} kcal\nTMT (con AF): ${Math.round(tmt)} kcal\n\n¿Usar como Meta Total?`)) {
+        document.getElementById('goalTotal').value = Math.round(tmt);
+        AppState.userOverridesGoal = true;
+        initGoalLogic(); // update sim goal
+    }
+}
+
+function calcDryWeight() {
+    const p = AppState.patient;
+    const grade = parseInt(document.getElementById('edemaGrade').value);
+    if (!p.peso) return;
+
+    // Grades: 0, 1, 3, 7, 10
+    const dry = p.peso - grade;
+    document.getElementById('valDryWeight').innerText = dry.toFixed(1);
+}
+
+function addExamRow() {
+    const container = document.getElementById('examsContainer');
+    const row = document.createElement('div');
+    row.className = 'exam-row';
+    row.innerHTML = `
+        <input type="date">
+        <input type="text" placeholder="Examen">
+        <input type="text" placeholder="Result">
+    `;
+    container.appendChild(row);
+}
+
+function calcNitrogenBalance() {
+    const nuu = parseFloat(document.getElementById('valNUU').value);
+    const protIngested = parseFloat(document.getElementById('valProt').innerText); // From simulator
+    const factor = parseFloat(document.getElementById('valNFactor').value) || 4;
+
+    const resDiv = document.getElementById('bnResult');
+
+    if (!nuu || !protIngested) {
+        resDiv.innerText = "Faltan datos (NUU o Prot)";
+        resDiv.style.color = "#666";
+        return;
+    }
+
+    const bn = (protIngested / 6.25) - (nuu + factor);
+    const txt = bn > 0 ? "Anabolismo" : "Catabolismo";
+    const color = bn > 0 ? "#22c55e" : "#ef4444";
+
+    resDiv.innerHTML = `BN: <strong>${bn.toFixed(1)} g</strong> (<span style="color:${color}">${txt}</span>)`;
+}
+
+// Simple Frisancho Classification (Mock for demo - ideally needs full JSON)
+// We listen to input changes for color coding
+document.querySelectorAll('.input-watch').forEach(imp => {
+    imp.addEventListener('input', (e) => {
+        // Logic would go here. For now validation only.
+        // We will simple color badge based on arbitrary ranges for demo, 
+        // asking user to implement full table if strictly needed later.
+    });
+});

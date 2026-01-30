@@ -48,340 +48,502 @@
                 <div>
                     <h1>SEDILE - HRA</h1>
                     <p id="userNameDisplay">Calculadora Clínica</p>
-                    <p style="font-size: 0.65rem; opacity: 0.6; margin-top: 2px;">Nut. Martin E. Gonzalez</p>
+                    <p class="dedication-text">
+                        Esta plataforma fue creada con el fin de poder simplificar los tiempos para el nutricionista y
+                        mejorar la calidad de los procesos evitando errores de calculos por falta de tiempo o de
+                        organizacion, espero les sirva Atte: Nut Martin Gonzalez.
+                    </p>
                 </div>
             </div>
 
-            <div class="patient-quick-access" id="btnPatientToggle">
-                <div class="p-avatar" id="currentPatientAvatar">P</div>
-                <div class="p-info">
-                    <span id="currentPatientName">Nuevo Paciente</span>
-                    <small style="display:flex; align-items:center; gap:5px;">
-                        IMC: <b id="valBMI">--</b>
-                    </small>
+            <div class="header-right-group">
+                <div class="patient-quick-access" id="btnPatientToggle">
+                    <div class="p-avatar" id="currentPatientAvatar">P</div>
+                    <div class="p-info">
+                        <span id="currentPatientName">Nuevo Paciente</span>
+                        <small style="display:flex; align-items:center; gap:5px;">
+                            IMC: <b id="valBMI">--</b>
+                        </small>
+                    </div>
                 </div>
+                <button class="btn-assess" id="btnOpenAssessment">
+                    <span>📋</span> Evaluación Completa
+                </button>
             </div>
         </header>
 
-        <main class="dashboard-grid">
-            <!-- SECCIÓN 1: EVALUACIÓN -->
-            <section class="card assessment-card">
-                <div class="card-header">
-                    <h3>Registro Evaluación</h3>
-                    <div class="header-actions">
-                        <button class="btn-micro" id="btnOpenHistory">📂 Historial</button>
-                        <button class="btn-micro" id="btnAddPatient">+ Nuevo</button>
-                    </div>
-                </div>
-                <form id="form-paciente" class="compact-form">
-                    <div class="input-row">
-                        <input type="text" id="nombre" placeholder="Nombre completo" required>
-                    </div>
-                    <div class="grid-col-4">
-                        <div class="mini-input">
-                            <label>Edad</label>
-                            <input type="number" id="edad" placeholder="0">
+        <!-- VISTA DASHBOARD (PRINCIPAL) -->
+        <div id="view-dashboard" class="view-section active-view">
+            <main class="dashboard-grid">
+                <!-- SECCIÓN 1: EVALUACIÓN RÁPIDA -->
+                <section class="card assessment-card">
+                    <div class="card-header">
+                        <h3>Registro Evaluación</h3>
+                        <div class="header-actions">
+                            <button class="btn-micro" id="btnOpenHistory">📂 Historial</button>
+                            <button class="btn-micro" id="btnAddPatient">+ Nuevo</button>
                         </div>
-                        <div class="mini-input">
-                            <label>Sexo</label>
-                            <select id="sexo">
-                                <option value="m">M</option>
-                                <option value="f">F</option>
+                    </div>
+                    <form id="form-paciente" class="compact-form">
+                        <div class="input-row">
+                            <input type="text" id="nombre" placeholder="Nombre completo" required>
+                        </div>
+                        <!-- NEW: Diagnosis & Bed -->
+                        <div class="input-row grid-col-2">
+                            <input type="text" id="diagnostico" placeholder="Diagnóstico" style="font-size:0.85rem;">
+                            <input type="text" id="cama" placeholder="Cama / Sala" style="font-size:0.85rem;">
+                        </div>
+
+                        <div class="grid-col-4">
+                            <div class="mini-input">
+                                <label>Edad</label>
+                                <input type="number" id="edad" placeholder="0">
+                            </div>
+                            <div class="mini-input">
+                                <label>Sexo</label>
+                                <select id="sexo">
+                                    <option value="m">M</option>
+                                    <option value="f">F</option>
+                                </select>
+                            </div>
+                            <div class="mini-input">
+                                <label>Peso (kg)</label>
+                                <input type="number" step="0.1" id="peso" placeholder="0">
+                            </div>
+                            <div class="mini-input">
+                                <label>Talla (m)</label>
+                                <input type="number" step="0.01" id="estatura" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="input-row-multi">
+                            <select id="actividad" class="select-small">
+                                <option value="1.2">AF: 1.2 (Reposo)</option>
+                                <option value="1.3">AF: 1.3 (Ligero)</option>
+                                <option value="1.5">AF: 1.5 (Mod)</option>
                             </select>
+                            <!-- NEW: TMB Calc Button -->
+                            <button type="button" class="btn-micro-action" id="btnCalcTMB">Calc TMB (OMS)</button>
                         </div>
-                        <div class="mini-input">
-                            <label>Peso (kg)</label>
-                            <input type="number" step="0.1" id="peso" placeholder="0">
+
+                        <!-- Goal & Evolution Inputs -->
+                        <div style="margin-top: 15px; padding-top:15px; border-top:1px dashed #ddd;">
+                            <label
+                                style="font-size:0.75rem; font-weight:700; color:#666; margin-bottom:5px; display:block;">Metas
+                                y Evolución</label>
+                            <div class="grid-col-2" style="grid-template-columns: 1fr 1fr; gap:10px; display:grid;">
+                                <div class="mini-input">
+                                    <label>Evolución kcal/kg</label>
+                                    <input type="number" id="goalKcalBox" placeholder="Ej. 20">
+                                    <div id="evolutionBadge" class="ev-badge">0 kcal</div>
+                                </div>
+                                <div class="mini-input">
+                                    <label>Meta Total (Kcal)</label>
+                                    <input type="number" id="goalTotal" placeholder="Total">
+                                </div>
+                            </div>
                         </div>
-                        <div class="mini-input">
-                            <label>Talla (m)</label>
-                            <input type="number" step="0.01" id="estatura" placeholder="0">
+
+                        <div class="input-row-multi" style="margin-top:15px;">
+                            <button type="submit" class="btn-save-small" style="width:100%;">Guardar Paciente</button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- NEW: Hydration Card -->
+                <section class="card hydration-card" style="border-left: 5px solid #3498db;">
+                    <div class="card-header" style="margin-bottom:10px;">
+                        <h3>💧 Balance Hídrico</h3>
+                        <div style="display:flex; gap:10px; font-size:0.8rem;">
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
+                                <input type="radio" name="hydMethod" value="holiday" checked
+                                    onchange="toggleHydMethod()">
+                                Holiday
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
+                                <input type="radio" name="hydMethod" value="mlkg" onchange="toggleHydMethod()"> ml/kg
+                            </label>
                         </div>
                     </div>
-                    <div class="input-row-multi">
-                        <select id="actividad" class="select-small">
-                            <option value="1.2">AF: 1.2 (Reposo)</option>
-                            <option value="1.3">AF: 1.3 (Ligero)</option>
-                            <option value="1.5">AF: 1.5 (Mod)</option>
+
+                    <!-- Input Factor ml/kg (Hidden by default) -->
+                    <div id="hydFactorRow" style="display:none; margin-bottom:15px; text-align:right;">
+                        <label style="font-size:0.8rem; margin-right:5px;">Factor:</label>
+                        <input type="number" id="hydFactor" value="30"
+                            style="width:50px; padding:4px; border-radius:6px; border:1px solid #ddd; text-align:center;">
+                        <span style="font-size:0.8rem;">ml/kg</span>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div style="text-align:center;">
+                            <span style="font-size:0.7rem; color:#888;">Requerimiento</span>
+                            <div style="font-size:1.4rem; font-weight:700; color:#3498db;"><span id="hydReq">0</span> ml
+                            </div>
+                        </div>
+                        <div style="font-size:1.5rem; opacity:0.2;">➔</div>
+                        <div style="text-align:center;">
+                            <span style="font-size:0.7rem; color:#888;">Déficit (Agua Libre)</span>
+                            <div style="font-size:1.4rem; font-weight:700; color:#e74c3c;" id="hydDeficitBox"><span
+                                    id="hydDeficit">0</span> ml</div>
+                        </div>
+                    </div>
+                    <div class="water-bar-container">
+                        <div class="water-bar" id="hydBar"></div>
+                    </div>
+                    <small
+                        style="text-align:center; display:block; margin-top:5px; opacity:0.6; font-size:0.7rem;">Basado
+                        en Peso Actual</small>
+                </section>
+
+
+                <!-- SECCIÓN 2: SIMULADOR INTEGRADO -->
+                <section class="card simulator-card">
+                    <div class="sim-header-dashboard">
+                        <div class="mode-selector">
+                            <button class="mode-toggle active" data-mode="vol">Vol / Dil</button>
+                            <button class="mode-toggle" data-mode="grams">Gramaje</button>
+                        </div>
+
+                        <!-- NEW: Compare Toggle -->
+                        <button id="btnToggleCompare" class="btn-micro"
+                            style="margin-left:auto; display:flex; align-items:center; gap:5px; border-color:#888; color:#555;">
+                            <span>⚖️</span> Comparar
+                        </button>
+
+                        <div class="progress-container-mini">
+                            <div class="prog-label">Meta: <span id="simGoal">--</span> kcal</div>
+                            <div class="prog-track">
+                                <div class="prog-fill" id="simBar"></div>
+                            </div>
+                            <div class="prog-label">Cons: <span id="simCurrent">0</span> kcal</div>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Infusion Calculator -->
+                    <div class="infusion-box">
+                        <div class="infusion-title">
+                            <span>⏱️ Calculadora de Infusión</span>
+                            <small style="opacity:0.5; font-weight:400;">(Opcional)</small>
+                        </div>
+                        <div class="grid-col-2">
+                            <div class="mini-input">
+                                <label>Velocidad (ml/hr)</label>
+                                <input type="number" id="infusionRate" placeholder="Ej. 60">
+                            </div>
+                            <div class="mini-input">
+                                <label>Hora Inicio</label>
+                                <input type="time" id="infusionStart">
+                            </div>
+                        </div>
+                        <div class="infusion-result" id="infusionResultBox" style="display:none;">
+                            Termina a las: <strong id="valEndTime">--:--</strong> <span id="valDuration"
+                                style="font-size:0.75rem; opacity:0.7;">(0 hrs)</span>
+                        </div>
+                    </div>
+
+                    <div class="sim-inputs">
+                        <div class="input-group">
+                            <label>Fórmula / Leche HRA / RTH</label>
+                            <!-- Search Input -->
+                            <div style="margin-bottom:5px; position:relative;">
+                                <span
+                                    style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.5;">🔍</span>
+                                <input type="text" id="formulaSearch" placeholder="Buscar fórmula..."
+                                    style="width:100%; padding:6px 6px 6px 30px; border-radius:8px; border:1px solid #eee; font-size:0.8rem;">
+                            </div>
+
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <select id="formulaSelect" class="select-modern"></select>
+                                <button id="btnToggleFav" class="btn-micro" style="font-size:1.2rem; padding: 5px 10px;"
+                                    title="Marcar como Favorita">☆</button>
+                            </div>
+                        </div>
+
+                        <!-- NEW: Compare Formula Selector (Hidden) -->
+                        <div class="input-group" id="compareRow"
+                            style="display:none; margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
+                            <label style="color:var(--secondary); font-weight:700;">🆚 Comparar con:</label>
+                            <select id="formulaSelectB" class="select-modern"></select>
+                            <div id="compareResult"
+                                style="margin-top:5px; font-size:0.8rem; display:flex; gap:10px; justify-content:flex-end;">
+                                <!-- JS will populate -->
+                            </div>
+                        </div>
+
+                        <div class="grid-col-2">
+                            <div class="input-group">
+                                <label>Volumen (ml)</label>
+                                <input type="number" id="volume" placeholder="ml">
+                            </div>
+                            <div class="input-group">
+                                <label id="lblDilution">Dilución (%)</label>
+                                <input type="number" id="dilution" placeholder="%">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- NEW: Stacked Bar (Main + Secondary) -->
+            <div class="macro-stack-wrapper">
+                <!-- Primary Bar -->
+                <div class="macro-stack-bar" id="stackPrimary">
+                    <div class="stack-segment p" id="barProt" style="width:0%"></div>
+                    <div class="stack-segment c" id="barCHO" style="width:0%"></div>
+                    <div class="stack-segment f" id="barLip" style="width:0%"></div>
+                </div>
+                <!-- Secondary Bar (Comparison) -->
+                <div class="macro-stack-bar secondary" id="stackCompare"
+                    style="display:none; opacity:0; transform:translateY(-100%);">
+                    <div class="stack-segment p" id="barProtB" style="width:0%"></div>
+                    <div class="stack-segment c" id="barCHOB" style="width:0%"></div>
+                    <div class="stack-segment f" id="barLipB" style="width:0%"></div>
+                </div>
+            </div>
+
+            <!-- Donut Chart + Macros -->
+            <div
+                style="display:flex; gap:15px; align-items:center; margin-top:20px; justify-content:center; flex-wrap:wrap;">
+                <div style="width:80px; height:80px; position:relative;">
+                    <canvas id="macroChart"></canvas>
+                </div>
+                <div class="macro-board" style="flex:1; margin:0; max-width:400px;">
+                    <div class="macro-item k"><label>Energía</label><span id="valKcal">0</span><small>kcal</small></div>
+                    <div class="macro-item p"><label>Prot</label><span id="valProt">0</span><small>g</small></div>
+                    <div class="macro-item c"><label>CHO</label><span id="valCHO">0</span><small>g</small></div>
+                    <div class="macro-item f"><label>Líp</label><span id="valLip">0</span><small>g</small></div>
+                </div>
+            </div>
+
+            <button class="btn-primary-wide" id="btnSaveHistory" style="margin-top:20px;">Prescribir y Guardar
+                Cloud</button>
+        </div><!-- End View Dashboard -->
+
+        <!-- VISTA EVALUACIÓN COMPLETA (NUEVO) -->
+        <div id="view-assessment" class="view-section" style="display:none;">
+            <div class="view-header">
+                <button class="btn-back" id="btnBackToDash">← Volver al Dashboard</button>
+                <h2>Evaluación Nutricional Completa</h2>
+            </div>
+
+            <div class="assess-grid">
+                <!-- 1. Antropometría Avanzada -->
+                <section class="card assess-module">
+                    <div class="module-head">
+                        <h3>📏 Antropometría Avanzada</h3>
+                    </div>
+                    <div class="grid-col-3">
+                        <div class="mini-input">
+                            <label>C. Cintura (cm)</label>
+                            <input type="number" id="ccintura">
+                        </div>
+                        <div class="mini-input">
+                            <label>C. Braquial (cm)</label>
+                            <input type="number" id="cbraquial" class="input-watch">
+                            <div class="interp-badge" id="badgeCB"></div>
+                        </div>
+                        <div class="mini-input">
+                            <label>C. Pantorrilla (cm)</label>
+                            <input type="number" id="cpantorrilla">
+                        </div>
+                    </div>
+
+                    <details class="folds-accordion">
+                        <summary>Agregar parámetros (Pliegues y Estimación)</summary>
+                        <div class="folds-grid">
+                            <h5>Pliegues Cutáneos</h5>
+                            <div class="grid-col-4">
+                                <div class="mini-input"><label>Tricipital</label><input type="number" id="ptricipital"
+                                        class="input-watch">
+                                    <div class="interp-badge" id="badgePT"></div>
+                                </div>
+                                <div class="mini-input"><label>Bicipital</label><input type="number" id="pbicipital">
+                                </div>
+                                <div class="mini-input"><label>Suprailíaco</label><input type="number" id="piliaco">
+                                </div>
+                                <div class="mini-input"><label>Abdominal</label><input type="number" id="pabdominal">
+                                </div>
+                            </div>
+                            <h5 style="margin-top:10px;">Estimación Talla/Peso</h5>
+                            <div class="grid-col-3">
+                                <div class="mini-input"><label>Alt. Rodilla</label><input type="number" id="altrodilla">
+                                </div>
+                                <div class="mini-input"><label>Media Env.</label><input type="number" id="mediaenv">
+                                </div>
+                                <div class="mini-input"><label>Env. Completa</label><input type="number" id="envcomp">
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                </section>
+
+                <!-- 2. Examen Físico (Edema) -->
+                <section class="card assess-module">
+                    <div class="module-head">
+                        <h3>🩺 Examen Físico</h3>
+                    </div>
+                    <div class="input-group">
+                        <label>Grado de Edema</label>
+                        <select id="edemaGrade" class="select-modern" onchange="calcDryWeight()">
+                            <option value="0">Ausente</option>
+                            <option value="1">Grado + (1kg)</option>
+                            <option value="3">Grado ++ (3kg)</option>
+                            <option value="7">Grado +++ (7kg)</option>
+                            <option value="10">Grado ++++ (10kg Anasarca)</option>
                         </select>
                     </div>
-
-                    <!-- NEW: Goal & Evolution Inputs -->
-                    <div style="margin-top: 15px; padding-top:15px; border-top:1px dashed #ddd;">
-                        <label
-                            style="font-size:0.75rem; font-weight:700; color:#666; margin-bottom:5px; display:block;">Metas
-                            y Evolución</label>
-                        <div class="grid-col-2" style="grid-template-columns: 1fr 1fr; gap:10px; display:grid;">
-                            <div class="mini-input">
-                                <label>Meta Kcal/kg</label>
-                                <input type="number" id="goalKcalBox" placeholder="Ej. 20">
-                            </div>
-                            <div class="mini-input">
-                                <label>Meta Total (Kcal)</label>
-                                <input type="number" id="goalTotal" placeholder="Total">
-                            </div>
-                        </div>
+                    <div class="dry-weight-box">
+                        Peso Seco Estimado: <strong id="valDryWeight">--</strong> kg
                     </div>
+                </section>
 
-                    <div class="input-row-multi" style="margin-top:15px;">
-                        <button type="submit" class="btn-save-small" style="width:100%;">Guardar Paciente</button>
+                <!-- 3. Exámenes Bioquímicos -->
+                <section class="card assess-module">
+                    <div class="module-head">
+                        <h3>🩸 Exámenes Bioquímicos</h3>
+                        <button class="btn-micro" onclick="addExamRow()">+</button>
                     </div>
-                </form>
-            </section>
-
-            <!-- NEW: Hydration Card -->
-            <section class="card hydration-card" style="border-left: 5px solid #3498db;">
-                <div class="card-header" style="margin-bottom:10px;">
-                    <h3>💧 Balance Hídrico</h3>
-                    <div style="display:flex; gap:10px; font-size:0.8rem;">
-                        <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
-                            <input type="radio" name="hydMethod" value="holiday" checked onchange="toggleHydMethod()">
-                            Holiday
-                        </label>
-                        <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
-                            <input type="radio" name="hydMethod" value="mlkg" onchange="toggleHydMethod()"> ml/kg
-                        </label>
+                    <div class="exams-list" id="examsContainer">
+                        <!-- Dynamic Rows -->
                     </div>
-                </div>
+                </section>
 
-                <!-- Input Factor ml/kg (Hidden by default) -->
-                <div id="hydFactorRow" style="display:none; margin-bottom:15px; text-align:right;">
-                    <label style="font-size:0.8rem; margin-right:5px;">Factor:</label>
-                    <input type="number" id="hydFactor" value="30"
-                        style="width:50px; padding:4px; border-radius:6px; border:1px solid #ddd; text-align:center;">
-                    <span style="font-size:0.8rem;">ml/kg</span>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="text-align:center;">
-                        <span style="font-size:0.7rem; color:#888;">Requerimiento</span>
-                        <div style="font-size:1.4rem; font-weight:700; color:#3498db;"><span id="hydReq">0</span> ml
-                        </div>
-                    </div>
-                    <div style="font-size:1.5rem; opacity:0.2;">➔</div>
-                    <div style="text-align:center;">
-                        <span style="font-size:0.7rem; color:#888;">Déficit (Agua Libre)</span>
-                        <div style="font-size:1.4rem; font-weight:700; color:#e74c3c;" id="hydDeficitBox"><span
-                                id="hydDeficit">0</span> ml</div>
-                    </div>
-                </div>
-                <div class="water-bar-container">
-                    <div class="water-bar" id="hydBar"></div>
-                </div>
-                <small style="text-align:center; display:block; margin-top:5px; opacity:0.6; font-size:0.7rem;">Basado
-                    en Peso Actual</small>
-            </section>
-
-
-            <!-- SECCIÓN 2: SIMULADOR INTEGRADO -->
-            <section class="card simulator-card">
-                <div class="sim-header-dashboard">
-                    <div class="mode-selector">
-                        <button class="mode-toggle active" data-mode="vol">Vol / Dil</button>
-                        <button class="mode-toggle" data-mode="grams">Gramaje</button>
-                    </div>
-
-                    <!-- NEW: Compare Toggle -->
-                    <button id="btnToggleCompare" class="btn-micro"
-                        style="margin-left:auto; display:flex; align-items:center; gap:5px; border-color:#888; color:#555;">
-                        <span>⚖️</span> Comparar
-                    </button>
-
-                    <div class="progress-container-mini">
-                        <div class="prog-label">Meta: <span id="simGoal">--</span> kcal</div>
-                        <div class="prog-track">
-                            <div class="prog-fill" id="simBar"></div>
-                        </div>
-                        <div class="prog-label">Cons: <span id="simCurrent">0</span> kcal</div>
-                    </div>
-                </div>
-
-                <!-- NEW: Infusion Calculator -->
-                <div class="infusion-box">
-                    <div class="infusion-title">
-                        <span>⏱️ Calculadora de Infusión</span>
-                        <small style="opacity:0.5; font-weight:400;">(Opcional)</small>
+                <!-- 4. Balance Nitrogenado -->
+                <section class="card assess-module">
+                    <div class="module-head">
+                        <h3>⚖️ Balance Nitrogenado</h3>
                     </div>
                     <div class="grid-col-2">
                         <div class="mini-input">
-                            <label>Velocidad (ml/hr)</label>
-                            <input type="number" id="infusionRate" placeholder="Ej. 60">
+                            <label>NUU (g/24h)</label>
+                            <input type="number" id="valNUU" placeholder="Urea Urinaria">
                         </div>
                         <div class="mini-input">
-                            <label>Hora Inicio</label>
-                            <input type="time" id="infusionStart">
+                            <label>Factor Pérdidas</label>
+                            <input type="number" id="valNFactor" value="4" placeholder="4">
                         </div>
                     </div>
-                    <div class="infusion-result" id="infusionResultBox" style="display:none;">
-                        Termina a las: <strong id="valEndTime">--:--</strong> <span id="valDuration"
-                            style="font-size:0.75rem; opacity:0.7;">(0 hrs)</span>
+                    <small style="font-size:0.7rem; color:#666; display:block; margin-bottom:10px;">
+                        BN = (Prot/6.25) - (NUU + Factor)
+                    </small>
+                    <div class="bn-result" id="bnResult">
+                        Resultado: --
                     </div>
-                </div>
-
-                <div class="sim-inputs">
-                    <div class="input-group">
-                        <label>Fórmula / Leche HRA / RTH</label>
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <select id="formulaSelect" class="select-modern"></select>
-                            <button id="btnToggleFav" class="btn-micro" style="font-size:1.2rem; padding: 5px 10px;"
-                                title="Marcar como Favorita">☆</button>
-                        </div>
-                    </div>
-
-                    <!-- NEW: Compare Formula Selector (Hidden) -->
-                    <div class="input-group" id="compareRow"
-                        style="display:none; margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
-                        <label style="color:var(--secondary); font-weight:700;">🆚 Comparar con:</label>
-                        <select id="formulaSelectB" class="select-modern"></select>
-                        <div id="compareResult"
-                            style="margin-top:5px; font-size:0.8rem; display:flex; gap:10px; justify-content:flex-end;">
-                            <!-- JS will populate -->
-                        </div>
-                    </div>
-
-                    <div class="grid-col-2">
-                        <div class="input-group">
-                            <label>Volumen (ml)</label>
-                            <input type="number" id="volume" placeholder="ml">
-                        </div>
-                        <div class="input-group">
-                            <label id="lblDilution">Dilución (%)</label>
-                            <input type="number" id="dilution" placeholder="%">
-                        </div>
-                    </div>
-                </div>
-
-    </div>
-    </div>
-
-    <!-- NEW: Stacked Bar -->
-    <div class="macro-stack-bar">
-        <div class="stack-segment p" id="barProt" style="width:0%"></div>
-        <div class="stack-segment c" id="barCHO" style="width:0%"></div>
-        <div class="stack-segment f" id="barLip" style="width:0%"></div>
-    </div>
-
-    <div class="macro-board">
-        <div class="macro-item k"><label>Energía</label><span id="valKcal">0</span><small>kcal</small></div>
-        <div class="macro-item p"><label>Prot</label><span id="valProt">0</span><small>g</small></div>
-        <div class="macro-item c"><label>CHO</label><span id="valCHO">0</span><small>g</small></div>
-        <div class="macro-item f"><label>Líp</label><span id="valLip">0</span><small>g</small></div>
-    </div>
-
-    <button class="btn-primary-wide" id="btnSaveHistory">Prescribir y Guardar Cloud</button>
-    <div id="pwaInstallContainer" style="display:none; text-align:center; margin-top:15px;">
-        <span id="btnInstallApp"
-            style="cursor:pointer; font-size:0.75rem; color:var(--primary); text-decoration:underline;">
-            Dejar aplicación en pantalla de inicio 📱
-        </span>
-    </div>
-    </section>
-    </main>
-
-    <!-- MODAL DE HISTORIAL -->
-    <div class="protocol-modal" id="historyModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Historial de Pacientes</h2>
-                <button class="btn-close" id="btnHistoryClose">&times;</button>
+                </section>
             </div>
-            <div class="history-list" id="historyContainer">
-                <div id="chartContainer"
-                    style="display:none; margin-bottom: 20px; padding: 10px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                    <canvas id="evolutionChart" width="400" height="200"></canvas>
-                    <p style="text-align:center; font-size:0.7rem; color:#888; margin-top:5px;">Evolución de Peso
-                        (Últimos 5 registros)</p>
+        </div>
+        <div id="pwaInstallContainer" style="display:none; text-align:center; margin-top:15px;">
+            <span id="btnInstallApp"
+                style="cursor:pointer; font-size:0.75rem; color:var(--primary); text-decoration:underline;">
+                Dejar aplicación en pantalla de inicio 📱
+            </span>
+        </div>
+        </section>
+        </main>
+
+        <!-- MODAL DE HISTORIAL -->
+        <div class="protocol-modal" id="historyModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Historial de Pacientes</h2>
+                    <button class="btn-close" id="btnHistoryClose">&times;</button>
                 </div>
-                <p style="text-align:center; opacity:0.6;">Cargando tus registros...</p>
+                <div class="history-list" id="historyContainer">
+                    <div id="chartContainer"
+                        style="display:none; margin-bottom: 20px; padding: 10px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <canvas id="evolutionChart" width="400" height="200"></canvas>
+                        <p style="text-align:center; font-size:0.7rem; color:#888; margin-top:5px;">Evolución de Peso
+                            (Últimos 5 registros)</p>
+                    </div>
+                    <p style="text-align:center; opacity:0.6;">Cargando tus registros...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL DE PROTOCOLOS (EXISTENTE) -->
+        <div class="protocol-modal" id="protocolModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Protocolos Institucionales HRA</h2>
+                    <button class="btn-close" id="btnProtocolClose">&times;</button>
+                </div>
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchProtocolTab(0)">Velocidades RTH</button>
+                    <button class="tab-btn" onclick="switchProtocolTab(1)">Horarios de Entrega</button>
+                </div>
+                <div class="tab-content" id="tab-infusion" style="display:block;">
+                    <h3 class="table-title">Enterales en ml y su duración</h3>
+                    <div class="table-scroll">
+                        <table class="pretty-table">
+                            <thead>
+                                <tr>
+                                    <th>500 ml</th>
+                                    <th>1000 ml</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Row 1 -->
+                                <tr>
+                                    <td>20 ml/h = <strong>24 hrs</strong></td>
+                                    <td>40 ml/h = <strong>24 hrs</strong></td>
+                                </tr>
+                                <!-- Row 2 -->
+                                <tr>
+                                    <td>25 ml/h = <strong>20 hrs</strong></td>
+                                    <td>50 ml/h = <strong>20 hrs</strong></td>
+                                </tr>
+                                <!-- Row 3 -->
+                                <tr>
+                                    <td>30 ml/h = <strong>16 hrs</strong></td>
+                                    <td>60 ml/h = <strong>16 hrs</strong></td>
+                                </tr>
+                                <!-- Row 4 -->
+                                <tr>
+                                    <td>40 ml/h = <strong>12 hrs</strong></td>
+                                    <td>75 ml/h = <strong>13 hrs</strong></td>
+                                </tr>
+                                <!-- Row 5 -->
+                                <tr>
+                                    <td>50 ml/h = <strong>10 hrs</strong></td>
+                                    <td>80 ml/h = <strong>12 hrs</strong></td>
+                                </tr>
+                                <!-- Row 6 -->
+                                <tr>
+                                    <td>60 ml/h = <strong>8 hrs</strong></td>
+                                    <td>-</td>
+                                </tr>
+                                <!-- Row 7 -->
+                                <tr>
+                                    <td>75 ml/h = <strong>6 hrs</strong></td>
+                                    <td>-</td>
+                                </tr>
+                                <!-- Row 8 -->
+                                <tr>
+                                    <td>80 ml/h = <strong>6 hrs</strong></td>
+                                    <td>-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-content" id="tab-delivery" style="display:none;">
+                    <div class="table-scroll">
+                        <table class="schedule-table">
+                            <tr>
+                                <td>Q3H</td>
+                                <td>03-06-09-12-15-18-21-24</td>
+                            </tr>
+                            <tr>
+                                <td>Q4H</td>
+                                <td>06-10-14-18-22-02</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL DE PROTOCOLOS (EXISTENTE) -->
-    <div class="protocol-modal" id="protocolModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Protocolos Institucionales HRA</h2>
-                <button class="btn-close" id="btnProtocolClose">&times;</button>
-            </div>
-            <div class="tab-nav">
-                <button class="tab-btn active" onclick="switchProtocolTab(0)">Velocidades RTH</button>
-                <button class="tab-btn" onclick="switchProtocolTab(1)">Horarios de Entrega</button>
-            </div>
-            <div class="tab-content" id="tab-infusion" style="display:block;">
-                <h3 class="table-title">Enterales en ml y su duración</h3>
-                <div class="table-scroll">
-                    <table class="pretty-table">
-                        <thead>
-                            <tr>
-                                <th>500 ml</th>
-                                <th>1000 ml</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Row 1 -->
-                            <tr>
-                                <td>20 ml/h = <strong>24 hrs</strong></td>
-                                <td>40 ml/h = <strong>24 hrs</strong></td>
-                            </tr>
-                            <!-- Row 2 -->
-                            <tr>
-                                <td>25 ml/h = <strong>20 hrs</strong></td>
-                                <td>50 ml/h = <strong>20 hrs</strong></td>
-                            </tr>
-                            <!-- Row 3 -->
-                            <tr>
-                                <td>30 ml/h = <strong>16 hrs</strong></td>
-                                <td>60 ml/h = <strong>16 hrs</strong></td>
-                            </tr>
-                            <!-- Row 4 -->
-                            <tr>
-                                <td>40 ml/h = <strong>12 hrs</strong></td>
-                                <td>75 ml/h = <strong>13 hrs</strong></td>
-                            </tr>
-                            <!-- Row 5 -->
-                            <tr>
-                                <td>50 ml/h = <strong>10 hrs</strong></td>
-                                <td>80 ml/h = <strong>12 hrs</strong></td>
-                            </tr>
-                            <!-- Row 6 -->
-                            <tr>
-                                <td>60 ml/h = <strong>8 hrs</strong></td>
-                                <td>-</td>
-                            </tr>
-                            <!-- Row 7 -->
-                            <tr>
-                                <td>75 ml/h = <strong>6 hrs</strong></td>
-                                <td>-</td>
-                            </tr>
-                            <!-- Row 8 -->
-                            <tr>
-                                <td>80 ml/h = <strong>6 hrs</strong></td>
-                                <td>-</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="tab-content" id="tab-delivery" style="display:none;">
-                <div class="table-scroll">
-                    <table class="schedule-table">
-                        <tr>
-                            <td>Q3H</td>
-                            <td>03-06-09-12-15-18-21-24</td>
-                        </tr>
-                        <tr>
-                            <td>Q4H</td>
-                            <td>06-10-14-18-22-02</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
-
-    <script src="script.js?v=20260130-0000"></script>
+    <script src="script.js?v=20260130-1140"></script>
 </body>
 
 </html>
