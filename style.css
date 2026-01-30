@@ -423,6 +423,7 @@ header.main-header {
     font-size: 0.75rem;
     font-weight: 600;
 }
+
 /* --- FIXES & ENHANCEMENTS V2.5 --- */
 
 /* 1. Protocol Modal Mobile Fix */
@@ -431,7 +432,7 @@ header.main-header {
         width: 100%;
         padding: 20px;
     }
-    
+
     .protocol-fab {
         right: 20px;
         bottom: 80px;
@@ -447,7 +448,7 @@ header.main-header {
     background: white;
     padding: 10px 20px;
     border-radius: 50px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     border: 1px solid rgba(142, 68, 173, 0.1);
     transition: 0.3s;
 }
@@ -468,7 +469,7 @@ header.main-header {
     font-weight: 700;
     color: var(--primary);
     border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .p-info {
@@ -492,7 +493,7 @@ header.main-header {
     width: 100%;
     padding: 12px 15px;
     border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     background: white;
     font-size: 0.9rem;
     cursor: pointer;
@@ -541,7 +542,7 @@ header.main-header {
 .mode-toggle.active {
     background: white;
     color: var(--primary);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .progress-container-mini {
@@ -578,15 +579,21 @@ header.main-header {
 
 /* 5. New Purple Background & Top User Bar */
 body {
-    background: linear-gradient(135deg, #fdfbfd 0%, #e6e9f0 100%); /* Fallback light */
+    background: linear-gradient(135deg, #fdfbfd 0%, #e6e9f0 100%);
+    /* Fallback light */
 }
+
 body::before {
     content: '';
     position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: radial-gradient(circle at 10% 20%, rgb(242, 235, 243) 0%, rgb(234, 218, 255) 90%);
     z-index: -2;
 }
+
 /* Enhanced User Pill */
 #userNameDisplay {
     background: white;
@@ -599,4 +606,181 @@ body::before {
     border: 1px solid rgba(142, 68, 173, 0.2);
     display: inline-block;
     margin-top: 5px;
+}
+
+/* 6. Stacked Macro Bar (New Request) */
+.macro-stack-bar {
+    width: 100%;
+    height: 12px;
+    background: #eee;
+    border-radius: 6px;
+    display: flex;
+    overflow: hidden;
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+
+.stack-segment {
+    height: 100%;
+    width: 0%;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stack-segment.p {
+    background: #e67e22;
+}
+
+.stack-segment.c {
+    background: #3498db;
+}
+
+.stack-segment.f {
+    background: #d4ac0d;
+}
+
+/* 7. Number Animation Class */
+.anim-number {
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+/* 8. Elegant Protocol Table */
+.table-title {
+    font-size: 1.1rem;
+    color: var(--primary);
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.pretty-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.pretty-table th {
+    background: var(--primary);
+    color: white;
+    padding: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.pretty-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    color: var(--secondary);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.pretty-table tr:last-child td {
+    border-bottom: none;
+}
+
+.pretty-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.pretty-table td strong {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* 9. Infusion Calculator */
+.infusion-box {
+    background: #fdfefe;
+    border: 1px solid #e1e4e8;
+    border-radius: 16px;
+    padding: 15px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.infusion-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--accent);
+    /* Red/Accent color for medical infusion vibe */
+}
+
+.infusion-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--secondary);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.infusion-result {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #eee;
+    text-align: right;
+    font-size: 0.9rem;
+    color: #555;
+    display: none;
+    /* Initially hidden */
+}
+
+.infusion-result strong {
+    color: var(--accent);
+    font-size: 1.1rem;
+}
+
+/* 10. Hydration Card Styles */
+.water-bar-container {
+    width: 100%;
+    height: 10px;
+    background: #ecf0f1;
+    border-radius: 5px;
+    margin-top: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.water-bar {
+    height: 100%;
+    width: 0%;
+    background: #3498db;
+    border-radius: 5px;
+    transition: width 0.5s ease-out, background 0.3s;
+}
+
+/* 11. Compare Mode Styles */
+.btn-micro.active {
+    background: var(--secondary);
+    color: white;
+    border-color: var(--secondary);
+}
+
+.diff-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.diff-pos {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+}
+
+.diff-neg {
+    background: rgba(231, 76, 60, 0.1);
+    color: #c0392b;
 }

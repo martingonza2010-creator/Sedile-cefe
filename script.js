@@ -53,8 +53,13 @@ const AppState = {
     user: null,
     patient: { nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0 },
     formulas: LOCAL_FORMULAS,
+    formulas: LOCAL_FORMULAS,
     calcMode: 'vol',
-    favorites: JSON.parse(localStorage.getItem('sedile_favs') || '[]')
+    favorites: JSON.parse(localStorage.getItem('sedile_favs') || '[]'),
+    userOverridesGoal: false,
+    compareMode: false,
+    formulaB: null,
+    chart: null // NEW: Holds Chart.js instance
 };
 
 // --- 4. INITIALIZATION & AUTH ---
@@ -68,7 +73,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     initProtocolModal();
     initHistoryModal();
     initPatientLogic();
+    initPatientLogic();
+    initGoalLogic();
     initSimulatorLogic();
+    initInfusionLogic();
+    initHydrationLogic();
+    initCompareLogic();
+    initSearchLogic(); // NEW
+    initChartSim();    // NEW
     updateFormulaSelect();
     applyCircularFavicon();
 });
@@ -223,21 +235,80 @@ function initPatientLogic() {
         form.onsubmit = async (e) => {
             e.preventDefault();
             const btn = form.querySelector('button');
+            const originalText = btn.innerText;
             btn.innerText = "Guardando...";
 
+            // Retrieve Data
+            const nombre = document.getElementById('nombre').value;
+            const edad = parseInt(document.getElementById('edad').value) || 0;
+            const peso = parseFloat(document.getElementById('peso').value) || 0;
+            const estatura = parseFloat(document.getElementById('estatura').value) || 0;
+            const sexo = document.getElementById('sexo').value;
+            const actividad = parseFloat(document.getElementById('actividad').value) || 1.2;
+            const tmt = parseFloat(document.getElementById('goalTotal').value) || 0;
+            const bmi = parseFloat(document.getElementById('valBMI').innerText) || 0;
+
             const data = {
-                nombre: document.getElementById('nombre').value,
-                edad: parseInt(document.getElementById('edad').value) || 0,
-                peso_kg: parseFloat(document.getElementById('peso').value) || 0,
-                estatura_m: parseFloat(document.getElementById('estatura').value) || 0,
+                nombre,
+                edad,
+                peso_kg: peso,
+                estatura_m: estatura,
+                sexo,
+                actividad,
+                tmt,
+                // bmi might not be in DB column, usually calculated, but we send it just in case or omit if not needed.
+                // Assuming basic fields are in DB. If fails, we'll see error now.
                 user_id: AppState.user.id
             };
 
             const { error } = await supabaseClient.from('pacientes').insert([data]);
-            btn.innerText = error ? "Error" : "Guardado";
-            setTimeout(() => btn.innerText = "Guardar", 2000);
+
+            if (error) {
+                console.error("Supabase Error:", error);
+                alert("Error al guardar: " + error.message + "\nRevisa la consola para más detalles.");
+                btn.innerText = "Error";
+            } else {
+                btn.innerText = "¡Guardado!";
+            }
+            setTimeout(() => btn.innerText = originalText, 2000);
         };
     }
+}
+
+// --- NEW: Goal Evolution Logic ---
+function initGoalLogic() {
+    const boxKcal = document.getElementById('goalKcalBox');
+    const boxTotal = document.getElementById('goalTotal');
+
+    if (!boxKcal || !boxTotal) return;
+
+    // 1. Change Kcal/kg -> Update Total
+    boxKcal.oninput = () => {
+        AppState.userOverridesGoal = true;
+        const perKg = parseFloat(boxKcal.value) || 0;
+        const peso = parseFloat(document.getElementById('peso').value) || 0;
+        if (peso > 0) {
+            const total = Math.round(perKg * peso);
+            boxTotal.value = total;
+            AppState.patient.tmt = total;
+            document.getElementById('simGoal').innerText = total;
+            runSimulation();
+        }
+    };
+
+    // 2. Change Total -> Update Kcal/kg
+    boxTotal.oninput = () => {
+        AppState.userOverridesGoal = true;
+        const total = parseFloat(boxTotal.value) || 0;
+        const peso = parseFloat(document.getElementById('peso').value) || 0;
+        if (peso > 0) {
+            const perKg = (total / peso).toFixed(1);
+            boxKcal.value = perKg;
+        }
+        AppState.patient.tmt = total;
+        document.getElementById('simGoal').innerText = total;
+        runSimulation();
+    };
 }
 
 async function loadHistory() {
@@ -345,6 +416,7 @@ window.loadPatient = async (id) => {
         document.getElementById('edad').value = data.edad;
         document.getElementById('peso').value = data.peso_kg;
         document.getElementById('estatura').value = data.estatura_m;
+        // Trigger calc
         calculateRequirements();
         document.getElementById('historyModal').classList.remove('active');
     }
@@ -365,9 +437,20 @@ function calculateRequirements() {
 
     if (p.peso > 0 && p.estatura > 0 && p.edad > 0) {
         let bmr = (10 * p.peso) + (6.25 * (p.estatura * 100)) - (5 * p.edad) + (document.getElementById('sexo').value === 'm' ? 5 : -161);
-        p.tmt = bmr * p.actividad;
-        document.getElementById('valTMT').innerText = Math.round(p.tmt);
-        document.getElementById('simGoal').innerText = Math.round(p.tmt);
+
+        // Only auto-update if user hasn't manually overridden goals
+        if (!AppState.userOverridesGoal) {
+            p.tmt = bmr * p.actividad;
+
+            const goalTotalBox = document.getElementById('goalTotal');
+            const goalKcalBox = document.getElementById('goalKcalBox');
+
+            if (goalTotalBox) goalTotalBox.value = Math.round(p.tmt);
+            if (goalKcalBox) goalKcalBox.value = (p.tmt / p.peso).toFixed(1);
+            if (goalKcalBox) goalKcalBox.value = (p.tmt / p.peso).toFixed(1);
+            document.getElementById('simGoal').innerText = Math.round(p.tmt);
+        }
+        calcHydration(); // Trigger Hydration Update
         runSimulation();
     }
 }
@@ -474,14 +557,259 @@ function runSimulation() {
         l = formula.f * (grams / 100);
     }
 
-    document.getElementById('valKcal').innerText = Math.round(k);
-    document.getElementById('valProt').innerText = p.toFixed(1);
-    document.getElementById('valCHO').innerText = c.toFixed(1);
-    document.getElementById('valLip').innerText = l.toFixed(1);
-    document.getElementById('simCurrent').innerText = Math.round(k);
+    // Animation: Count Up Numbers
+    animateValue("valKcal", Math.round(k));
+    animateValue("valProt", p.toFixed(1));
+    animateValue("valCHO", c.toFixed(1));
+    animateValue("valLip", l.toFixed(1));
+    animateValue("simCurrent", Math.round(k));
 
-    const goal = AppState.patient.tmt || 2000;
+    const goal = parseFloat(document.getElementById('goalTotal').value) || 2000;
     document.getElementById('simBar').style.width = Math.min((k / goal) * 100, 100) + '%';
+
+    // Animation: Stacked Bar (New)
+    const totalMacross = p + c + l;
+    if (totalMacross > 0) {
+        const pPct = (p / totalMacross) * 100;
+        const cPct = (c / totalMacross) * 100;
+        const lPct = (l / totalMacross) * 100;
+
+        document.getElementById('barProt').style.width = pPct + "%";
+        document.getElementById('barCHO').style.width = cPct + "%";
+        document.getElementById('barLip').style.width = lPct + "%";
+    } else {
+        document.getElementById('barProt').style.width = "0%";
+        document.getElementById('barCHO').style.width = "0%";
+        document.getElementById('barLip').style.width = "0%";
+    }
+
+    // Compare Mode Updates
+    if (AppState.compareMode) {
+        updateCompareResults(k, p, c, l);
+    }
+
+    // Trigger Infusion Calc update if volume changes
+    calcInfusion();
+    calcHydration();
+
+    // Update Chart
+    if (AppState.chart) {
+        // Convert to calories for distribution chart (4 kcal/g Prot/CHO, 9 kcal/g Fat)
+        const pCal = p * 4;
+        const cCal = c * 4;
+        const lCal = l * 9;
+
+        AppState.chart.data.datasets[0].data = [pCal, cCal, lCal];
+        AppState.chart.update();
+    }
+}
+
+// --- 10. INFUSION CALCULATOR LOGIC (NEW) ---
+function initInfusionLogic() {
+    const rateInput = document.getElementById('infusionRate');
+    const timeInput = document.getElementById('infusionStart');
+
+    if (rateInput) rateInput.oninput = calcInfusion;
+    if (timeInput) timeInput.oninput = calcInfusion;
+}
+
+function calcInfusion() {
+    // Inputs
+    const vol = parseFloat(document.getElementById('volume').value) || 0;
+    const rate = parseFloat(document.getElementById('infusionRate').value) || 0;
+    const startTimeStr = document.getElementById('infusionStart').value;
+
+    const resBox = document.getElementById('infusionResultBox');
+    const valEnd = document.getElementById('valEndTime');
+    const valDur = document.getElementById('valDuration');
+
+    if (vol > 0 && rate > 0 && startTimeStr) {
+        resBox.style.display = 'block';
+
+        // 1. Calculate Duration in Hours
+        const durationHrs = vol / rate;
+
+        // 2. Parse Start Time
+        const [startH, startM] = startTimeStr.split(':').map(Number);
+
+        // 3. Add Duration to Start Date object
+        const now = new Date();
+        now.setHours(startH, startM, 0, 0);
+
+        // Add milliseconds (hours * 3600 * 1000)
+        const endTimestamp = now.getTime() + (durationHrs * 3600 * 1000);
+        const endDate = new Date(endTimestamp);
+
+        // 4. Format Output
+        const endH = endDate.getHours().toString().padStart(2, '0');
+        const endM = endDate.getMinutes().toString().padStart(2, '0');
+
+        // Check if next day
+        const dayDiff = endDate.getDate() - now.getDate();
+        let dayLabel = "";
+        if (dayDiff > 0) dayLabel = " (+1 día)";
+
+        valEnd.innerText = `${endH}:${endM}${dayLabel}`;
+
+        // Format duration for display (e.g. 20.5 hrs -> 20h 30m)
+        const hrs = Math.floor(durationHrs);
+        const mins = Math.round((durationHrs - hrs) * 60);
+        valDur.innerText = `(${hrs}h ${mins}m)`;
+
+    } else {
+        resBox.style.display = 'none';
+    }
+}
+
+// --- 11. HYDRATION LOGIC (NEW) ---
+function initHydrationLogic() {
+    // Listener for factor input
+    const factorInput = document.getElementById('hydFactor');
+    if (factorInput) factorInput.oninput = calcHydration;
+}
+
+function toggleHydMethod() {
+    const isMlKg = document.querySelector('input[name="hydMethod"][value="mlkg"]').checked;
+    document.getElementById('hydFactorRow').style.display = isMlKg ? 'block' : 'none';
+    calcHydration();
+}
+
+function calcHydration() {
+    const p = AppState.patient;
+    const vol = parseFloat(document.getElementById('volume').value) || 0;
+
+    if (p.peso <= 0) return;
+
+    let req = 0;
+    const isMlKg = document.querySelector('input[name="hydMethod"][value="mlkg"]').checked;
+
+    if (isMlKg) {
+        // Method: ml/kg
+        const factor = parseFloat(document.getElementById('hydFactor').value) || 0;
+        req = p.peso * factor;
+    } else {
+        // Method: Holiday-Segar Rule
+        if (p.peso <= 10) {
+            req = p.peso * 100;
+        } else if (p.peso <= 20) {
+            req = 1000 + (p.peso - 10) * 50;
+        } else {
+            req = 1500 + (p.peso - 20) * 20;
+        }
+    }
+
+    const deficit = req - vol;
+
+    // Update UI
+    document.getElementById('hydReq').innerText = Math.round(req);
+    const defBox = document.getElementById('hydDeficitBox');
+    const defText = document.getElementById('hydDeficit');
+    const bar = document.getElementById('hydBar');
+
+    if (deficit > 0) {
+        defText.innerText = Math.round(deficit);
+        defBox.style.color = "#e74c3c"; // Red
+        const pct = Math.min((vol / req) * 100, 100);
+        bar.style.width = pct + "%";
+        bar.style.background = "#e74c3c";
+    } else {
+        defText.innerText = "Cubierto"; // Or 0
+        defBox.style.color = "#27ae60"; // Green
+        bar.style.width = "100%";
+        bar.style.background = "#27ae60";
+    }
+}
+
+// --- 12. COMPARE LOGIC (NEW) ---
+function initCompareLogic() {
+    const btnComp = document.getElementById('btnToggleCompare');
+    const rowComp = document.getElementById('compareRow');
+    const selB = document.getElementById('formulaSelectB');
+
+    // Clone options from main select to secondary
+    setTimeout(() => {
+        selB.innerHTML = document.getElementById('formulaSelect').innerHTML;
+    }, 1000); // Wait for main init
+
+    btnComp.onclick = () => {
+        AppState.compareMode = !AppState.compareMode;
+        rowComp.style.display = AppState.compareMode ? 'block' : 'none';
+        btnComp.classList.toggle('active');
+        runSimulation();
+    };
+
+    selB.onchange = () => {
+        runSimulation();
+    };
+}
+
+function updateCompareResults(k1, p1, c1, l1) {
+    const fIdB = document.getElementById('formulaSelectB').value;
+    const formulaB = AppState.formulas.find(f => f.id === fIdB);
+    const box = document.getElementById('compareResult');
+
+    if (!formulaB) {
+        box.innerHTML = '';
+        return;
+    }
+
+    const v1 = parseFloat(document.getElementById('volume').value) || 0;
+    const v2 = parseFloat(document.getElementById('dilution').value) || 0;
+
+    let k2 = 0, p2 = 0;
+
+    // Calc Formula B stats (same mode)
+    if (AppState.calcMode === 'vol') {
+        k2 = formulaB.k * (v1 / 100);
+        p2 = formulaB.p * (v1 / 100);
+    } else {
+        k2 = formulaB.k * (v2 / 100);
+        p2 = formulaB.p * (v2 / 100);
+    }
+
+    const diffK = Math.round(k2 - k1);
+    const diffP = (p2 - p1).toFixed(1);
+
+    const badgeK = diffK > 0 ? `<span class="diff-badge diff-pos">+${diffK} kcal</span>` : `<span class="diff-badge diff-neg">${diffK} kcal</span>`;
+    const badgeP = diffP > 0 ? `<span class="diff-badge diff-pos">+${diffP}g Prot</span>` : `<span class="diff-badge diff-neg">${diffP}g Prot</span>`;
+
+    box.innerHTML = `Diferencia: ${badgeK} ${badgeP}`;
+}
+
+// Simple CountUp Animation
+function animateValue(id, end) {
+    const obj = document.getElementById(id);
+    if (!obj) return;
+
+    const start = parseFloat(obj.innerText) || 0;
+    const endVal = parseFloat(end) || 0;
+
+    if (start === endVal) return;
+
+    // If change is drastic or first load, maybe faster?
+    const duration = 600;
+    const startTime = performance.now();
+
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 4); // EaseOutQuart
+
+        const current = start + (endVal - start) * ease;
+
+        if (Number.isInteger(endVal)) {
+            obj.innerText = Math.round(current);
+        } else {
+            obj.innerText = current.toFixed(1);
+        }
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        } else {
+            obj.innerText = end;
+        }
+    }
+    requestAnimationFrame(update);
 }
 
 async function savePrescription() {
@@ -510,7 +838,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     const container = document.getElementById('pwaInstallContainer');
-    if(container) container.style.display = 'block';
+    if (container) container.style.display = 'block';
 });
 
 document.getElementById('btnInstallApp').addEventListener('click', async () => {
@@ -521,3 +849,117 @@ document.getElementById('btnInstallApp').addEventListener('click', async () => {
     deferredPrompt = null;
     document.getElementById('pwaInstallContainer').style.display = 'none';
 });
+// --- 13. SMART SEARCH LOGIC (NEW) ---
+function initSearchLogic() {
+    const searchInput = document.getElementById('formulaSearch');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const select = document.getElementById('formulaSelect');
+        const allOptions = AppState.formulas;
+
+        const filtered = allOptions.filter(f => f.name.toLowerCase().includes(term));
+
+        select.innerHTML = '';
+        if (filtered.length === 0) {
+            select.innerHTML = '<option>Sin resultados</option>';
+            return;
+        }
+
+        const cats = {};
+        filtered.forEach(f => {
+            if (!cats[f.cat]) cats[f.cat] = [];
+            cats[f.cat].push(f);
+        });
+
+        for (const [catName, formulas] of Object.entries(cats)) {
+            const grp = document.createElement('optgroup');
+            grp.label = catName;
+            formulas.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.id;
+                opt.innerText = f.name;
+                grp.appendChild(opt);
+            });
+            select.appendChild(grp);
+        }
+    });
+}
+
+// --- 14. CHART LOGIC (NEW) ---
+function initChartSim() {
+    const ctx = document.getElementById('macroChart')?.getContext('2d');
+    if (!ctx) return;
+
+    AppState.chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Prot', 'Carb', 'Líp'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: [
+                    '#e67e22',
+                    '#3498db',
+                    '#f1c40f'
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.label || '';
+                            let value = context.raw || 0;
+                            let total = context.chart._metasets[context.datasetIndex].total;
+                            let percentage = Math.round((value / total) * 100) + '%';
+                            return label + ': ' + percentage;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateCompareResults(k1, p1, c1, l1) {
+    const box = document.getElementById('compareResult');
+    if (!box || !AppState.compareMode) return;
+
+    const fIdB = document.getElementById('formulaSelectB').value;
+    const formulaB = AppState.formulas.find(f => f.id === fIdB);
+
+    if (!formulaB) {
+        box.innerHTML = '';
+        return;
+    }
+
+    const v1 = parseFloat(document.getElementById('volume').value) || 0;
+    const v2 = parseFloat(document.getElementById('dilution').value) || 0;
+
+    let k2 = 0, p2 = 0;
+
+    if (AppState.calcMode === 'vol') {
+        k2 = formulaB.k * (v1 / 100);
+        p2 = formulaB.p * (v1 / 100);
+    } else {
+        k2 = formulaB.k * (v2 / 100);
+        p2 = formulaB.p * (v2 / 100);
+    }
+
+    const diffK = Math.round(k2 - k1);
+    const diffP = (p2 - p1).toFixed(1);
+
+    const badgeK = diffK > 0 ? `<span class="diff-badge diff-pos">+${diffK} kcal</span>` : `<span class="diff-badge diff-neg">${diffK} kcal</span>`;
+    const badgeP = diffP > 0 ? `<span class="diff-badge diff-pos">+${diffP}g Prot</span>` : `<span class="diff-badge diff-neg">${diffP}g Prot</span>`;
+
+    box.innerHTML = `Vs: ${badgeK} ${badgeP}`;
+}
