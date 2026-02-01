@@ -53,7 +53,6 @@ const AppState = {
     user: null,
     patient: { nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0 },
     formulas: LOCAL_FORMULAS,
-    formulas: LOCAL_FORMULAS,
     calcMode: 'vol',
     favorites: JSON.parse(localStorage.getItem('sedile_favs') || '[]'),
     userOverridesGoal: false,
@@ -302,29 +301,7 @@ function initPatientLogic() {
 
 // --- NEW: Goal Evolution Logic (Decoupled) ---
 function initGoalLogic() {
-    const boxKcal = document.getElementById('goalKcalBox');
-    const boxTotal = document.getElementById('goalTotal');
-    const resEvo = document.getElementById('evolutionResult');
-
-    // 1. Evolution Input -> Updates ONLY local result badge
-    if (boxKcal) {
-        boxKcal.oninput = () => {
-            const perKg = parseFloat(boxKcal.value) || 0;
-            const peso = parseFloat(document.getElementById('peso').value) || 0;
-            const total = Math.round(perKg * peso);
-            resEvo.innerText = `${total} kcal/día`;
-        };
-    }
-
-    // 2. Meta Total -> Updates Simulator Goal (Standard)
-    if (boxTotal) {
-        boxTotal.oninput = () => {
-            AppState.userOverridesGoal = true;
-            AppState.patient.tmt = parseFloat(boxTotal.value) || 0;
-            document.getElementById('simGoal').innerText = AppState.patient.tmt;
-            runSimulation();
-        };
-    }
+    // Redundant block merged into initAssessmentLogic
 }
 
 async function loadHistory() {
@@ -1071,17 +1048,30 @@ function initAssessmentLogic() {
     });
 
     // Evolution Logic
-    document.getElementById('goalKcalBox').addEventListener('input', (e) => {
-        const factor = parseFloat(e.target.value) || 0;
-        const weight = AppState.patient.peso || 0;
-        const badge = document.getElementById('evolutionBadge');
-        if (factor > 0 && weight > 0) {
-            badge.style.display = 'block';
-            badge.innerText = `${Math.round(factor * weight)} kcal`;
-        } else {
-            badge.style.display = 'none';
-        }
-    });
+    const inpGoalKcal = document.getElementById('goalKcalBox');
+    const inpGoalTotal = document.getElementById('goalTotal');
+    const resEvoBadge = document.getElementById('evolutionResult');
+
+    if (inpGoalKcal) {
+        inpGoalKcal.addEventListener('input', (e) => {
+            const factor = parseFloat(e.target.value) || 0;
+            const weight = parseFloat(document.getElementById('peso').value) || AppState.patient.peso || 0;
+            if (factor > 0 && weight > 0) {
+                resEvoBadge.innerText = `${Math.round(factor * weight)} kcal/día`;
+            } else {
+                resEvoBadge.innerText = "0 kcal/día";
+            }
+        });
+    }
+
+    if (inpGoalTotal) {
+        inpGoalTotal.oninput = () => {
+            AppState.userOverridesGoal = true;
+            AppState.patient.tmt = parseFloat(inpGoalTotal.value) || 0;
+            document.getElementById('simGoal').innerText = AppState.patient.tmt;
+            runSimulation();
+        };
+    }
 
     // TMB Logic
     document.getElementById('btnCalcTMB').onclick = calcTMB_OMS;
