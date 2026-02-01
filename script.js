@@ -256,10 +256,8 @@ function initPatientLogic() {
                 peso_kg: peso,
                 estatura_m: estatura,
                 sexo,
-                actividad,
+                // actividad removed to fix DB error
                 tmt,
-                // bmi might not be in DB column, usually calculated, but we send it just in case or omit if not needed.
-                // Assuming basic fields are in DB. If fails, we'll see error now.
                 user_id: AppState.user.id
             };
 
@@ -267,7 +265,7 @@ function initPatientLogic() {
 
             if (error) {
                 console.error("Supabase Error:", error);
-                alert("Error al guardar: " + error.message + "\nRevisa la consola para más detalles.");
+                alert("Error al guardar: " + error.message);
                 btn.innerText = "Error";
             } else {
                 btn.innerText = "¡Guardado!";
@@ -277,40 +275,31 @@ function initPatientLogic() {
     }
 }
 
-// --- NEW: Goal Evolution Logic ---
+// --- NEW: Goal Evolution Logic (Decoupled) ---
 function initGoalLogic() {
     const boxKcal = document.getElementById('goalKcalBox');
     const boxTotal = document.getElementById('goalTotal');
+    const resEvo = document.getElementById('evolutionResult');
 
-    if (!boxKcal || !boxTotal) return;
-
-    // 1. Change Kcal/kg -> Update Total
-    boxKcal.oninput = () => {
-        AppState.userOverridesGoal = true;
-        const perKg = parseFloat(boxKcal.value) || 0;
-        const peso = parseFloat(document.getElementById('peso').value) || 0;
-        if (peso > 0) {
+    // 1. Evolution Input -> Updates ONLY local result badge
+    if (boxKcal) {
+        boxKcal.oninput = () => {
+            const perKg = parseFloat(boxKcal.value) || 0;
+            const peso = parseFloat(document.getElementById('peso').value) || 0;
             const total = Math.round(perKg * peso);
-            boxTotal.value = total;
-            AppState.patient.tmt = total;
-            document.getElementById('simGoal').innerText = total;
-            runSimulation();
-        }
-    };
+            resEvo.innerText = `${total} kcal/día`;
+        };
+    }
 
-    // 2. Change Total -> Update Kcal/kg
-    boxTotal.oninput = () => {
-        AppState.userOverridesGoal = true;
-        const total = parseFloat(boxTotal.value) || 0;
-        const peso = parseFloat(document.getElementById('peso').value) || 0;
-        if (peso > 0) {
-            const perKg = (total / peso).toFixed(1);
-            boxKcal.value = perKg;
-        }
-        AppState.patient.tmt = total;
-        document.getElementById('simGoal').innerText = total;
-        runSimulation();
-    };
+    // 2. Meta Total -> Updates Simulator Goal (Standard)
+    if (boxTotal) {
+        boxTotal.oninput = () => {
+            AppState.userOverridesGoal = true;
+            AppState.patient.tmt = parseFloat(boxTotal.value) || 0;
+            document.getElementById('simGoal').innerText = AppState.patient.tmt;
+            runSimulation();
+        };
+    }
 }
 
 async function loadHistory() {
@@ -502,9 +491,10 @@ function checkFavoriteStatus() {
 }
 
 function updateFormulaSelect() {
-    const sel = document.getElementById('formulaSelect');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Seleccione Fórmula...</option>';
+    const selects = [
+        document.getElementById('formulaSelect'),
+        document.getElementById('formulaSelectB')
+    ];
 
     // Sort logic: Favorites first, then by Category
     const sortedFormulas = [...AppState.formulas].sort((a, b) => {
@@ -512,27 +502,46 @@ function updateFormulaSelect() {
         const bFav = AppState.favorites.includes(b.id);
         if (aFav && !bFav) return -1;
         if (!aFav && bFav) return 1;
-        return 0; // Keep original order otherwise
+        return 0;
     });
 
     const cats = [...new Set(sortedFormulas.map(i => i.cat))];
-    cats.forEach(cat => {
-        const group = document.createElement('optgroup');
-        group.label = cat;
-        sortedFormulas.filter(i => i.cat === cat).forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = item.id;
-            const star = AppState.favorites.includes(item.id) ? '⭐ ' : '';
-            opt.innerText = star + item.name;
-            group.appendChild(opt);
+
+    selects.forEach(sel => {
+        if (!sel) return;
+        const currentVal = sel.value; // preserve value if possible (rare)
+        sel.innerHTML = '<option value="">Seleccione Fórmula...</option>';
+
+        cats.forEach(cat => {
+            const group = document.createElement('optgroup');
+            group.label = cat;
+            sortedFormulas.filter(i => i.cat === cat).forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                const star = AppState.favorites.includes(item.id) ? '⭐ ' : '';
+                opt.innerText = star + item.name;
+                group.appendChild(opt);
+            });
+            sel.appendChild(group);
         });
-        sel.appendChild(group);
+
+        // Restore if value exists in new options
+        if (currentVal) sel.value = currentVal;
     });
 
-    sel.onchange = () => {
-        runSimulation();
-        checkFavoriteStatus();
-    };
+    // Event Listeners
+    if (selects[0]) {
+        selects[0].onchange = () => {
+            runSimulation();
+            checkFavoriteStatus();
+        };
+    }
+    if (selects[1]) {
+        selects[1].onchange = () => {
+            AppState.formulaB = AppState.formulas.find(f => f.id === selects[1].value);
+            runSimulation(); // Updates compare results
+        };
+    }
 }
 
 function runSimulation() {
@@ -853,14 +862,25 @@ document.getElementById('btnInstallApp').addEventListener('click', async () => {
 });
 // --- 13. SMART SEARCH LOGIC (NEW) ---
 function initSearchLogic() {
-    const searchInput = document.getElementById('formulaSearch');
+    attachSearch('formulaSearch', 'formulaSelect');
+    attachSearch('compareSearch', 'formulaSelectB');
+}
+
+function attachSearch(inputId, selectId) {
+    const searchInput = document.getElementById(inputId);
     if (!searchInput) return;
 
     searchInput.addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
-        const select = document.getElementById('formulaSelect');
-        const allOptions = AppState.formulas;
+        const select = document.getElementById(selectId);
+        if (!select) return;
 
+        // Logic to clear and rebuild, but using current AppState.formulas logic
+        // We reuse the logic from updateFormulaSelect but filtered
+        // Ideally we should just filter existing options? 
+        // Re-rendering is safer for OptGroups.
+
+        const allOptions = AppState.formulas;
         const filtered = allOptions.filter(f => f.name.toLowerCase().includes(term));
 
         select.innerHTML = '';
@@ -881,7 +901,8 @@ function initSearchLogic() {
             formulas.forEach(f => {
                 const opt = document.createElement('option');
                 opt.value = f.id;
-                opt.innerText = f.name;
+                const star = AppState.favorites.includes(f.id) ? '⭐ ' : '';
+                opt.innerText = star + f.name;
                 grp.appendChild(opt);
             });
             select.appendChild(grp);
@@ -1040,10 +1061,28 @@ function initAssessmentLogic() {
     // TMB Logic
     document.getElementById('btnCalcTMB').onclick = calcTMB_OMS;
 
+    // Factorial Logic
+    const inpFactor = document.getElementById('factorKcal');
+    if (inpFactor) {
+        inpFactor.oninput = () => {
+            const f = parseFloat(inpFactor.value) || 0;
+            const p = AppState.patient.peso || 0;
+            const res = Math.round(f * p);
+            document.getElementById('resFactorial').innerText = `${res} kcal`;
+        }
+    }
+
     // Nitrogen Logic
     const fnBN = () => calcNitrogenBalance();
     document.getElementById('valNUU').oninput = fnBN;
     document.getElementById('valNFactor').oninput = fnBN;
+
+    // Purpose Modal Logic
+    const modPurpose = document.getElementById('purposeModal');
+    if (modPurpose) {
+        document.getElementById('btnOpenPurpose').onclick = () => modPurpose.classList.add('active');
+        document.getElementById('btnPurposeClose').onclick = () => modPurpose.classList.remove('active');
+    }
 }
 
 function calcTMB_OMS() {
@@ -1054,9 +1093,8 @@ function calcTMB_OMS() {
     }
 
     let tmb = 0;
-    // OMS Formulas (simplified based on image ranges)
+    // OMS Formulas
     if (document.getElementById('sexo').value === 'm') {
-        // Males
         if (p.edad < 3) tmb = 59.512 * p.peso - 30.4;
         else if (p.edad <= 10) tmb = 22.706 * p.peso + 504.3;
         else if (p.edad <= 18) tmb = 17.686 * p.peso + 658.2;
@@ -1064,7 +1102,6 @@ function calcTMB_OMS() {
         else if (p.edad <= 60) tmb = 11.472 * p.peso + 873.1;
         else tmb = 11.711 * p.peso + 587.7;
     } else {
-        // Females
         if (p.edad < 3) tmb = 58.317 * p.peso - 31.1;
         else if (p.edad <= 10) tmb = 20.315 * p.peso + 485.9;
         else if (p.edad <= 18) tmb = 13.384 * p.peso + 692.6;
@@ -1073,12 +1110,9 @@ function calcTMB_OMS() {
         else tmb = 9.082 * p.peso + 658.5;
     }
 
-    const tmt = tmb * p.actividad;
-    if (confirm(`TMB (OMS): ${Math.round(tmb)} kcal\nTMT (con AF): ${Math.round(tmt)} kcal\n\n¿Usar como Meta Total?`)) {
-        document.getElementById('goalTotal').value = Math.round(tmt);
-        AppState.userOverridesGoal = true;
-        initGoalLogic(); // update sim goal
-    }
+    // Since we removed 'actividad' field from DB but kept it in standard usage calculation potentially, 
+    // we assume TMB result is just the base.
+    document.getElementById('resTMB').innerText = `${Math.round(tmb)} kcal`;
 }
 
 function calcDryWeight() {

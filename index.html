@@ -57,6 +57,12 @@
             </div>
 
             <div class="header-right-group">
+                <!-- Purpose & Logout -->
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; justify-content: flex-end;">
+                    <button class="btn-icon-circle" id="btnOpenPurpose" title="Propósito de la App">ℹ️</button>
+                    <button class="btn-icon-circle" id="btnLogout" title="Cerrar Sesión">🚪</button>
+                </div>
+
                 <div class="patient-quick-access" id="btnPatientToggle">
                     <div class="p-avatar" id="currentPatientAvatar">P</div>
                     <div class="p-info">
@@ -115,14 +121,27 @@
                                 <input type="number" step="0.01" id="estatura" placeholder="0">
                             </div>
                         </div>
-                        <div class="input-row-multi">
-                            <select id="actividad" class="select-small">
-                                <option value="1.2">AF: 1.2 (Reposo)</option>
-                                <option value="1.3">AF: 1.3 (Ligero)</option>
-                                <option value="1.5">AF: 1.5 (Mod)</option>
-                            </select>
-                            <!-- NEW: TMB Calc Button -->
-                            <button type="button" class="btn-micro-action" id="btnCalcTMB">Calc TMB (OMS)</button>
+                        <!-- New Calculator Section: TMB & Factorial -->
+                        <div style="margin-top:10px; padding:10px; background:#f8fafc; border-radius:8px;">
+                            <label
+                                style="font-size:0.75rem; font-weight:700; color:#555; display:block; margin-bottom:5px;">Est.
+                                Requerimientos</label>
+
+                            <!-- Row 1: TMB OMS -->
+                            <div style="display:flex; gap:5px; align-items:center; margin-bottom:8px;">
+                                <button type="button" class="btn-micro-action" id="btnCalcTMB" style="flex:1;">TMB
+                                    (OMS)</button>
+                                <div class="result-badge" id="resTMB">-- kcal</div>
+                            </div>
+
+                            <!-- Row 2: Factorial -->
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                <div class="mini-input" style="flex:1;">
+                                    <label>Método Factorial (kcal/kg)</label>
+                                    <input type="number" id="factorKcal" placeholder="25-30" value="25">
+                                </div>
+                                <div class="result-badge" id="resFactorial">-- kcal</div>
+                            </div>
                         </div>
 
                         <!-- Goal & Evolution Inputs -->
@@ -130,15 +149,18 @@
                             <label
                                 style="font-size:0.75rem; font-weight:700; color:#666; margin-bottom:5px; display:block;">Metas
                                 y Evolución</label>
-                            <div class="grid-col-2" style="grid-template-columns: 1fr 1fr; gap:10px; display:grid;">
+                            <div class="grid-col-2">
                                 <div class="mini-input">
-                                    <label>Evolución kcal/kg</label>
-                                    <input type="number" id="goalKcalBox" placeholder="Ej. 20">
-                                    <div id="evolutionBadge" class="ev-badge">0 kcal</div>
+                                    <label>Evolución (kcal/kg)</label>
+                                    <input type="number" id="goalKcalBox" placeholder="Actual (Ej. 20)">
+                                    <!-- Result Badge BELOW the input -->
+                                    <div id="evolutionResult"
+                                        style="font-size:0.75rem; color:var(--primary); font-weight:700; margin-top:2px;">
+                                        0 kcal/día</div>
                                 </div>
                                 <div class="mini-input">
                                     <label>Meta Total (Kcal)</label>
-                                    <input type="number" id="goalTotal" placeholder="Total">
+                                    <input type="number" id="goalTotal" placeholder="Objetivo Final">
                                 </div>
                             </div>
                         </div>
@@ -262,6 +284,15 @@
                         <div class="input-group" id="compareRow"
                             style="display:none; margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
                             <label style="color:var(--secondary); font-weight:700;">🆚 Comparar con:</label>
+
+                            <!-- Search Input B -->
+                            <div style="margin-bottom:5px; position:relative;">
+                                <span
+                                    style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.5;">🔍</span>
+                                <input type="text" id="compareSearch" placeholder="Buscar comparación..."
+                                    style="width:100%; padding:6px 6px 6px 30px; border-radius:8px; border:1px solid #eee; font-size:0.8rem;">
+                            </div>
+
                             <select id="formulaSelectB" class="select-modern"></select>
                             <div id="compareResult"
                                 style="margin-top:5px; font-size:0.8rem; display:flex; gap:10px; justify-content:flex-end;">
@@ -543,7 +574,23 @@
         </div>
     </div>
 
-    <script src="script.js?v=20260130-1140"></script>
+    <!-- MODAL PROPÓSITO -->
+    <div class="modal-overlay" id="purposeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📖 Propósito</h3>
+                <button class="btn-close-modal" id="btnPurposeClose">×</button>
+            </div>
+            <div class="modal-body" style="font-style: italic; color: #555; line-height: 1.6;">
+                <p>Esta plataforma fue creada con el fin de poder simplificar los tiempos para el nutricionista y
+                    mejorar la calidad de los procesos evitando errores de cálculos por falta de tiempo o de
+                    organización.</p>
+                <p style="margin-top:15px; font-weight:700; text-align:right;">Atte: Nut. Martin Gonzalez</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=20260201-1330"></script>
 </body>
 
 </html>
