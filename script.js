@@ -1057,7 +1057,7 @@ function initAssessmentLogic() {
         document.getElementById('currentPatientName').innerText = val || 'Nuevo Paciente';
     });
 
-    // Evolution Logic
+    // Evolution Logic (Connected to Main Goal)
     const inpGoalKcal = document.getElementById('goalKcalBox');
     const inpGoalTotal = document.getElementById('goalTotal');
     const resEvoBadge = document.getElementById('evolutionResult');
@@ -1066,8 +1066,20 @@ function initAssessmentLogic() {
         inpGoalKcal.addEventListener('input', (e) => {
             const factor = parseFloat(e.target.value) || 0;
             const weight = parseFloat(document.getElementById('peso').value) || AppState.patient.peso || 0;
+
             if (factor > 0 && weight > 0) {
-                resEvoBadge.innerText = `${Math.round(factor * weight)} kcal/día`;
+                const total = Math.round(factor * weight);
+                // 1. Update Badge
+                resEvoBadge.innerText = `${total} kcal/día`;
+
+                // 2. Update Main Goal (Sim link)
+                AppState.userOverridesGoal = true;
+                AppState.patient.tmt = total;
+                if (inpGoalTotal) inpGoalTotal.value = total;
+                const simGoal = document.getElementById('simGoal');
+                if (simGoal) simGoal.innerText = total;
+
+                runSimulation();
             } else {
                 resEvoBadge.innerText = "0 kcal/día";
             }
@@ -1091,6 +1103,14 @@ function initAssessmentLogic() {
     if (inpFactor) {
         inpFactor.oninput = calcFactorial;
     }
+
+    // Edema/Dry Weight Logic (moved from HTML)
+    const selEdema = document.getElementById('edemaGrade');
+    if (selEdema) selEdema.onchange = calcDryWeight;
+
+    // Exams Logic (moved from HTML)
+    const btnAddExam = document.getElementById('btnAddExam');
+    if (btnAddExam) btnAddExam.onclick = addExamRow;
 
     // Nitrogen Logic
     const fnBN = () => calcNitrogenBalance();

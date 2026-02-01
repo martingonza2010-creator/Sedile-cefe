@@ -409,7 +409,7 @@
                     </div>
                     <div class="input-group">
                         <label>Grado de Edema</label>
-                        <select id="edemaGrade" class="select-modern" onchange="calcDryWeight()">
+                        <select id="edemaGrade" class="select-modern">
                             <option value="0">Ausente</option>
                             <option value="1">Grado + (1kg)</option>
                             <option value="3">Grado ++ (3kg)</option>
@@ -426,7 +426,7 @@
                 <section class="card assess-module">
                     <div class="module-head">
                         <h3>🩸 Exámenes Bioquímicos</h3>
-                        <button class="btn-micro" onclick="addExamRow()">+</button>
+                        <button class="btn-micro" id="btnAddExam">+</button>
                     </div>
                     <div class="exams-list" id="examsContainer">
                         <!-- Dynamic Rows -->
@@ -585,7 +585,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=20260201-1445"></script>
+    <script src="script.js?v=20260201-1500"></script>
 </body>
 
 </html>
