@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sedile-hra-v1';
+const CACHE_NAME = 'sedile-hra-v2'; // Bumped version
 const ASSETS = [
     './',
     './index.html',
@@ -9,8 +9,23 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+    self.skipWaiting(); // Force new SW to activate immediately
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    );
+});
+
+self.addEventListener('activate', (e) => {
+    e.waitUntil(
+        clients.claim() // Take control of open pages immediately
+            .then(() => {
+                // Optional: Clear old caches that don't match current CACHE_NAME
+                return caches.keys().then(keys => Promise.all(
+                    keys.map(key => {
+                        if (key !== CACHE_NAME) return caches.delete(key);
+                    })
+                ));
+            })
     );
 });
 
