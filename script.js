@@ -179,8 +179,8 @@ async function logout() {
         await Promise.all(keys.map(key => caches.delete(key)));
     }
 
-    // 5. Force Hard Reload
-    window.location.href = window.location.href + '?nocache=' + Date.now();
+    // 5. Force Hard Reload (Clean)
+    window.location.replace(window.location.origin);
 }
 
 function showApp() {
