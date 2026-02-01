@@ -83,6 +83,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSearchLogic();
     initChartSim();
     initAssessmentLogic(); // NEW
+
+    // Connect Logout Button
+    const btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) btnLogout.onclick = logout;
     updateFormulaSelect();
     applyCircularFavicon();
 });
@@ -155,8 +159,29 @@ window.login = async function () {
 };
 
 async function logout() {
+    // 1. Clear Supabase Session
     await supabaseClient.auth.signOut();
-    window.location.reload();
+
+    // 2. Clear Local Storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // 3. Unregister Service Workers
+    if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+            await registration.unregister();
+        }
+    }
+
+    // 4. Clear ALL Caches
+    if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(key => caches.delete(key)));
+    }
+
+    // 5. Force Hard Reload
+    window.location.href = window.location.href + '?nocache=' + Date.now();
 }
 
 function showApp() {
