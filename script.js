@@ -431,6 +431,10 @@ function calculateRequirements() {
     if (p.peso > 0 && p.estatura > 0 && p.edad > 0) {
         let bmr = (10 * p.peso) + (6.25 * (p.estatura * 100)) - (5 * p.edad) + (document.getElementById('sexo').value === 'm' ? 5 : -161);
 
+        // --- NEW: Auto-Calculate TMB & Factorial ---
+        calcTMB_OMS();
+        calcFactorial();
+
         // Only auto-update if user hasn't manually overridden goals
         if (!AppState.userOverridesGoal) {
             p.tmt = bmr * p.actividad;
@@ -440,7 +444,13 @@ function calculateRequirements() {
 
             if (goalTotalBox) goalTotalBox.value = Math.round(p.tmt);
             if (goalKcalBox) goalKcalBox.value = (p.tmt / p.peso).toFixed(1);
-            if (goalKcalBox) goalKcalBox.value = (p.tmt / p.peso).toFixed(1);
+
+            // Fix: Update the result badge immediately
+            if (goalKcalBox) {
+                const resEvoBadge = document.getElementById('evolutionResult');
+                if (resEvoBadge) resEvoBadge.innerText = `${Math.round(p.tmt)} kcal/día`;
+            }
+
             document.getElementById('simGoal').innerText = Math.round(p.tmt);
         }
         calcHydration(); // Trigger Hydration Update
@@ -1079,12 +1089,7 @@ function initAssessmentLogic() {
     // Factorial Logic
     const inpFactor = document.getElementById('factorKcal');
     if (inpFactor) {
-        inpFactor.oninput = () => {
-            const f = parseFloat(inpFactor.value) || 0;
-            const p = AppState.patient.peso || 0;
-            const res = Math.round(f * p);
-            document.getElementById('resFactorial').innerText = `${res} kcal`;
-        }
+        inpFactor.oninput = calcFactorial;
     }
 
     // Nitrogen Logic
@@ -1098,6 +1103,19 @@ function initAssessmentLogic() {
         document.getElementById('btnOpenPurpose').onclick = () => modPurpose.classList.add('active');
         document.getElementById('btnPurposeClose').onclick = () => modPurpose.classList.remove('active');
     }
+}
+
+// Global helper for Factorial
+function calcFactorial() {
+    const inpFactor = document.getElementById('factorKcal');
+    if (!inpFactor) return;
+
+    const f = parseFloat(inpFactor.value) || 0;
+    const p = AppState.patient.peso || parseFloat(document.getElementById('peso').value) || 0;
+    const res = Math.round(f * p);
+
+    const resBadge = document.getElementById('resFactorial');
+    if (resBadge) resBadge.innerText = `${res} kcal`;
 }
 
 function calcTMB_OMS() {
