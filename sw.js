@@ -1,9 +1,9 @@
-const CACHE_NAME = 'sedile-hra-v2'; // Bumped version
+const CACHE_NAME = 'sedile-hra-v3.6';
 const ASSETS = [
     './',
     './index.html',
-    './style.css',
-    './script.js',
+    './style.css?v=3.6',
+    './app_core.js?v=3.6',
     './manifest.json',
     './favicon.jpg'
 ];

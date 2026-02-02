@@ -1058,4 +1058,80 @@ body::before {
                  / *   E n s u r e   p a d d i n g   d o e s n ' t   o v e r f l o w   * /  
          }  
  }  
- 
+ /* --- 15. TABBED NAVIGATION V3.7 --- */
+.app-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #666;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tab-btn:hover {
+    background: rgba(142, 68, 173, 0.05);
+    color: var(--primary);
+}
+
+.tab-btn.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tab-icon {
+    font-size: 1.1rem;
+}
+
+/* --- 16. TOAST NOTIFICATION --- */
+#app-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--secondary);
+    color: white;
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    opacity: 0;
+    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#app-toast.toast-show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* --- 17. MOBILE ADJUSTMENTS FOR TABS --- */
+@media (max-width: 600px) {
+    .app-tabs {
+        margin: 0 10px 20px 10px;
+    }
+
+    .tab-btn {
+        font-size: 0.8rem;
+        padding: 10px 5px;
+    }
+}
