@@ -1135,3 +1135,51 @@ body::before {
         padding: 10px 5px;
     }
 }
+/* --- 16. MACRO BADGE REFINEMENT V3.9 --- */
+.macro-badge-item {
+    background: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+}
+.macro-badge-item span {
+    font-weight: 800;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: white;
+    font-size: 0.65rem;
+}
+.macro-badge-item.p span { background: #e67e22; }
+.macro-badge-item.c span { background: #3498db; }
+.macro-badge-item.f span { background: #27ae60; }
+.macro-badge-item strong { color: var(--secondary); }
+
+/* Compact Tab Layout Fix */
+.app-tabs {
+    justify-content: center;
+    max-width: 600px;
+    margin: 0 auto 20px auto;
+}
+/* Final Fix for Select Visibility */
+select.select-modern, 
+select.select-modern optgroup, 
+select.select-modern option {
+    background-color: white !important;
+    color: #2c3e50 !important;
+}
+
+/* Ensure tab buttons are visible and side-by-side */
+.app-tabs {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    gap: 15px !important;
+}
