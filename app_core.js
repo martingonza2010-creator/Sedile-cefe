@@ -753,6 +753,8 @@ function toggleHydMethod() {
 function calcHydration() {
     const p = AppState.patient;
     const vol = parseFloat(document.getElementById('volume').value) || 0;
+    const dil = (parseFloat(document.getElementById('dilution').value) || 100) / 100;
+    const realVol = vol * dil; // Effective volume
 
     if (p.peso <= 0) return;
 
@@ -760,40 +762,43 @@ function calcHydration() {
     const isMlKg = document.querySelector('input[name="hydMethod"][value="mlkg"]').checked;
 
     if (isMlKg) {
-        // Method: ml/kg
         const factor = parseFloat(document.getElementById('hydFactor').value) || 0;
         req = p.peso * factor;
     } else {
-        // Method: Holiday-Segar Rule
-        if (p.peso <= 10) {
-            req = p.peso * 100;
-        } else if (p.peso <= 20) {
-            req = 1000 + (p.peso - 10) * 50;
-        } else {
-            req = 1500 + (p.peso - 20) * 20;
-        }
+        if (p.peso <= 10) req = p.peso * 100;
+        else if (p.peso <= 20) req = 1000 + (p.peso - 10) * 50;
+        else req = 1500 + (p.peso - 20) * 20;
     }
 
-    const deficit = req - vol;
-
-    // Update UI
+    // 1. Requerimiento Base
     document.getElementById('hydReq').innerText = Math.round(req);
-    const defBox = document.getElementById('hydDeficitBox');
-    const defText = document.getElementById('hydDeficit');
-    const bar = document.getElementById('hydBar');
 
-    if (deficit > 0) {
-        defText.innerText = Math.round(deficit);
-        defBox.style.color = "#e74c3c"; // Red
-        const pct = Math.min((vol / req) * 100, 100);
-        bar.style.width = pct + "%";
-        bar.style.background = "#e74c3c";
-    } else {
-        defText.innerText = "Cubierto"; // Or 0
-        defBox.style.color = "#27ae60"; // Green
-        bar.style.width = "100%";
-        bar.style.background = "#27ae60";
+    // 2. Clinical Metrics V3.12
+    const currentKcal = parseFloat(document.getElementById('valKcal')?.innerText) || 0;
+
+    // Ingreso Actual
+    const elTotal = document.getElementById('valHydTotal');
+    if (elTotal) elTotal.innerText = `${Math.round(realVol)} ml`;
+
+    // Relación ml/kcal
+    const elRatio = document.getElementById('valHydRatio');
+    if (elRatio && currentKcal > 0) {
+        elRatio.innerText = (realVol / currentKcal).toFixed(2);
     }
+
+    // Balance Estimado
+    const elBalance = document.getElementById('valHydBalance');
+    const balance = Math.round(realVol - req);
+    if (elBalance) {
+        elBalance.innerText = `${balance > 0 ? '+' : ''}${balance} ml`;
+        elBalance.style.color = balance < -50 ? '#e67e22' : (balance > 50 ? '#3498db' : '#27ae60');
+    }
+
+    // 3. Water Bar
+    const bar = document.getElementById('hydBar');
+    const pct = Math.min((realVol / req) * 100, 100);
+    bar.style.width = pct + "%";
+    bar.style.background = (pct < 80) ? "#e67e22" : (pct > 105) ? "#3498db" : "#27ae60";
 }
 
 // --- 12. COMPARE LOGIC (NEW) ---
@@ -1116,9 +1121,8 @@ function initAssessmentLogic() {
         });
     }
 
-    // Evolution Logic (Connected to Main Goal) V3.7
+    // Evolution Logic (Auxiliary Tool) V3.12
     const inpGoalKcal = document.getElementById('goalKcalBox');
-    const inpGoalTotal = document.getElementById('goalTotal');
     const resEvoBadge = document.getElementById('evolutionResult');
 
     if (inpGoalKcal) {
@@ -1127,13 +1131,8 @@ function initAssessmentLogic() {
             const weight = parseFloat(document.getElementById('peso').value) || 0;
             const total = Math.round(val * weight);
 
-            if (inpGoalTotal) inpGoalTotal.value = total;
             if (resEvoBadge) resEvoBadge.innerHTML = `<b>${total}</b> kcal/día`;
-
-            AppState.userOverridesGoal = true;
-            const simGoal = document.getElementById('simGoal');
-            if (simGoal) simGoal.innerText = total;
-            runSimulation();
+            // V3.12: Independent from main goal unless user explicitly wants to update
         });
     }
 
