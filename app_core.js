@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initCompareLogic();
     initChartSim();
     initAssessmentLogic();
+    initGlobalEvents();
 
     updateFormulaSelect();
     applyCircularFavicon();
@@ -1238,33 +1239,39 @@ function showToast(msg) {
     toast.classList.add('toast-show');
     setTimeout(() => { toast.classList.remove('toast-show'); }, 3000);
 }
-// TMB Logic
-document.getElementById('btnCalcTMB').onclick = calcTMB_OMS;
+// --- 17. GLOBAL EVENTS & MISC (CLEANUP V3.16.2) ---
+function initGlobalEvents() {
+    // TMB Logic
+    const btnTMB = document.getElementById('btnCalcTMB');
+    if (btnTMB) btnTMB.onclick = calcTMB_OMS;
 
-// Factorial Logic
-const inpFactor = document.getElementById('factorKcal');
-if (inpFactor) {
-    inpFactor.oninput = calcFactorial;
-}
+    // Factorial Logic
+    const inpFactor = document.getElementById('factorKcal');
+    if (inpFactor) inpFactor.oninput = calcFactorial;
 
-// Edema/Dry Weight Logic (moved from HTML)
-const selEdema = document.getElementById('edemaGrade');
-if (selEdema) selEdema.onchange = calcDryWeight;
+    // Edema/Dry Weight Logic
+    const selEdema = document.getElementById('edemaGrade');
+    if (selEdema) selEdema.onchange = calcDryWeight;
 
-// Exams Logic (moved from HTML)
-const btnAddExam = document.getElementById('btnAddExam');
-if (btnAddExam) btnAddExam.onclick = addExamRow;
+    // Exams Logic
+    const btnAddExam = document.getElementById('btnAddExam');
+    if (btnAddExam) btnAddExam.onclick = addExamRow;
 
-// Nitrogen Logic
-const fnBN = () => calcNitrogenBalance();
-document.getElementById('valNUU').oninput = fnBN;
-document.getElementById('valNFactor').oninput = fnBN;
+    // Nitrogen Logic
+    const inpNUU = document.getElementById('valNUU');
+    const inpNFactor = document.getElementById('valNFactor');
+    const fnBN = () => calcNitrogenBalance();
+    if (inpNUU) inpNUU.oninput = fnBN;
+    if (inpNFactor) inpNFactor.oninput = fnBN;
 
-// Purpose Modal Logic
-const modPurpose = document.getElementById('purposeModal');
-if (modPurpose) {
-    document.getElementById('btnOpenPurpose').onclick = () => modPurpose.classList.add('active');
-    document.getElementById('btnPurposeClose').onclick = () => modPurpose.classList.remove('active');
+    // Purpose Modal Logic
+    const modPurpose = document.getElementById('purposeModal');
+    if (modPurpose) {
+        const btnOpen = document.getElementById('btnOpenPurpose');
+        const btnClose = document.getElementById('btnPurposeClose');
+        if (btnOpen) btnOpen.onclick = () => modPurpose.classList.add('active');
+        if (btnClose) btnClose.onclick = () => modPurpose.classList.remove('active');
+    }
 }
 
 
