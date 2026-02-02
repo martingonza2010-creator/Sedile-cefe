@@ -52,7 +52,10 @@ const LOCAL_FORMULAS = [
     { cat: "Fórmulas RTH", id: "fresubin_fibre", name: "Fresubin Original Fibre", type: "l", k: 100.0, p: 3.8, c: 13.0, f: 3.4 },
     { cat: "Fórmulas RTH", id: "fresubin_intensive", name: "Fresubin Intensive", type: "l", k: 122.0, p: 10.0, c: 12.9, f: 3.2 },
     { cat: "Fórmulas RTH", id: "fresubin_2kcal", name: "Fresubin 2 Kcal HP", type: "l", k: 200.0, p: 10.0, c: 17.5, f: 10.0 },
-    { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", k: 149.2, p: 8.0, c: 18.0, f: 4.8 }
+    { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", k: 149.2, p: 8.0, c: 18.0, f: 4.8 },
+    { cat: "Fórmulas en Polvo", id: "nan_optipro", name: "Nan Optipro", type: "p", k: 522.0, p: 9.6, c: 58.0, f: 28.0 },
+    { cat: "Fórmulas en Polvo", id: "nido_3", name: "Nido Etapa 3+", type: "p", k: 458.0, p: 17.0, c: 52.0, f: 20.2 },
+    { cat: "Fórmulas en Polvo", id: "purita_pro2", name: "Purita + Pro2", type: "p", k: 439.0, p: 29.9, c: 45.7, f: 15.2 }
 ];
 
 // --- 3. GLOBAL STATE ---
@@ -505,6 +508,7 @@ function calculateRequirements() {
             document.getElementById('simGoal').innerText = Math.round(p.tmt);
         }
 
+        calcTMB_OMS();
         calcFactorial();
         calcHydration();
         runSimulation();
@@ -1123,6 +1127,7 @@ function initAssessmentLogic() {
 
     // Evolution Logic (Auxiliary Tool) V3.12
     const inpGoalKcal = document.getElementById('goalKcalBox');
+    const inpGoalTotal = document.getElementById('goalTotal');
     const resEvoBadge = document.getElementById('evolutionResult');
 
     if (inpGoalKcal) {
@@ -1132,7 +1137,6 @@ function initAssessmentLogic() {
             const total = Math.round(val * weight);
 
             if (resEvoBadge) resEvoBadge.innerHTML = `<b>${total}</b> kcal/día`;
-            // V3.12: Independent from main goal unless user explicitly wants to update
         });
     }
 
@@ -1148,9 +1152,47 @@ function initAssessmentLogic() {
 
             AppState.userOverridesGoal = true;
             const simGoal = document.getElementById('simGoal');
-            if (simGoal) simGoal.innerText = val;
+            if (simGoal) simGoal.innerText = Math.round(val);
             runSimulation();
         });
+    }
+
+    // NEW V3.16: ROSS Estimation (Pediatrics)
+    const rossInputs = ['altrodilla', 'cbraquial', 'edad', 'sexo'];
+    rossInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', calcRoss);
+    });
+}
+
+function calcRoss() {
+    const atr = parseFloat(document.getElementById('altrodilla').value) || 0;
+    const cb = parseFloat(document.getElementById('cbraquial').value) || 0;
+    const age = parseFloat(document.getElementById('edad').value) || 0;
+    const sex = document.getElementById('sexo').value;
+
+    const resBox = document.getElementById('rossContainer');
+    const badgeW = document.getElementById('valRossWeight');
+    const badgeH = document.getElementById('valRossHeight');
+
+    if (atr > 0 || cb > 0) {
+        if (resBox) resBox.style.display = 'block';
+
+        let weight = 0;
+        if (sex === 'f') weight = (2.37 * cb) + (1.64 * age) - 28.28;
+        else weight = (2.54 * cb) + (1.82 * age) - 32.73;
+
+        let height = 0;
+        if (sex === 'f') {
+            height = (1.83 * atr) + (84.8 - (0.24 * age));
+        } else {
+            height = (2.02 * atr) + (64.19 - (0.04 * age));
+        }
+
+        if (badgeW) badgeW.innerText = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
+        if (badgeH) badgeH.innerText = (height > 0 ? height : 0).toFixed(1) + ' cm';
+    } else {
+        if (resBox) resBox.style.display = 'none';
     }
 }
 
@@ -1241,32 +1283,71 @@ function calcFactorial() {
 
 function calcTMB_OMS() {
     const p = AppState.patient;
-    if (p.edad <= 0 || p.peso <= 0) {
-        alert("Ingresa Edad y Peso primero.");
-        return;
-    }
+    const method = document.getElementById('tmbMethod').value;
+    const sexo = document.getElementById('sexo').value;
+    const age = p.edad || parseFloat(document.getElementById('edad').value) || 0;
+    const weight = p.peso || parseFloat(document.getElementById('peso').value) || 0;
+    const height = p.estatura || parseFloat(document.getElementById('estatura').value) || 0;
+
+    if (age <= 0 || weight <= 0) return;
 
     let tmb = 0;
-    // OMS Formulas
-    if (document.getElementById('sexo').value === 'm') {
-        if (p.edad < 3) tmb = 59.512 * p.peso - 30.4;
-        else if (p.edad <= 10) tmb = 22.706 * p.peso + 504.3;
-        else if (p.edad <= 18) tmb = 17.686 * p.peso + 658.2;
-        else if (p.edad <= 30) tmb = 15.057 * p.peso + 692.2;
-        else if (p.edad <= 60) tmb = 11.472 * p.peso + 873.1;
-        else tmb = 11.711 * p.peso + 587.7;
-    } else {
-        if (p.edad < 3) tmb = 58.317 * p.peso - 31.1;
-        else if (p.edad <= 10) tmb = 20.315 * p.peso + 485.9;
-        else if (p.edad <= 18) tmb = 13.384 * p.peso + 692.6;
-        else if (p.edad <= 30) tmb = 14.818 * p.peso + 486.6;
-        else if (p.edad <= 60) tmb = 8.126 * p.peso + 845.6;
-        else tmb = 9.082 * p.peso + 658.5;
+
+    if (method === 'oms') {
+        if (sexo === 'm') {
+            if (age < 3) tmb = 60.9 * weight - 54;
+            else if (age < 10) tmb = 22.7 * weight + 495;
+            else if (age < 18) tmb = 17.5 * weight + 651;
+            else if (age < 30) tmb = 15.3 * weight + 679;
+            else if (age < 60) tmb = 11.6 * weight + 879;
+            else tmb = 13.5 * weight + 487;
+        } else {
+            if (age < 3) tmb = 61.0 * weight - 51;
+            else if (age < 10) tmb = 22.5 * weight + 499;
+            else if (age < 18) tmb = 12.2 * weight + 746;
+            else if (age < 30) tmb = 14.7 * weight + 496;
+            else if (age < 60) tmb = 8.7 * weight + 829;
+            else tmb = 10.5 * weight + 596;
+        }
+    } else if (method === 'hb') {
+        // Harris-Benedict revised
+        if (sexo === 'm') {
+            tmb = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+        } else {
+            tmb = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+        }
+    } else if (method === 'schofield') {
+        if (sexo === 'm') {
+            if (age < 3) tmb = 59.512 * weight - 30.4;
+            else if (age < 10) tmb = 22.706 * weight + 504.3;
+            else if (age < 18) tmb = 17.686 * weight + 658.2;
+            else if (age < 30) tmb = 15.057 * weight + 692.2;
+            else if (age < 60) tmb = 11.472 * weight + 873.1;
+            else tmb = 11.711 * weight + 587.7;
+        } else {
+            if (age < 3) tmb = 58.317 * weight - 31.1;
+            else if (age < 10) tmb = 20.315 * weight + 485.9;
+            else if (age < 18) tmb = 13.384 * weight + 692.6;
+            else if (age < 30) tmb = 14.818 * weight + 486.6;
+            else if (age < 60) tmb = 8.126 * weight + 845.6;
+            else tmb = 9.082 * weight + 658.5;
+        }
+    } else if (method === 'msj') {
+        // Mifflin-St Jeor
+        if (sexo === 'm') {
+            tmb = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+        } else {
+            tmb = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+        }
     }
 
-    // Since we removed 'actividad' field from DB but kept it in standard usage calculation potentially, 
-    // we assume TMB result is just the base.
-    document.getElementById('resTMB').innerText = `${Math.round(tmb)} kcal`;
+    const tmbRes = Math.round(tmb);
+    document.getElementById('resTMB').innerText = `${tmbRes} kcal`;
+
+    // Calculate GET
+    const activity = parseFloat(document.getElementById('actividad')?.value) || 1.2;
+    const get = Math.round(tmbRes * activity);
+    document.getElementById('valGET').innerText = `${get} kcal`;
 }
 
 function calcDryWeight() {

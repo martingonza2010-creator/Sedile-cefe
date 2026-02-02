@@ -142,10 +142,15 @@
                                 style="font-size:0.75rem; font-weight:700; color:#555; display:block; margin-bottom:5px;">Est.
                                 Requerimientos</label>
 
-                            <!-- Row 1: TMB OMS -->
                             <div style="display:flex; gap:5px; align-items:center; margin-bottom:8px;">
-                                <button type="button" class="btn-micro-action" id="btnCalcTMB" style="flex:1;">TMB
-                                    (OMS)</button>
+                                <select id="tmbMethod"
+                                    style="flex:1; padding:4px; font-size:0.75rem; border-radius:6px; border:1px solid #ddd;"
+                                    onchange="calcTMB_OMS()">
+                                    <option value="oms">OMS / FAO / UNU</option>
+                                    <option value="hb">Harris-Benedict</option>
+                                    <option value="schofield">Schofield</option>
+                                    <option value="msj">Mifflin-St Jeor</option>
+                                </select>
                                 <div class="result-badge" id="resTMB">-- kcal</div>
                             </div>
 
@@ -156,6 +161,18 @@
                                     <input type="number" id="factorKcal" placeholder="25-30" value="25">
                                 </div>
                                 <div class="result-badge" id="resFactorial">-- kcal</div>
+                            </div>
+
+                            <!-- NEW V3.15: Visual GET Box -->
+                            <div id="getContainer"
+                                style="margin-top:12px; padding:12px; background:rgba(108, 92, 231, 0.1); border:1px solid rgba(108, 92, 231, 0.2); border-radius:10px; text-align:center;">
+                                <span
+                                    style="font-size:0.65rem; color:#6c5ce7; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Gasto
+                                    Energético Total (GET)</span>
+                                <div id="valGET"
+                                    style="font-size:1.6rem; font-weight:800; color:#6c5ce7; line-height:1.2;">0 kcal
+                                </div>
+                                <small style="font-size:0.6rem; color:#888;">TMB × Factor Actividad</small>
                             </div>
                         </div>
 
@@ -421,12 +438,37 @@
                             </div>
                             <h5 style="margin-top:10px;">Estimación Talla/Peso</h5>
                             <div class="grid-col-3">
-                                <div class="mini-input"><label>Alt. Rodilla</label><input type="number" id="altrodilla">
+                                <div class="mini-input"><label>Alt. Rodilla (ATR)</label><input type="number"
+                                        id="altrodilla" class="input-watch-ross">
                                 </div>
                                 <div class="mini-input"><label>Media Env.</label><input type="number" id="mediaenv">
                                 </div>
                                 <div class="mini-input"><label>Env. Completa</label><input type="number" id="envcomp">
                                 </div>
+                            </div>
+
+                            <!-- NEW V3.16: ROSS Results Display -->
+                            <div id="rossContainer"
+                                style="margin-top:15px; padding:12px; background:rgba(46, 204, 113, 0.05); border:1px solid rgba(46, 204, 113, 0.2); border-radius:12px; display:none;">
+                                <div
+                                    style="font-size:0.65rem; color:#27ae60; font-weight:800; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">
+                                    Estimación de ROSS (Pediatría)</div>
+                                <div style="display:flex; justify-content:space-around; text-align:center;">
+                                    <div>
+                                        <span style="font-size:0.6rem; color:#888; display:block;">Peso Est.</span>
+                                        <strong style="font-size:1.1rem; color:#27ae60;" id="valRossWeight">0.0
+                                            kg</strong>
+                                    </div>
+                                    <div style="width:1px; background:rgba(0,0,0,0.05);"></div>
+                                    <div>
+                                        <span style="font-size:0.6rem; color:#888; display:block;">Talla Est.</span>
+                                        <strong style="font-size:1.1rem; color:#27ae60;" id="valRossHeight">0.0
+                                            cm</strong>
+                                    </div>
+                                </div>
+                                <small
+                                    style="display:block; text-align:center; font-size:0.55rem; color:#999; margin-top:5px;">Basado
+                                    en ATR, CB y Edad</small>
                             </div>
                         </div>
                     </details>
