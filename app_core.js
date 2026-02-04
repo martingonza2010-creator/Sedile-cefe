@@ -473,6 +473,18 @@ function calculateRequirements() {
     p.actividad = parseFloat(actividadEl.value) || 1.2;
     const sexo = sexoEl.value;
 
+    // NEW V3.19: Ideal Weight & IPT (Real-time)
+    if (p.estatura > 0 && p.edad > 0) {
+        const factorIdx = p.edad >= 65 ? 25.5 : 21.7;
+        const pesoIdeal = factorIdx * (p.estatura * p.estatura);
+        document.getElementById('valIdealWeight').innerText = pesoIdeal.toFixed(1) + ' kg';
+
+        if (p.peso > 0) {
+            const ipt = (p.peso / pesoIdeal) * 100;
+            document.getElementById('valIPT').innerText = ipt.toFixed(1) + '%';
+        }
+    }
+
     if (p.peso > 0 && p.estatura > 0) {
         p.bmi = p.peso / (p.estatura * p.estatura);
         document.getElementById('valBMI').innerText = p.bmi.toFixed(1);

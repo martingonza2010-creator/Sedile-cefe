@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css?v=3.17">
+    <link rel="stylesheet" href="style.css?v=3.19">
     <link rel="manifest" href="manifest.json">
 </head>
 
@@ -125,6 +125,27 @@
                                 <label>Talla (m)</label>
                                 <input type="number" step="0.01" id="estatura" placeholder="0">
                             </div>
+                        </div>
+
+                        <!-- NEW V3.19: Ideal Weight & IPT Row -->
+                        <div class="grid-col-2" style="margin-top:10px; gap:10px;">
+                            <div
+                                style="background:rgba(52, 152, 219, 0.05); padding:8px; border-radius:8px; border:1px solid rgba(52, 152, 219, 0.1);">
+                                <span
+                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">Peso
+                                    Ideal</span>
+                                <strong style="font-size:1rem; color:#3498db;" id="valIdealWeight">-- kg</strong>
+                            </div>
+                            <div
+                                style="background:rgba(231, 76, 60, 0.05); padding:8px; border-radius:8px; border:1px solid rgba(231, 76, 60, 0.1);">
+                                <span
+                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">IPT
+                                    (% Peso Ideal)</span>
+                                <strong style="font-size:1rem; color:#e74c3c;" id="valIPT">-- %</strong>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-4" style="margin-top:10px;">
                             <!-- Restored Actividad Field (Fix TypeError) -->
                             <div class="mini-input">
                                 <label>Actividad</label>
@@ -525,6 +546,96 @@
                         Resultado: --
                     </div>
                 </section>
+
+                <!-- 5. Cribaje de Riesgo -->
+                <section class="card assess-module" style="border-left-color: #f1c40f;">
+                    <div class="module-head">
+                        <h3>📋 Cribaje de Riesgo</h3>
+                    </div>
+                    <div class="grid-col-2">
+                        <div class="mini-input">
+                            <label>Riesgo NRS-2002</label>
+                            <select id="nrs2002" class="select-modern">
+                                <option value="bajo">Bajo (0-2 pts)</option>
+                                <option value="alto">Alto (≥ 3 pts)</option>
+                            </select>
+                        </div>
+                        <div class="mini-input">
+                            <label>VGS (Valoración Global)</label>
+                            <select id="vgsGrade" class="select-modern">
+                                <option value="A">A (Bien nutrido)</option>
+                                <option value="B">B (Desnutrición Moderada)</option>
+                                <option value="C">C (Desnutrición Severa)</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. Tolerancia Gastrointestinal -->
+                <section class="card assess-module" style="border-left-color: #1abc9c;">
+                    <div class="module-head">
+                        <h3>🦠 Tolerancia GI</h3>
+                    </div>
+                    <div class="grid-col-3">
+                        <div class="mini-input">
+                            <label>Residuo Gástrico</label>
+                            <select id="residuo" class="select-modern">
+                                <option value="no">Ausente</option>
+                                <option value="si">Presente</option>
+                            </select>
+                        </div>
+                        <div class="mini-input">
+                            <label>Diarrea / Deposic.</label>
+                            <select id="diarrea" class="select-modern">
+                                <option value="no">Normal</option>
+                                <option value="si">Diarrea/Alt.</option>
+                            </select>
+                        </div>
+                        <div class="mini-input">
+                            <label>Distensión Abd.</label>
+                            <select id="distension" class="select-modern">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. Vías de Acceso -->
+                <section class="card assess-module" style="border-left-color: #e67e22;">
+                    <div class="module-head">
+                        <h3>📍 Vías de Acceso</h3>
+                    </div>
+                    <div class="grid-col-2">
+                        <div class="mini-input">
+                            <label>Tipo de Acceso</label>
+                            <select id="accesoTipo" class="select-modern">
+                                <option value="oral">Vía Oral</option>
+                                <option value="sng">SNG (Nasogástrica)</option>
+                                <option value="snj">SNJ (Nasoyeyunal)</option>
+                                <option value="gtt">GTT (Gastrostomía)</option>
+                                <option value="yeyuno">Yeyunostomía</option>
+                            </select>
+                        </div>
+                        <div class="mini-input">
+                            <label>Fecha Instalación</label>
+                            <input type="date" id="accesoFecha">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. Diagnóstico Nutricional -->
+                <section class="card assess-module" style="border-left-color: #9b59b6;">
+                    <div class="module-head">
+                        <h3>📑 Diagnóstico Nutricional Integrado</h3>
+                    </div>
+                    <div class="input-group">
+                        <label>Evolución / PES / Diagnóstico</label>
+                        <textarea id="diagNutricional" rows="4"
+                            style="width:100%; border-radius:10px; border:1px solid #ddd; padding:10px; font-size:0.85rem;"
+                            placeholder="Escriba el diagnóstico integrado aquí..."></textarea>
+                    </div>
+                </section>
             </div>
         </div>
         <div id="pwaInstallContainer" style="display:none; text-align:center; margin-top:15px;">
@@ -669,7 +780,7 @@
             });
         }
     </script>
-    <script src="app_core.js?v=3.17"></script>
+    <script src="app_core.js?v=3.19"></script>
 </body>
 
 </html>
