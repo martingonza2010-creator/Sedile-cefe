@@ -1138,10 +1138,16 @@ function initAssessmentLogic() {
         });
     }
 
-    // Evolution Logic (Auxiliary Tool) V3.12
+    // Evolution Logic (Auxiliary Tool) V3.18
     const inpGoalKcal = document.getElementById('goalKcalBox');
     const inpGoalTotal = document.getElementById('goalTotal');
     const resEvoBadge = document.getElementById('evolutionResult');
+    const lastGoalLabel = document.getElementById('valLastGoalDate');
+
+    // Load last goal date from storage
+    if (localStorage.getItem('sedile_last_goal_date') && lastGoalLabel) {
+        lastGoalLabel.innerText = `Ultima meta: ${localStorage.getItem('sedile_last_goal_date')}`;
+    }
 
     if (inpGoalKcal) {
         inpGoalKcal.addEventListener('input', (e) => {
@@ -1149,24 +1155,27 @@ function initAssessmentLogic() {
             const weight = parseFloat(document.getElementById('peso').value) || 0;
             const total = Math.round(val * weight);
 
-            if (resEvoBadge) resEvoBadge.innerHTML = `<b>${total}</b> kcal/día`;
+            if (resEvoBadge) {
+                resEvoBadge.innerHTML = `<b>${total}</b> kcal/día`;
+                resEvoBadge.style.color = "#8e44ad"; // Purple as requested
+            }
         });
     }
 
     if (inpGoalTotal) {
         inpGoalTotal.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value) || 0;
-            const weight = parseFloat(document.getElementById('peso').value) || 0;
 
-            if (weight > 0 && inpGoalKcal) {
-                inpGoalKcal.value = (val / weight).toFixed(1);
-            }
-            if (resEvoBadge) resEvoBadge.innerHTML = `<b>${val}</b> kcal/día`;
-
+            // Update Simulator and AppsState
             AppState.userOverridesGoal = true;
             const simGoal = document.getElementById('simGoal');
             if (simGoal) simGoal.innerText = Math.round(val);
             runSimulation();
+
+            // Store and show date
+            const today = new Date().toLocaleDateString('es-CL');
+            localStorage.setItem('sedile_last_goal_date', today);
+            if (lastGoalLabel) lastGoalLabel.innerText = `Ultima meta: ${today}`;
         });
     }
 
