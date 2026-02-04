@@ -1195,6 +1195,7 @@ function calcRoss() {
         if (sex === 'f') weight = (2.37 * cb) + (1.64 * age) - 28.28;
         else weight = (2.54 * cb) + (1.82 * age) - 32.73;
 
+        // Formula de Chumlea (Estimación de Talla por ATR)
         let height = 0;
         if (sex === 'f') {
             height = (1.83 * atr) + (84.8 - (0.24 * age));
