@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css?v=3.6">
+    <link rel="stylesheet" href="style.css?v=3.17">
     <link rel="manifest" href="manifest.json">
 </head>
 
@@ -420,6 +420,24 @@
                         </div>
                     </div>
 
+                    <div id="rossContainer"
+                        style="margin-bottom:20px; padding:12px; background:rgba(46, 204, 113, 0.05); border:1px solid rgba(46, 204, 113, 0.2); border-radius:12px; display:none;">
+                        <div
+                            style="font-size:0.65rem; color:#27ae60; font-weight:800; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">
+                            Estimación de ROSS (Pediatría)</div>
+                        <div style="display:flex; justify-content:space-around; text-align:center;">
+                            <div>
+                                <span style="font-size:0.6rem; color:#888; display:block;">Peso Est.</span>
+                                <strong style="font-size:1.1rem; color:#27ae60;" id="valRossWeight">0.0 kg</strong>
+                            </div>
+                            <div style="width:1px; background:rgba(0,0,0,0.05);"></div>
+                            <div>
+                                <span style="font-size:0.6rem; color:#888; display:block;">Talla Est.</span>
+                                <strong style="font-size:1.1rem; color:#27ae60;" id="valRossHeight">0.0 cm</strong>
+                            </div>
+                        </div>
+                    </div>
+
                     <details class="folds-accordion">
                         <summary>Agregar parámetros (Pliegues y Estimación)</summary>
                         <div class="folds-grid">
@@ -445,30 +463,6 @@
                                 </div>
                                 <div class="mini-input"><label>Env. Completa</label><input type="number" id="envcomp">
                                 </div>
-                            </div>
-
-                            <!-- NEW V3.16: ROSS Results Display -->
-                            <div id="rossContainer"
-                                style="margin-top:15px; padding:12px; background:rgba(46, 204, 113, 0.05); border:1px solid rgba(46, 204, 113, 0.2); border-radius:12px; display:none;">
-                                <div
-                                    style="font-size:0.65rem; color:#27ae60; font-weight:800; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">
-                                    Estimación de ROSS (Pediatría)</div>
-                                <div style="display:flex; justify-content:space-around; text-align:center;">
-                                    <div>
-                                        <span style="font-size:0.6rem; color:#888; display:block;">Peso Est.</span>
-                                        <strong style="font-size:1.1rem; color:#27ae60;" id="valRossWeight">0.0
-                                            kg</strong>
-                                    </div>
-                                    <div style="width:1px; background:rgba(0,0,0,0.05);"></div>
-                                    <div>
-                                        <span style="font-size:0.6rem; color:#888; display:block;">Talla Est.</span>
-                                        <strong style="font-size:1.1rem; color:#27ae60;" id="valRossHeight">0.0
-                                            cm</strong>
-                                    </div>
-                                </div>
-                                <small
-                                    style="display:block; text-align:center; font-size:0.55rem; color:#999; margin-top:5px;">Basado
-                                    en ATR, CB y Edad</small>
                             </div>
                         </div>
                     </details>
@@ -671,7 +665,7 @@
             });
         }
     </script>
-    <script src="app_core.js?v=3.6"></script>
+    <script src="app_core.js?v=3.17"></script>
 </body>
 
 </html>

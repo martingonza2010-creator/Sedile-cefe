@@ -83,6 +83,7 @@ try {
 // --- 4. INITIALIZATION & AUTH ---
 // --- 4. INITIALIZATION & AUTH ---
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log("🚀 SEDILE HRA: DOMContentLoaded initialized");
     checkUser();
 
     const btnLogin = document.getElementById('btnLoginGoogle');
@@ -107,12 +108,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateFormulaSelect();
     applyCircularFavicon();
 
+    console.log("✅ Initialization complete. Formulas loaded:", AppState.formulas.length);
+
     // Force repopulating formulas after a delay
     setTimeout(() => {
-        if (document.getElementById('formulaSelect').options.length <= 1) {
+        const sel = document.getElementById('formulaSelect');
+        if (sel && sel.options.length <= 1) {
+            console.warn("⚠️ Dropdown empty, retrying updateFormulaSelect...");
             updateFormulaSelect();
         }
-    }, 1000);
+    }, 1560);
 });
 
 async function applyCircularFavicon() {
@@ -518,15 +523,21 @@ function calculateRequirements() {
 
 // --- 8. SIMULATOR LOGIC ---
 function initSimulatorLogic() {
-    document.getElementById('volume').oninput = runSimulation;
-    document.getElementById('dilution').oninput = runSimulation;
-    document.getElementById('btnSaveHistory').onclick = savePrescription;
+    const vol = document.getElementById('volume');
+    const dil = document.getElementById('dilution');
+    const btnSave = document.getElementById('btnSaveHistory');
+
+    if (vol) vol.oninput = runSimulation;
+    if (dil) dil.oninput = runSimulation;
+    if (btnSave) btnSave.onclick = savePrescription;
 
     // Favorites Logic
     const btnFav = document.getElementById('btnToggleFav');
     if (btnFav) {
         btnFav.onclick = () => {
-            const fId = document.getElementById('formulaSelect').value;
+            const fSel = document.getElementById('formulaSelect');
+            if (!fSel) return;
+            const fId = fSel.value;
             if (!fId) return;
 
             if (AppState.favorites.includes(fId)) {
@@ -536,7 +547,8 @@ function initSimulatorLogic() {
             }
             localStorage.setItem('sedile_favs', JSON.stringify(AppState.favorites));
             updateFormulaSelect(); // Re-render to sort
-            document.getElementById('formulaSelect').value = fId; // Restore selection
+            const fSelNew = document.getElementById('formulaSelect');
+            if (fSelNew) fSelNew.value = fId; // Restore selection
             checkFavoriteStatus();
         };
     }
