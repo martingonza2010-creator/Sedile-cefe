@@ -794,14 +794,134 @@ body::before {
 }
 
 /* 12. View Sections */
-.view-section { opacity: 0; transition: opacity 0.3s; display: none; }
-.view-section.active-view { opacity: 1; display: block; }
-#view-dashboard { display: block; opacity: 1; }
+.view-section {
+    opacity: 0;
+    transition: opacity 0.3s;
+    display: none;
+}
+
+.view-section.active-view {
+    opacity: 1;
+    display: block;
+}
+
+#view-dashboard {
+    display: block;
+    opacity: 1;
+}
+
 /* 13. Assessment Modules */
-.assess-module { border-left: 5px solid var(--primary); margin-bottom: 40px; padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); }
-.assess-grid { display: grid; gap: 35px; }
-.view-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
-.btn-back { padding: 8px 18px; border-radius: 50px; border: 1px solid var(--primary); color: var(--primary); background: transparent; cursor: pointer; font-weight: 600; }
-.btn-back:hover { background: var(--primary); color: white; }
-.module-head { border-bottom: 1px solid #eee; margin-bottom: 15px; padding-bottom: 8px; }
-.module-head h3 { color: var(--primary); font-size: 1.1rem; }
+@keyframes assessFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.assess-module {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-left: 5px solid var(--primary);
+    margin-bottom: 30px;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: assessFadeUp 0.6s ease out forwards;
+}
+
+.assess-module:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.assess-grid {
+    display: grid;
+    gap: 25px;
+}
+
+.view-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.btn-back {
+    padding: 8px 18px;
+    border-radius: 50px;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    background: transparent;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-back:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.module-head {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.module-head h3 {
+    color: var(--primary);
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+/* Exam Row Styles */
+.exam-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    animation: assessFadeUp 0.3s ease-out;
+}
+
+.exam-row input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+.btn-row-del {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-row-del:hover {
+    background: #e74c3c;
+    color: white;
+    transform: scale(1.1);
+}

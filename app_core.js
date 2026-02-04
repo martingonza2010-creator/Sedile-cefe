@@ -1401,14 +1401,18 @@ function calcDryWeight() {
     document.getElementById('valDryWeight').innerText = dry.toFixed(1);
 }
 
+// --- 18. BIOCHEMICAL EXAMS HELPERS ---
 function addExamRow() {
     const container = document.getElementById('examsContainer');
+    if (!container) return;
+
     const row = document.createElement('div');
     row.className = 'exam-row';
     row.innerHTML = `
         <input type="date">
-        <input type="text" placeholder="Examen">
-        <input type="text" placeholder="Result">
+        <input type="text" placeholder="Examen (Ej: Albúmina)">
+        <input type="text" placeholder="Resultado">
+        <button class="btn-row-del" onclick="this.parentElement.remove()" title="Eliminar examen">🗑️</button>
     `;
     container.appendChild(row);
 }
