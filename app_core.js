@@ -516,12 +516,16 @@ function calculateRequirements() {
         if (!AppState.userOverridesGoal) {
             p.tmt = bmr * p.actividad;
             const goalTotalBox = document.getElementById('goalTotal');
-            const goalKcalBox = document.getElementById('goalKcalBox');
-            const resEvoBadge = document.getElementById('evolutionResult');
+            // const goalKcalBox = document.getElementById('goalKcalBox'); // REMOVED V3.21: Stop auto-overwrite
 
             if (goalTotalBox) goalTotalBox.value = Math.round(p.tmt);
-            if (goalKcalBox) goalKcalBox.value = (p.tmt / p.peso).toFixed(1);
-            if (resEvoBadge) resEvoBadge.innerHTML = `<b>${Math.round(p.tmt)}</b> kcal/día`;
+            // if (goalKcalBox) goalKcalBox.value = (p.tmt / p.peso).toFixed(1); // REMOVED V3.21
+
+            // Keep the automatic Evolution Badge update ONLY if the user hasn't typed manually yet
+            // Actually, better to just clear it or leave it as TMB reference if needed, 
+            // but user wants manual control. Let's just update the badge if the box is empty?
+            // User request: "Evolución kcal/kg... no sea apenas coloque el peso... sino que yo coloque ejemplo 20"
+            // So we DO NOT touch the box value. We DO NOT touch the badge unless user types.
 
             document.getElementById('simGoal').innerText = Math.round(p.tmt);
         }
@@ -585,6 +589,12 @@ function checkFavoriteStatus() {
 }
 
 function updateFormulaSelect() {
+    // AGGRESSIVE FALLBACK V3.21: Use LOCAL_FORMULAS if AppState is empty
+    if (!AppState.formulas || AppState.formulas.length === 0) {
+        console.warn("⚠️ AppState.formulas empty, reloading from LOCAL_FORMULAS...");
+        AppState.formulas = [...LOCAL_FORMULAS];
+    }
+
     const selects = [
         document.getElementById('formulaSelect'),
         document.getElementById('formulaSelectB')
@@ -1289,7 +1299,11 @@ function initGlobalEvents() {
 
     // Exams Logic
     const btnAddExam = document.getElementById('btnAddExam');
-    if (btnAddExam) btnAddExam.onclick = addExamRow;
+    if (btnAddExam) {
+        // Remove old listeners to be safe (though this is init)
+        btnAddExam.onclick = null;
+        btnAddExam.onclick = addExamRow;
+    }
 
     // Nitrogen Logic
     const inpNUU = document.getElementById('valNUU');
