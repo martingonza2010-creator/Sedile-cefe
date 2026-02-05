@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css?v=3.22">
+    <link rel="stylesheet" href="style.css?v=3.23">
     <link rel="manifest" href="manifest.json">
 </head>
 
@@ -80,6 +80,9 @@
             </button>
             <button class="tab-btn" data-view="assessment">
                 <span class="tab-icon">📋</span> Evaluación Completa
+            </button>
+            <button class="tab-btn" data-view="nutri-ia">
+                <span class="tab-icon">🦦</span> Nutri IA
             </button>
         </nav>
 
@@ -421,7 +424,6 @@
         <!-- VISTA EVALUACIÓN COMPLETA (NUEVO) -->
         <div id="view-assessment" class="view-section" style="display:none;">
             <div class="view-header">
-                <button class="btn-back" id="btnBackToDash">← Volver al Dashboard</button>
                 <h2>Evaluación Nutricional Completa</h2>
             </div>
 
@@ -636,6 +638,32 @@
                 </section>
             </div>
         </div>
+
+        <!-- VISTA NUTRI IA (🦦 NUEVO V3.23) -->
+        <div id="view-nutri-ia" class="view-section" style="display:none;">
+            <div class="view-header">
+                <h2>🦦 Nutri IA - Análisis Clínico Inteligente</h2>
+            </div>
+
+            <div class="ia-welcome-card" id="iaInitialState">
+                <div class="ia-icon-large">🦦</div>
+                <h3>¡Hola! Soy tu asistente de Nutrición IA</h3>
+                <p>Analizaré toda la información recolectada del paciente para sugerir un plan basado en los protocolos
+                    del <b>Hospital Regional de Antofagasta</b>.</p>
+                <div style="margin: 20px 0;">
+                    <button class="btn-ia-generate" id="btnGenerateIA">
+                        <span id="iaBtnLabel">🚀 Generar Análisis Completo</span>
+                        <div class="spinner-ia" id="iaSpinner" style="display:none;"></div>
+                    </button>
+                </div>
+                <small style="opacity:0.6; font-size:0.7rem;">Requiere conexión a internet y configuración de API
+                    Gemini.</small>
+            </div>
+
+            <div id="iaResultContainer" class="ia-report-view" style="display:none;">
+                <!-- Generated Report will appear here -->
+            </div>
+        </div>
         <div id="pwaInstallContainer" style="display:none; text-align:center; margin-top:15px;">
             <span id="btnInstallApp"
                 style="cursor:pointer; font-size:0.75rem; color:var(--primary); text-decoration:underline;">
@@ -778,7 +806,7 @@
             });
         }
     </script>
-    <script src="app_core.js?v=3.22"></script>
+    <script src="app_core.js?v=3.23"></script>
 </body>
 
 </html>

@@ -104,6 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initChartSim();
     initAssessmentLogic();
     initGlobalEvents();
+    initNutriIA();
 
     updateFormulaSelect();
     applyCircularFavicon();
@@ -1488,3 +1489,126 @@ document.querySelectorAll('.input-watch').forEach(imp => {
         // asking user to implement full table if strictly needed later.
     });
 });
+
+// --- NUTRI IA (🦦 V3.23) ---
+const GEMINI_API_KEY = "AIzaSyBw4hOkkjFtBsydkuiuRnyarmsLo5FfYMY";
+
+function initNutriIA() {
+    const btnGenerate = document.getElementById('btnGenerateIA');
+    if (btnGenerate) {
+        btnGenerate.addEventListener('click', generateNutriIAAnalysis);
+    }
+
+    // Tab integration for visibility
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            if (tab.dataset.view === 'nutri-ia') {
+                const resultBox = document.getElementById('iaResultContainer');
+                const welcomeBox = document.getElementById('iaInitialState');
+                if (resultBox && resultBox.style.display === 'none' && welcomeBox) {
+                    welcomeBox.style.display = 'block';
+                }
+            }
+        });
+    });
+}
+
+async function generateNutriIAAnalysis() {
+    const btn = document.getElementById('btnGenerateIA');
+    const label = document.getElementById('iaBtnLabel');
+    const spinner = document.getElementById('iaSpinner');
+    const resultBox = document.getElementById('iaResultContainer');
+    const welcomeBox = document.getElementById('iaInitialState');
+
+    if (!btn || !resultBox) return;
+
+    btn.disabled = true;
+    if (label) label.style.display = 'none';
+    if (spinner) spinner.style.display = 'block';
+
+    try {
+        const prompt = constructNutriIAPrompt();
+        const response = await callGeminiAPI(prompt);
+
+        if (welcomeBox) welcomeBox.style.display = 'none';
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = formatIAResponse(response);
+    } catch (err) {
+        console.error("Error Nutri IA:", err);
+        alert("Error al conectar con la Nutri IA. Verifica tu conexión.");
+    } finally {
+        btn.disabled = false;
+        if (label) label.style.display = 'block';
+        if (spinner) spinner.style.display = 'none';
+    }
+}
+
+function constructNutriIAPrompt() {
+    const p = AppState.patient;
+    const context = {
+        antropometria: {
+            peso: p.peso, talla: p.estatura, bmi: p.bmi,
+            pesoIdeal: document.getElementById('valIdealWeight')?.innerText,
+            ipt: document.getElementById('valIPT')?.innerText,
+            diagnosticoIPT: document.getElementById('valIPTClass')?.innerText,
+            cintura: document.getElementById('ccintura')?.value,
+            braquial: document.getElementById('cbraquial')?.value,
+            ross: document.getElementById('valRossWeight')?.value
+        },
+        bioquimica: Array.from(document.querySelectorAll('#examsContainer .exam-row')).map(row => {
+            const inputs = row.querySelectorAll('input');
+            return { fecha: inputs[0]?.value, examen: inputs[1]?.value, valor: inputs[2]?.value };
+        }).filter(e => e.examen),
+        riesgo: {
+            nrs2002: document.getElementById('nrs2002')?.value,
+            vgs: document.getElementById('vgs')?.value
+        },
+        tolerancia: {
+            residuo: document.getElementById('residuo')?.value,
+            diarrea: document.getElementById('diarrea')?.value,
+            distension: document.getElementById('distension')?.value
+        },
+        accesos: { tipo: document.getElementById('accesoTipo')?.value, fecha: document.getElementById('accesoFecha')?.value },
+        diagnosticoIntegrado: document.getElementById('diagnosticoPES')?.value,
+        metas: { kcalKg: document.getElementById('goalKcalBox')?.value, kcalTotal: document.getElementById('goalTotal')?.value }
+    };
+
+    return `Actúa como un Nutricionista Clínico experto del Hospital Regional de Antofagasta (HRA), Chile.
+Genera un informe clínico profesional fundamentado en estos datos:
+- Paciente: ${p.nombre || 'N/A'}, ${p.edad} años, ${p.sexo === 'm' ? 'M' : 'F'}.
+- Antropometría: IMC ${context.antropometria.bmi}, Peso Ideal ${context.antropometria.pesoIdeal}, IPT ${context.antropometria.ipt} (${context.antropometria.diagnosticoIPT}).
+- Cribado: NRS-2002: ${context.riesgo.nrs2002}, VGS: ${context.riesgo.vgs}.
+- Laboratorio: ${JSON.stringify(context.bioquimica)}.
+- Tolerancia GI: Residuo ${context.tolerancia.residuo}, Diarrea ${context.tolerancia.diarrea}, Distensión ${context.tolerancia.distension}.
+- Diagnóstico PES: ${context.diagnosticoIntegrado}.
+- Meta actual: ${context.metas.kcalTotal} kcal/día (${context.metas.kcalKg} kcal/kg).
+
+INFORME REQUERIDO:
+1. Resumen de Hallazgos Clínicos.
+2. Análisis de Bioquímica y Tolerancia.
+3. Plan Nutricional Sugerido (Energía, Prot, Fórmulas).
+4. Recomendaciones según protocolos HRA Antofagasta.
+
+Tono profesional y estructurado. Usa HTML (h3, p, ul, li).`;
+}
+
+async function callGeminiAPI(prompt) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al generar análisis.";
+}
+
+function formatIAResponse(text) {
+    let formatted = text.replace(/```html/g, '').replace(/```/g, '').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+    return `<div class="ia-report-content">${formatted}</div>
+            <div style="margin-top:20px; border-top:1px dashed #ccc; padding-top:10px; font-size:0.7rem; color:#666;">
+                <i>*Sugerencia clínica IA - Validar con profesional HRA.</i>
+            </div>`;
+}
+
