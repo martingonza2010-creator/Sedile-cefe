@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css?v=3.21">
+    <link rel="stylesheet" href="style.css?v=3.22">
     <link rel="manifest" href="manifest.json">
 </head>
 
@@ -142,6 +142,8 @@
                                     style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">IPT
                                     (% Peso Ideal)</span>
                                 <strong style="font-size:1rem; color:#e74c3c;" id="valIPT">-- %</strong>
+                                <div id="valIPTClass"
+                                    style="font-size:0.65rem; color:#c0392b; margin-top:2px; font-weight:600;"></div>
                             </div>
                         </div>
 
@@ -445,20 +447,14 @@
                         </div>
                     </div>
 
-                    <div id="rossContainer"
-                        style="margin-bottom:20px; padding:12px; background:rgba(46, 204, 113, 0.05); border:1px solid rgba(46, 204, 113, 0.2); border-radius:12px; display:none;">
-                        <div
-                            style="font-size:0.65rem; color:#27ae60; font-weight:800; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">
-                            Estimación de ROSS (Pediatría)</div>
-                        <div style="display:flex; justify-content:space-around; text-align:center;">
-                            <div>
-                                <span style="font-size:0.6rem; color:#888; display:block;">Peso Est.</span>
-                                <strong style="font-size:1.1rem; color:#27ae60;" id="valRossWeight">0.0 kg</strong>
-                            </div>
-                            <div style="width:1px; background:rgba(0,0,0,0.05);"></div>
-                            <div>
-                                <span style="font-size:0.6rem; color:#888; display:block;">Talla Est.</span>
-                                <strong style="font-size:1.1rem; color:#27ae60;" id="valRossHeight">0.0 cm</strong>
+                    <div id="rossContainer" style="margin-bottom:20px; display:none;">
+                        <div class="mini-input">
+                            <label style="color:#27ae60;">Peso Estimado (Ross)</label>
+                            <input type="text" id="valRossWeight" readonly
+                                style="font-weight:bold; color:#27ae60; background:rgba(46, 204, 113, 0.05); border-color:rgba(46, 204, 113, 0.3);">
+                            <div id="valRossDate"
+                                style="font-size:0.6rem; color:#888; margin-top:4px; text-align:right; font-style:italic;">
+                                Última act: --
                             </div>
                         </div>
                     </div>
@@ -782,7 +778,7 @@
             });
         }
     </script>
-    <script src="app_core.js?v=3.21"></script>
+    <script src="app_core.js?v=3.22"></script>
 </body>
 
 </html>

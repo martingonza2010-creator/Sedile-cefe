@@ -481,7 +481,34 @@ function calculateRequirements() {
 
         if (p.peso > 0) {
             const ipt = (p.peso / pesoIdeal) * 100;
-            document.getElementById('valIPT').innerText = ipt.toFixed(1) + '%';
+            const iptVal = ipt.toFixed(1);
+            document.getElementById('valIPT').innerText = iptVal + '%';
+
+            // IPT Classification Logic V3.22
+            const iptClassEl = document.getElementById('valIPTClass');
+            if (iptClassEl) {
+                let status = "";
+                const age = p.edad;
+
+                if (age > 18) {
+                    // Adults
+                    if (ipt < 75) status = "Desnutrición Severa";
+                    else if (ipt <= 84) status = "Desnutrición Moderada";
+                    else if (ipt <= 89) status = "Desnutrición Leve";
+                    else if (ipt <= 110) status = "Normal";
+                    else status = "Sobrepeso/Obesidad";
+                } else {
+                    // Pediatrics / Adolescents (> 70% cutoff seems like Severe type III?)
+                    // User criteria: 80-90 (Leve I), 70-79 (Mod II), <70 (Sev III)
+                    if (ipt < 70) status = "Desnutrición Severa (G. III)";
+                    else if (ipt <= 79) status = "Desnutrición Moderada (G. II)";
+                    else if (ipt <= 90) status = "Desnutrición Leve (G. I)";
+                    else if (ipt <= 110) status = "Normal";
+                    else status = "Sobrepeso";
+                }
+                iptClassEl.innerText = status;
+                iptClassEl.style.color = status.includes("Normal") ? "#27ae60" : "#c0392b";
+            }
         }
     }
 
@@ -1217,7 +1244,8 @@ function calcRoss() {
 
     const resBox = document.getElementById('rossContainer');
     const badgeW = document.getElementById('valRossWeight');
-    const badgeH = document.getElementById('valRossHeight');
+    // const badgeH = document.getElementById('valRossHeight'); // Removed in V3.22
+    const badgeDate = document.getElementById('valRossDate');
 
     if (atr > 0 || cb > 0) {
         if (resBox) resBox.style.display = 'block';
@@ -1226,16 +1254,16 @@ function calcRoss() {
         if (sex === 'f') weight = (2.37 * cb) + (1.64 * age) - 28.28;
         else weight = (2.54 * cb) + (1.82 * age) - 32.73;
 
-        // Formula de Chumlea (Estimación de Talla por ATR)
-        let height = 0;
-        if (sex === 'f') {
-            height = (1.83 * atr) + (84.8 - (0.24 * age));
-        } else {
-            height = (2.02 * atr) + (64.19 - (0.04 * age));
+        // Display in Input Field
+        if (badgeW) badgeW.value = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
+
+        // Update Timestamp
+        if (badgeDate) {
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('es-CL') + ' ' + now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+            badgeDate.innerText = `Última act: ${timeStr}`;
         }
 
-        if (badgeW) badgeW.innerText = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
-        if (badgeH) badgeH.innerText = (height > 0 ? height : 0).toFixed(1) + ' cm';
     } else {
         if (resBox) resBox.style.display = 'none';
     }
