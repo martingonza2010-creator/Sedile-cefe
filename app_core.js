@@ -104,9 +104,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     initChartSim();
     initAssessmentLogic();
     initGlobalEvents();
-    initNutriIA();
+    try { initNutriIA(); } catch (e) { console.error("NutriIA Init Error:", e); }
 
     updateFormulaSelect();
+    initFormulaSearch();
     applyCircularFavicon();
 
     console.log("✅ Initialization complete. Formulas loaded:", AppState.formulas.length);
@@ -615,11 +616,25 @@ function checkFavoriteStatus() {
     }
 }
 
-function updateFormulaSelect() {
+function initFormulaSearch() {
+    const search = document.getElementById('formulaSearch');
+    if (search) {
+        search.oninput = (e) => {
+            updateFormulaSelect(e.target.value);
+        };
+    }
+}
+
+function updateFormulaSelect(filter = "") {
     // AGGRESSIVE FALLBACK V3.21: Use LOCAL_FORMULAS if AppState is empty
     if (!AppState.formulas || AppState.formulas.length === 0) {
         console.warn("⚠️ AppState.formulas empty, reloading from LOCAL_FORMULAS...");
         AppState.formulas = [...LOCAL_FORMULAS];
+    } else {
+        // Ensure all local ones are present (V3.26 Force sync)
+        if (AppState.formulas.length < LOCAL_FORMULAS.length) {
+            AppState.formulas = [...LOCAL_FORMULAS];
+        }
     }
 
     const selects = [
@@ -628,13 +643,17 @@ function updateFormulaSelect() {
     ];
 
     // Sort logic: Favorites first, then by Category
-    const sortedFormulas = [...AppState.formulas].sort((a, b) => {
-        const aFav = AppState.favorites.includes(a.id);
-        const bFav = AppState.favorites.includes(b.id);
-        if (aFav && !bFav) return -1;
-        if (!aFav && bFav) return 1;
-        return 0;
-    });
+    const normalizedFilter = filter.toLowerCase().trim();
+
+    const sortedFormulas = [...AppState.formulas]
+        .filter(f => !normalizedFilter || f.name.toLowerCase().includes(normalizedFilter) || f.cat.toLowerCase().includes(normalizedFilter))
+        .sort((a, b) => {
+            const aFav = AppState.favorites.includes(a.id);
+            const bFav = AppState.favorites.includes(b.id);
+            if (aFav && !bFav) return -1;
+            if (!aFav && bFav) return 1;
+            return 0;
+        });
 
     const cats = [...new Set(sortedFormulas.map(i => i.cat))];
 
@@ -1206,7 +1225,17 @@ function initAssessmentLogic() {
 
             if (resEvoBadge) {
                 resEvoBadge.innerHTML = `<b>${total}</b> kcal/día`;
-                resEvoBadge.style.color = "#8e44ad"; // Purple as requested
+                resEvoBadge.style.color = "#8e44ad";
+            }
+
+            // NEW V3.26: Sync with Total Goal input
+            if (inpGoalTotal) {
+                inpGoalTotal.value = total;
+                // Trigger simulator update
+                AppState.userOverridesGoal = true;
+                const simGoalBadge = document.getElementById('simGoal');
+                if (simGoalBadge) simGoalBadge.innerText = total;
+                runSimulation();
             }
         });
     }

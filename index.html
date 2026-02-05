@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css?v=3.25">
+    <link rel="stylesheet" href="style.css?v=3.26">
     <link rel="manifest" href="manifest.json">
 </head>
 
@@ -346,6 +346,10 @@
                         <div class="input-group">
                             <label>Fórmula / Leche HRA / RTH</label>
 
+                            <div style="margin-bottom:8px;">
+                                <input type="text" id="formulaSearch" placeholder="🔍 Buscar fórmula..."
+                                    style="width:100%; padding:6px 10px; font-size:0.8rem; border-radius:8px; border:1px solid #ddd; outline:none; background:rgba(255,255,255,0.8);">
+                            </div>
                             <div style="display:flex; gap:10px; align-items:center;">
                                 <select id="formulaSelect" class="select-modern"></select>
                                 <button id="btnToggleFav" class="btn-micro" style="font-size:1.2rem; padding: 5px 10px;"
@@ -562,7 +566,7 @@
                         </div>
                         <div class="mini-input">
                             <label>VGS (Valoración Global)</label>
-                            <select id="vgsGrade" class="select-modern">
+                            <select id="vgs" class="select-modern">
                                 <option value="A">A (Bien nutrido)</option>
                                 <option value="B">B (Desnutrición Moderada)</option>
                                 <option value="C">C (Desnutrición Severa)</option>
@@ -631,7 +635,7 @@
                     </div>
                     <div class="input-group">
                         <label>Evolución / PES / Diagnóstico</label>
-                        <textarea id="diagNutricional" rows="4"
+                        <textarea id="diagnosticoPES" rows="4"
                             style="width:100%; border-radius:10px; border:1px solid #ddd; padding:10px; font-size:0.85rem;"
                             placeholder="Escriba el diagnóstico integrado aquí..."></textarea>
                     </div>
@@ -669,9 +673,7 @@
                 style="cursor:pointer; font-size:0.75rem; color:var(--primary); text-decoration:underline;">
                 Dejar aplicación en pantalla de inicio 📱
             </span>
-        </div>
-        </section>
-        </main>
+        </div> <!-- End Main App -->
 
         <!-- MODAL DE HISTORIAL -->
         <div class="protocol-modal" id="historyModal">
@@ -774,39 +776,38 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- MODAL PROPÓSITO -->
-    <div class="modal-overlay" id="purposeModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>📖 Propósito</h3>
-                <button class="btn-close-modal" id="btnPurposeClose">×</button>
-            </div>
-            <div class="modal-body" style="font-style: italic; color: #555; line-height: 1.6;">
-                <p>Esta plataforma fue creada con el fin de poder simplificar los tiempos para el nutricionista y
-                    mejorar la calidad de los procesos evitando errores de cálculos por falta de tiempo o de
-                    organización.</p>
-                <p style="margin-top:15px; font-weight:700; text-align:right;">Atte: Nut. Martin Gonzalez</p>
+        <!-- MODAL PROPÓSITO -->
+        <div class="modal-overlay" id="purposeModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📖 Propósito</h3>
+                    <button class="btn-close-modal" id="btnPurposeClose">×</button>
+                </div>
+                <div class="modal-body" style="font-style: italic; color: #555; line-height: 1.6;">
+                    <p>Esta plataforma fue creada con el fin de poder simplificar los tiempos para el nutricionista y
+                        mejorar la calidad de los procesos evitando errores de cálculos por falta de tiempo o de
+                        organización.</p>
+                    <p style="margin-top:15px; font-weight:700; text-align:right;">Atte: Nut. Martin Gonzalez</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        // EMERGENCY CACHE PURGE V3.6
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (registrations) {
-                for (let registration of registrations) {
-                    if (!localStorage.getItem('sw_purged_3.6')) {
-                        registration.unregister();
-                        localStorage.setItem('sw_purged_3.6', 'true');
-                        window.location.reload();
+        <script>
+            // EMERGENCY CACHE PURGE V3.6
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                    for (let registration of registrations) {
+                        if (!localStorage.getItem('sw_purged_3.6')) {
+                            registration.unregister();
+                            localStorage.setItem('sw_purged_3.6', 'true');
+                            window.location.reload();
+                        }
                     }
-                }
-            });
-        }
-    </script>
-    <script src="app_core.js?v=3.25"></script>
+                });
+            }
+        </script>
+        <script src="app_core.js?v=3.26"></script>
 </body>
 
 </html>
