@@ -313,7 +313,6 @@ function initPatientLogic() {
                     estatura_m: estatura,
                     sexo,
                     actividad,
-                    tmt,
                     user_id: AppState.user.id
                 };
 
