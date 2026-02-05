@@ -1086,6 +1086,10 @@ function initChartSim() {
     const ctx = document.getElementById('macroChart')?.getContext('2d');
     if (!ctx) return;
 
+    if (typeof Chart === 'undefined') {
+        console.warn("📊 Chart.js not loaded yet or blocked. Skipping chart init.");
+        return;
+    }
     AppState.chart = new Chart(ctx, {
         type: 'doughnut',
         data: {
