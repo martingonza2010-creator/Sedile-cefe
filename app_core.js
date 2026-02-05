@@ -1491,7 +1491,7 @@ document.querySelectorAll('.input-watch').forEach(imp => {
 });
 
 // --- NUTRI IA (🦦 V3.23) ---
-const GEMINI_API_KEY = "AIzaSyBw4hOkkjFtBsydkuiuRnyarmsLo5FfYMY";
+const GEMINI_API_KEY = "AIzaSyClmI1-BQWQejRurf02zYPgxMax0DKZ9lg";
 
 function initNutriIA() {
     const btnGenerate = document.getElementById('btnGenerateIA');
