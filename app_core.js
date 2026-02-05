@@ -305,6 +305,8 @@ function initPatientLogic() {
                 const estatura = parseFloat(document.getElementById('estatura').value) || 0;
                 const sexo = document.getElementById('sexo').value;
                 const actividad = parseFloat(document.getElementById('actividad').value) || 1.2;
+                const diagnostico = document.getElementById('diagnostico')?.value || '';
+                const cama = document.getElementById('cama')?.value || '';
                 const tmt = parseFloat(document.getElementById('goalTotal').value) || 0;
 
                 const data = {
@@ -314,6 +316,10 @@ function initPatientLogic() {
                     estatura_m: estatura,
                     sexo,
                     actividad,
+                    diagnostico,
+                    cama,
+                    tmt,
+                    ia_report: AppState.patient.ia_report || null,
                     user_id: AppState.user.id
                 };
 
@@ -374,11 +380,15 @@ async function loadHistory() {
     }
 
     container.innerHTML += data.map(p => `
-        <div class="history-item" onclick="loadPatient(${p.id})">
+        <div class="history-mini-card" onclick="loadPatient(${p.id})">
             <h4>${p.nombre}</h4>
-            <div class="meta">
-                <span>Peso: ${p.peso_kg}kg | Edad: ${p.edad}a</span>
-                <span>${new Date(p.created_at).toLocaleDateString()}</span>
+            <div class="diag">${p.diagnostico || 'Sin diagnóstico registrado'}</div>
+            <div class="bottom-row">
+                <span>${p.peso_kg}kg | ${p.edad}a</span>
+                <span class="bed-badge">🛋️ ${p.cama || '--'}</span>
+            </div>
+            <div style="font-size:0.6rem; margin-top:3px; opacity:0.5; text-align:right;">
+                ${new Date(p.created_at).toLocaleDateString()}
             </div>
         </div>
     `).join('');
@@ -925,38 +935,7 @@ function initCompareLogic() {
     };
 }
 
-function updateCompareResults(k1, p1, c1, l1) {
-    const fIdB = document.getElementById('formulaSelectB').value;
-    const formulaB = AppState.formulas.find(f => f.id === fIdB);
-    const box = document.getElementById('compareResult');
-
-    if (!formulaB) {
-        box.innerHTML = '';
-        return;
-    }
-
-    const v1 = parseFloat(document.getElementById('volume').value) || 0;
-    const v2 = parseFloat(document.getElementById('dilution').value) || 0;
-
-    let k2 = 0, p2 = 0;
-
-    // Calc Formula B stats (same mode)
-    if (AppState.calcMode === 'vol') {
-        k2 = formulaB.k * (v1 / 100);
-        p2 = formulaB.p * (v1 / 100);
-    } else {
-        k2 = formulaB.k * (v2 / 100);
-        p2 = formulaB.p * (v2 / 100);
-    }
-
-    const diffK = Math.round(k2 - k1);
-    const diffP = (p2 - p1).toFixed(1);
-
-    const badgeK = diffK > 0 ? `<span class="diff-badge diff-pos">+${diffK} kcal</span>` : `<span class="diff-badge diff-neg">${diffK} kcal</span>`;
-    const badgeP = diffP > 0 ? `<span class="diff-badge diff-pos">+${diffP}g Prot</span>` : `<span class="diff-badge diff-neg">${diffP}g Prot</span>`;
-
-    box.innerHTML = `Diferencia: ${badgeK} ${badgeP}`;
-}
+// Duplicate function at line 928 removed in V3.30
 
 // Simple CountUp Animation
 function animateValue(id, end) {
@@ -1139,6 +1118,9 @@ function updateCompareResults(k1, p1, c1, l1) {
     if (!formulaB) {
         box.innerHTML = '';
         macroBox.innerHTML = '';
+        // Hide formula B specific macro board if it exists
+        const boardB = document.getElementById('macroBoardB');
+        if (boardB) boardB.style.display = 'none';
         return;
     }
 
@@ -1159,59 +1141,57 @@ function updateCompareResults(k1, p1, c1, l1) {
         l2 = formulaB.f * (v2 / 100);
     }
 
-    // --- macro badges for B ---
-    macroBox.innerHTML = `
-            <div class="macro-badge-item p"><span>P</span><strong>${p2.toFixed(1)}g</strong></div>
-            <div class="macro-badge-item c"><span>C</span><strong>${c2.toFixed(1)}g</strong></div>
-            <div class="macro-badge-item f"><span>F</span><strong>${l2.toFixed(1)}g</strong></div>
-        `;
+    // Update Formula B Macro Board (shown below the comparison bar)
+    const boardB = document.getElementById('macroBoardB');
+    if (boardB) {
+        boardB.style.display = 'grid';
+        const labelB = document.getElementById('lblFormulaB');
+        if (labelB) labelB.innerText = `Fórmula B: ${formulaB.name}`;
+
+        document.getElementById('valKcalB').innerText = Math.round(k2);
+        document.getElementById('valProtB').innerText = p2.toFixed(1);
+        document.getElementById('valCHOB').innerText = c2.toFixed(1);
+        document.getElementById('valLipB').innerText = l2.toFixed(1);
+    }
 
     // --- differences ---
     const diffK = Math.round(k2 - k1);
-    const diffP = (p2 - p1).toFixed(1);
-    const diffC = (c2 - c1).toFixed(1);
-    const diffL = (l2 - l1).toFixed(1);
-
     const getBadge = (val, unit) => {
         const isPos = parseFloat(val) >= 0;
         const sign = isPos ? '+' : '';
         return `<span class="diff-badge ${isPos ? 'diff-pos' : 'diff-neg'}">${sign}${val}${unit}</span>`;
     };
 
-    box.innerHTML = `
-            <div><b>Vs:</b> ${getBadge(diffK, ' kcal')}</div>
-            <div style="display:flex; gap:5px; font-size:0.75rem;">
-                ${getBadge(diffP, 'g P')} | ${getBadge(diffC, 'g C')} | ${getBadge(diffL, 'g F')}
-            </div>
-        `;
+    // User wants ONLY the "Vs:" part here
+    box.innerHTML = `<div><b>Vs:</b> ${getBadge(diffK, ' kcal')}</div>`;
+}
 
-    // Update Secondary Stack Bar
-    const stackSec = document.getElementById('stackCompare');
-    if (stackSec) {
-        stackSec.style.display = 'flex';
-        setTimeout(() => { stackSec.style.opacity = '0.6'; stackSec.style.transform = 'translateY(18px)'; }, 50);
+// Update Secondary Stack Bar
+const stackSec = document.getElementById('stackCompare');
+if (stackSec) {
+    stackSec.style.display = 'flex';
+    setTimeout(() => { stackSec.style.opacity = '0.6'; stackSec.style.transform = 'translateY(18px)'; }, 50);
 
-        // Calculate % relative to Kcal Total (approx) or same scale as primary
-        // Primary scale: width% = (g * 4 / TotalKcal) * 100 ? No, usually stacked 100% of weight?
-        // Let's us simple distribution % for bar width
-        const totalK = k2 || 1;
-        const pPct = ((p2 * 4) / totalK) * 100;
-        const cPct = ((formulaB.c * (v1 / 100) * 4) / totalK) * 100; // approx
-        // Actually simpler: Just copy the logic from updateStackBar but for B
-        // We need 'c' and 'l' for formula B
-        const c2 = AppState.calcMode === 'vol' ? formulaB.c * (v1 / 100) : formulaB.c * (v2 / 100);
-        const l2 = AppState.calcMode === 'vol' ? formulaB.f * (v1 / 100) : formulaB.f * (v2 / 100);
+    // Calculate % relative to Kcal Total (approx) or same scale as primary
+    // Primary scale: width% = (g * 4 / TotalKcal) * 100 ? No, usually stacked 100% of weight?
+    // Let's us simple distribution % for bar width
+    const totalK = k2 || 1;
+    const pPct = ((p2 * 4) / totalK) * 100;
+    const cPct = ((formulaB.c * (v1 / 100) * 4) / totalK) * 100; // approx
+    // Actually simpler: Just copy the logic from updateStackBar but for B
+    // We need 'c' and 'l' for formula B
+    const c2 = AppState.calcMode === 'vol' ? formulaB.c * (v1 / 100) : formulaB.c * (v2 / 100);
+    const l2 = AppState.calcMode === 'vol' ? formulaB.f * (v1 / 100) : formulaB.f * (v2 / 100);
 
-        // Distribution
-        const calP = p2 * 4;
-        const calC = c2 * 4;
-        const calL = l2 * 9;
-        const totalCal = calP + calC + calL || 1;
+    // Distribution
+    const calP = p2 * 4;
+    const calC = c2 * 4;
+    const calL = l2 * 9;
+    const totalCal = calP + calC + calL || 1;
 
-        document.getElementById('barProtB').style.width = (calP / totalCal * 100) + "%";
-        document.getElementById('barCHOB').style.width = (calC / totalCal * 100) + "%";
-        document.getElementById('barLipB').style.width = (calL / totalCal * 100) + "%";
-    }
+    document.getElementById('barProtB').style.width = (calP / totalCal * 100) + "%";
+    document.getElementById('barCHOB').style.width = (calC / totalCal * 100) + "%";
+    document.getElementById('barLipB').style.width = (calL / totalCal * 100) + "%";
 }
 
 // --- 15. COMPLETE ASSESSMENT LOGIC (NEW) ---
@@ -1278,30 +1258,41 @@ function initAssessmentLogic() {
     }
 
     // NEW V3.16: ROSS Estimation (Pediatrics)
-    const rossInputs = ['altrodilla', 'cbraquial', 'edad', 'sexo'];
+    const rossInputs = ['altrodilla', 'edad', 'sexo'];
     rossInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', calcRoss);
     });
+
+    // NEW V3.41: Advanced Anthropometry (Frisancho/NHANES)
+    ['cbraquial', 'ptricipital', 'edad', 'sexo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateAnthropometry);
+    });
 }
 
 function calcRoss() {
-    const atr = parseFloat(document.getElementById('altrodilla').value) || 0;
-    const cb = parseFloat(document.getElementById('cbraquial').value) || 0;
-    const age = parseFloat(document.getElementById('edad').value) || 0;
-    const sex = document.getElementById('sexo').value;
+    const atr = parseFloat(document.getElementById('altrodilla')?.value) || 0;
+    const age = parseFloat(document.getElementById('edad')?.value) || 0;
+    const sex = document.getElementById('sexo')?.value;
 
     const resBox = document.getElementById('rossContainer');
     const badgeW = document.getElementById('valRossWeight');
-    // const badgeH = document.getElementById('valRossHeight'); // Removed in V3.22
     const badgeDate = document.getElementById('valRossDate');
 
-    if (atr > 0 || cb > 0) {
+    // Trigger: Aparece cuando se coloca ATR (Altura Rodilla)
+    if (atr > 0) {
         if (resBox) resBox.style.display = 'block';
 
         let weight = 0;
-        if (sex === 'f') weight = (2.37 * cb) + (1.64 * age) - 28.28;
-        else weight = (2.54 * cb) + (1.82 * age) - 32.73;
+        // Formula Ross 2.0 (User provided)
+        // Hombres: (2.02 × ATR) + (64.19 - (0.04 × Edad))
+        // Mujeres: (1.83 × ATR) + (84.8 - (0.24 × Edad))
+        if (sex === 'f') {
+            weight = (1.83 * atr) + (84.8 - (0.24 * age));
+        } else {
+            weight = (2.02 * atr) + (64.19 - (0.04 * age));
+        }
 
         // Display in Input Field
         if (badgeW) badgeW.value = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
@@ -1310,9 +1301,107 @@ function calcRoss() {
         if (badgeDate) {
             const now = new Date();
             const timeStr = now.toLocaleDateString('es-CL') + ' ' + now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-            badgeDate.innerText = `Última act: ${timeStr}`;
+            badgeDate.innerText = `Última estimación: ${timeStr}`;
+        }
+    } else {
+        if (resBox) resBox.style.display = 'none';
+    }
+}
+
+/**
+ * NEW V3.41: Advanced Anthropometry Classification (Frisancho & NHANES)
+ * Uses Red-themed UI, Percentile Logic, and Area G (AMA) calculation.
+ */
+function updateAnthropometry() {
+    const cb = parseFloat(document.getElementById('cbraquial')?.value) || 0;
+    const pt = parseFloat(document.getElementById('ptricipital')?.value) || 0;
+    const age = parseFloat(document.getElementById('edad')?.value) || 0;
+    const sex = document.getElementById('sexo')?.value;
+
+    const resBox = document.getElementById('frisanchoContainer');
+    const lblCB = document.getElementById('lblCBStatus');
+    const lblAG = document.getElementById('lblAGStatus');
+    const indicator = document.getElementById('anthIndicator');
+    const badgeDate = document.getElementById('valAnthDate');
+    if (cb > 0 || pt > 0) {
+        if (resBox) resBox.style.display = 'block';
+
+        // 1. Calculate Area G (AMA - Arm Muscle Area)
+        let ama = 0;
+        if (cb > 0 && pt > 0) {
+            const ptcm = pt / 10;
+            const pi = 3.14159265;
+            ama = Math.pow(cb - (pi * ptcm), 2) / (4 * pi);
+            // Heymsfield correction for bone area
+            if (sex === 'm') ama -= 10; else ama -= 6.5;
+            if (ama < 0) ama = 0;
         }
 
+        // 2. Reference Tables (Frisancho / NHANES Representative)
+        const refs = {
+            cb: {
+                m: {
+                    18: { p5: 27.2, p10: 28.2, p50: 32.7, p90: 37.7, p95: 39.5 },
+                    35: { p5: 29.2, p10: 30.4, p50: 34.7, p90: 39.6, p95: 41.1 },
+                    65: { p5: 27.0, p10: 28.5, p50: 32.7, p90: 37.5, p95: 39.0 },
+                    75: { p5: 25.5, p10: 27.0, p50: 30.7, p90: 35.5, p95: 37.0 }
+                },
+                f: {
+                    18: { p5: 23.5, p10: 24.5, p50: 28.5, p90: 33.5, p95: 35.5 },
+                    35: { p5: 25.4, p10: 26.8, p50: 32.1, p90: 38.8, p95: 41.7 },
+                    65: { p5: 24.5, p10: 26.0, p50: 31.7, p90: 38.5, p95: 41.0 },
+                    75: { p5: 22.5, p10: 24.0, p50: 28.6, p90: 34.5, p95: 36.5 }
+                }
+            },
+            ag: {
+                m: {
+                    18: { p5: 41.5, p10: 45.4, p50: 59.9, p90: 77.8, p95: 83.2 },
+                    35: { p5: 44.5, p10: 48.9, p50: 64.1, p90: 83.5, p95: 90.0 },
+                    65: { p5: 38.0, p10: 42.1, p50: 56.5, p90: 75.0, p95: 80.0 },
+                    75: { p5: 32.0, p10: 36.0, p50: 48.0, p90: 65.0, p95: 70.0 }
+                },
+                f: {
+                    18: { p5: 29.4, p10: 32.0, p50: 39.5, p90: 51.0, p95: 55.4 },
+                    35: { p5: 31.0, p10: 34.5, p50: 44.2, p90: 60.5, p95: 65.5 },
+                    65: { p5: 28.0, p10: 31.5, p50: 42.0, p90: 58.0, p95: 63.5 },
+                    75: { p5: 24.0, p10: 27.5, p50: 36.5, p90: 52.0, p95: 57.0 }
+                }
+            }
+        };
+
+        const getPercentileMatch = (type, val) => {
+            if (val <= 0) return { status: '--', color: '#888', pos: 50 };
+            const sexRefs = refs[type][sex === 'f' ? 'f' : 'm'];
+            const keys = Object.keys(sexRefs).map(Number).sort((a, b) => b - a);
+            const refKey = keys.find(k => age >= k) || keys[keys.length - 1];
+            const p = sexRefs[refKey];
+
+            if (val < p.p5) return { status: 'Muy Disminuido', color: '#c0392b', pos: 2.5 };
+            if (val < p.p10) return { status: 'Disminuido', color: '#e67e22', pos: 7.5 };
+            if (val < p.p90) return { status: 'Normal', color: '#27ae60', pos: 50 };
+            if (val <= p.p95) return { status: 'Elevado', color: '#3498db', pos: 92.5 };
+            return { status: 'Muy Elevado', color: '#9b59b6', pos: 97.5 };
+        };
+
+        const resCB = getPercentileMatch('cb', cb);
+        const resAG = getPercentileMatch('ag', ama);
+
+        if (lblCB) lblCB.innerHTML = `<span style="color:${resCB.color}; font-size:1rem;">${resCB.status}</span><br><small style="color:#888; font-weight:400;">CB: ${cb} cm</small>`;
+        if (lblAG && ama > 0) lblAG.innerHTML = `<span style="color:${resAG.color}; font-size:1rem;">${resAG.status}</span><br><small style="color:#888; font-weight:400;">AG: ${ama.toFixed(1)} cm²</small>`;
+        else if (lblAG) lblAG.innerHTML = "--";
+
+        // 3. Update Graphical Indicator
+        if (indicator) {
+            let pos = resCB.pos;
+            if (ama > 0) pos = (resCB.pos + resAG.pos) / 2;
+            indicator.style.left = pos + '%';
+        }
+
+        // 4. Update Timestamp
+        if (badgeDate) {
+            const now = new Date();
+            badgeDate.innerText = `Act: ${now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
+        }
     } else {
         if (resBox) resBox.style.display = 'none';
     }
