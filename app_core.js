@@ -61,7 +61,7 @@ const LOCAL_FORMULAS = [
 // --- 3. GLOBAL STATE ---
 const AppState = {
     user: null,
-    patient: { nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0 },
+    patient: { id: null, nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0, ia_report: null },
     formulas: LOCAL_FORMULAS,
     calcMode: 'vol',
     favorites: [], // Init empty first
@@ -446,10 +446,26 @@ function renderEvolutionChart(history) {
 window.loadPatient = async (id) => {
     const { data } = await supabaseClient.from('pacientes').select('*').eq('id', id).single();
     if (data) {
+        AppState.patient.id = data.id;
+        AppState.patient.ia_report = data.ia_report || null;
+
         document.getElementById('nombre').value = data.nombre;
         document.getElementById('edad').value = data.edad;
         document.getElementById('peso').value = data.peso_kg;
         document.getElementById('estatura').value = data.estatura_m;
+
+        // Restore IA report if exists
+        const resultBox = document.getElementById('iaResultContainer');
+        const welcomeBox = document.getElementById('iaInitialState');
+        if (data.ia_report && resultBox) {
+            resultBox.style.display = 'block';
+            resultBox.innerHTML = formatIAResponse(data.ia_report);
+            if (welcomeBox) welcomeBox.style.display = 'none';
+        } else if (resultBox) {
+            resultBox.style.display = 'none';
+            if (welcomeBox) welcomeBox.style.display = 'block';
+        }
+
         // Trigger calc
         calculateRequirements();
         document.getElementById('historyModal').classList.remove('active');
@@ -1357,9 +1373,10 @@ function initGlobalEvents() {
     // Exams Logic
     const btnAddExam = document.getElementById('btnAddExam');
     if (btnAddExam) {
-        // Remove old listeners to be safe (though this is init)
-        btnAddExam.onclick = null;
-        btnAddExam.onclick = addExamRow;
+        btnAddExam.onclick = (e) => {
+            e.preventDefault();
+            addExamRow();
+        };
     }
 
     // Nitrogen Logic
@@ -1562,6 +1579,16 @@ async function generateNutriIAAnalysis() {
         if (welcomeBox) welcomeBox.style.display = 'none';
         resultBox.style.display = 'block';
         resultBox.innerHTML = formatIAResponse(response);
+
+        // PERSISTENCE V3.27: Save to Supabase if patient is loaded
+        if (AppState.patient.id) {
+            await supabaseClient.from('pacientes')
+                .update({ ia_report: response })
+                .eq('id', AppState.patient.id);
+            AppState.patient.ia_report = response;
+            console.log("IA Report persisted for patient:", AppState.patient.id);
+        }
+
     } catch (err) {
         console.error("Error Nutri IA:", err);
         alert("Error al conectar con la Nutri IA. Verifica tu conexión.");
