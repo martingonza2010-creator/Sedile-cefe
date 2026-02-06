@@ -385,6 +385,43 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- NEW V3.50: CALCULADORA DE MÓDULOS -->
+                <section class="card simulator-card" style="margin-top: -15px;">
+                    <details class="folds-accordion" id="modulesAccordion">
+                        <summary style="font-weight:700; color:var(--primary);">➕ Calculadora de Módulos (Refuerzos)
+                        </summary>
+                        <div class="modules-grid"
+                            style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; padding-top:10px;">
+                            <div class="mini-input">
+                                <label>Nessucar (g)</label>
+                                <input type="number" id="modNessucar" class="input-module" placeholder="g">
+                            </div>
+                            <div class="mini-input">
+                                <label>MCT Oil (ml)</label>
+                                <input type="number" id="modMCT" class="input-module" placeholder="ml">
+                            </div>
+                            <div class="mini-input">
+                                <label>Enterex Karb (g)</label>
+                                <input type="number" id="modEnterex" class="input-module" placeholder="g">
+                            </div>
+                            <div class="mini-input">
+                                <label>Banatrol Plus (g)</label>
+                                <input type="number" id="modBanatrol" class="input-module" placeholder="g">
+                            </div>
+                            <div class="mini-input">
+                                <label>Proteinex (g)</label>
+                                <input type="number" id="modProteinex" class="input-module" placeholder="g">
+                            </div>
+                            <div class="mini-input">
+                                <label>Fresubin Powder (g)</label>
+                                <input type="number" id="modFresubin" class="input-module" placeholder="g">
+                            </div>
+                        </div>
+                        <small style="display:block; margin-top:8px; opacity:0.6; font-size:0.65rem;">Los módulos se
+                            suman al aporte total de la fórmula seleccionada.</small>
+                    </details>
+                </section>
             </main>
 
             <div class="macro-stack-wrapper">
@@ -473,16 +510,13 @@
                             <div id="valRossDate" style="font-size:0.6rem; color:#888; font-style:italic;">Última act:
                                 --</div>
                         </div>
-                        <div class="grid-col-2" style="gap:15px;">
-                            <div class="mini-input">
-                                <label>Alt. Rodilla (ATR cm)</label>
-                                <input type="number" id="altrodilla" class="input-watch-ross" placeholder="ATR">
-                            </div>
-                            <div class="mini-input">
-                                <label>Peso Estimado</label>
-                                <input type="text" id="valRossWeight" readonly
-                                    style="font-weight:bold; color:#27ae60; background:white; font-size:1.1rem;">
-                            </div>
+                        <div style="text-align:center;">
+                            <span
+                                style="font-size:0.65rem; color:#666; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:5px;">Peso
+                                Estimado (Ross 2.0)</span>
+                            <div id="valRossWeightDisplay" style="font-size:1.8rem; font-weight:bold; color:#27ae60;">--
+                                kg</div>
+                            <input type="hidden" id="valRossWeight">
                         </div>
                     </div>
 
@@ -569,6 +603,8 @@
                                 </div>
                                 <div class="mini-input"><label>Env. Completa</label><input type="number" id="envcomp">
                                 </div>
+                                <div class="mini-input"><label>Rodilla (ATR)</label><input type="number" id="altrodilla"
+                                        class="input-watch-ross" placeholder="cm"></div>
                             </div>
                         </div>
                     </details>
@@ -602,6 +638,22 @@
                     </div>
                     <div class="exams-list" id="examsContainer">
                         <!-- Dynamic Rows -->
+                    </div>
+                </section>
+
+                <!-- NEW V3.50: INTERACCIONES FÁRMACO-NUTRIENTE -->
+                <section class="card assess-module" style="border-left-color: #e74c3c;">
+                    <div class="module-head">
+                        <h3>💊 Interacciones Fármaco-Nutriente</h3>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="drugSearch" placeholder="🔍 Buscar fármaco (ej. Fenitoina, Propofol...)"
+                            style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; font-size:0.85rem;">
+                    </div>
+                    <div id="drugInteractionResult"
+                        style="margin-top:10px; font-size:0.8rem; line-height:1.4; min-height:40px;">
+                        <span style="opacity:0.5;">Busca un medicamento para ver recomendaciones nutricionales
+                            hospitalarias.</span>
                     </div>
                 </section>
 
@@ -719,6 +771,25 @@
                             placeholder="Escriba el diagnóstico integrado aquí..."></textarea>
                     </div>
                 </section>
+            </div>
+
+            <!-- NEW V3.50: GENERADOR DE NOTA CLÍNICA -->
+            <div style="margin: 25px 15px;">
+                <button class="btn-ia-generate" id="btnGenerateNote"
+                    style="background: linear-gradient(135s, #8e44ad, #9b59b6); margin-bottom: 15px;">
+                    ✨ Generar Nota Clínica (Copy)
+                </button>
+
+                <div id="clinicalNoteContainer" class="card"
+                    style="display:none; padding:20px; border: 1px solid var(--primary); background: white;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h4 style="margin:0; color:var(--primary);">📋 Resumen de Evolución</h4>
+                        <button class="btn-micro" id="btnCopyNote">Copiar Texto</button>
+                    </div>
+                    <div id="noteContent" style="font-size:0.85rem; line-height:1.5; color:#333;">
+                        <!-- Generated Content -->
+                    </div>
+                </div>
             </div>
         </div>
 

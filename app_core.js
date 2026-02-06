@@ -309,6 +309,55 @@ function initPatientLogic() {
                 const cama = document.getElementById('cama')?.value || '';
                 const tmt = parseFloat(document.getElementById('goalTotal').value) || 0;
 
+                // FULL STATE PERSISTENCE V3.51
+                const metadata = {
+                    simulator: {
+                        formula: document.getElementById('formulaSelect').value,
+                        volume: document.getElementById('volume').value,
+                        dilution: document.getElementById('dilution').value,
+                        goal_total: tmt,
+                        modules: {
+                            nessucar: document.getElementById('modNessucar').value,
+                            mct: document.getElementById('modMCT').value,
+                            enterex: document.getElementById('modEnterex').value,
+                            banatrol: document.getElementById('modBanatrol').value,
+                            proteinex: document.getElementById('modProteinex').value,
+                            fresubin: document.getElementById('modFresubin').value
+                        }
+                    },
+                    assessment: {
+                        cintura: document.getElementById('ccintura').value,
+                        braquial: document.getElementById('cbraquial').value,
+                        pantorrilla: document.getElementById('cpantorrilla').value,
+                        atr: document.getElementById('altrodilla').value,
+                        pliegues: {
+                            pt: document.getElementById('ptricipital').value,
+                            pb: document.getElementById('pbicipital').value,
+                            ps: document.getElementById('piliaco').value,
+                            pa: document.getElementById('pabdominal').value
+                        },
+                        talla: {
+                            mediaenv: document.getElementById('mediaenv').value,
+                            envcomp: document.getElementById('envcomp').value
+                        },
+                        edema: document.getElementById('edemaGrade').value,
+                        exams: Array.from(document.querySelectorAll('#examsContainer .exam-row')).map(row => {
+                            const inputs = row.querySelectorAll('input');
+                            return { date: inputs[0].value, type: inputs[1].value, res: inputs[2].value };
+                        }),
+                        cribaje: {
+                            nrs: document.getElementById('nrs2002').value,
+                            vgs: document.getElementById('vgs').value
+                        },
+                        gi: {
+                            residuo: document.getElementById('residuo').value,
+                            diarrea: document.getElementById('diarrea').value,
+                            distension: document.getElementById('distension').value
+                        },
+                        pes: document.getElementById('diagnosticoPES').value
+                    }
+                };
+
                 const data = {
                     nombre,
                     edad,
@@ -320,13 +369,14 @@ function initPatientLogic() {
                     cama,
                     tmt,
                     ia_report: AppState.patient.ia_report || null,
+                    metadata: metadata,
                     user_id: AppState.user.id
                 };
 
                 const { error } = await supabaseClient.from('pacientes').insert([data]);
 
                 if (!error) {
-                    showToast("✅ Paciente guardado en historial");
+                    showToast("✅ Ficha completa guardada en historial");
                     loadHistory();
                     btn.innerHTML = `<span>✔</span> ¡Guardado!`;
                     setTimeout(() => {
@@ -338,7 +388,7 @@ function initPatientLogic() {
                 }
             } catch (err) {
                 console.error("Save Error:", err);
-                alert("Error al guardar: " + err.message);
+                alert("Error al guardar (Verifica caché SQL): " + err.message);
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
@@ -400,7 +450,30 @@ function renderEvolutionChart(history) {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    const padding = 30;
+    const VERSION = "3.50";
+
+    // NEW V3.50: MODULE DATA (Nutritional values per 100g or 100ml)
+    const MODULE_DATA = {
+        nessucar: { kcal: 380, p: 0, c: 96, f: 0 },
+        mct: { kcal: 855, p: 0, c: 0, f: 95 },
+        enterex: { kcal: 383, p: 0, c: 95, f: 0 },
+        banatrol: { kcal: 372, p: 0, c: 65.11, f: 0 },
+        proteinex: { kcal: 357, p: 90, c: 0, f: 0 },
+        fresubin: { kcal: 360, p: 87, c: 0, f: 0 }
+    };
+
+    // NEW V3.50: DRUG INTERACTIONS
+    const DRUG_INTERACTIONS = {
+        "fenitoina": "⚠️ Separar de la nutrición enteral (NE) al menos 1-2 horas antes y después para evitar reducción en su absorción. Monitorizar niveles séricos.",
+        "propofol": "⚠️ Aporta 1.1 kcal/ml de lípidos. Considerar este aporte calórico graso dentro del balance calórico total para evitar sobrealimentación.",
+        "omeprazol": "⚠️ Administrar preferentemente en ayunas o 30-60 min antes de la NE para asegurar eficacia. No mezclar directamente con la fórmula.",
+        "furosemida": "⚠️ Puede causar hipopotasemia e hipomagnesemia. Monitorizar electrolitos periódicamente si se usa con NE a largo plazo.",
+        "levodopa": "⚠️ Las proteínas de la dieta pueden competir con su absorción. Ajustar tiempos de toma si el control motor fluctúa.",
+        "warfarina": "⚠️ El contenido de Vitamina K de algunas fórmulas enterales puede interferir con el efecto anticoagulante. Mantener aporte constante.",
+        "metformina": "⚠️ Puede causar déficit de B12 con uso prolongado. Considerar suplementación si existen signos clínicos.",
+        "cloroquina": "⚠️ Puede causar hipoglicemia severa. Monitorizar glicemia capilar.",
+        "ciprofloxacino": "⚠️ La absorción se reduce significativamente con productos lácteos o fórmulas enterales cálcicas. Suspender NE 2h antes/después."
+    };
 
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
@@ -858,10 +931,79 @@ function initHydrationLogic() {
 function toggleHydMethod() {
     const isMlKg = document.querySelector('input[name="hydMethod"][value="mlkg"]').checked;
     document.getElementById('hydFactorRow').style.display = isMlKg ? 'block' : 'none';
+    // Tab Navigation
+    initTabNavigation();
+
+    // New Patient Logic V3.51
+    const btnNew = document.getElementById('btnAddPatient');
+    if (btnNew) btnNew.onclick = resetPatientForm;
     calcHydration();
 }
 
-function calcHydration() {
+function resetPatientForm() {
+    if (!confirm("¿Deseas limpiar todos los campos para un nuevo paciente?")) return;
+
+    // Reset Global State
+    AppState.patient = { id: null, nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0, ia_report: null };
+    AppState.userOverridesGoal = false;
+
+    // 1. Dashboard Inputs
+    const dashIds = ['nombre', 'edad', 'sexo', 'peso', 'estatura', 'diagnostico', 'cama', 'actividad', 'goalTotal', 'goalKcalBox'];
+    dashIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = (id === 'actividad') ? '1.2' : (id === 'sexo' ? 'm' : '');
+    });
+
+    // 2. Simulator Inputs
+    const simIds = ['formulaSelect', 'volume', 'dilution', 'modNessucar', 'modMCT', 'modEnterex', 'modBanatrol', 'modProteinex', 'modFresubin'];
+    simIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    // 3. Assessment Inputs
+    const assessIds = [
+        'ccintura', 'cbraquial', 'cpantorrilla', 'altrodilla',
+        'ptricipital', 'pbicipital', 'piliaco', 'pabdominal',
+        'mediaenv', 'envcomp', 'edemaGrade', 'diagPES', 'diagnosticoPES',
+        'residuo', 'diarrea', 'distension', 'accesoTipo', 'accesoFecha'
+    ];
+    assessIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = (id === 'edemaGrade') ? '0' : '';
+    });
+
+    // 4. Clear Dynamic UI
+    const containers = ['examsContainer', 'iaResultContainer', 'clinicalNoteContainer', 'rossContainer', 'frisanchoContainer'];
+    containers.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = id.includes('Container') ? '' : el.innerHTML;
+            el.style.display = 'none';
+        }
+    });
+
+    // 5. Nutri IA State
+    const iaInitial = document.getElementById('iaInitialState');
+    if (iaInitial) iaInitial.style.display = 'block';
+
+    // 6. Reset Badges
+    const badges = ['valBMI', 'resTMB', 'valIdealWeight', 'valIPT', 'valIPTClass', 'simGoal', 'simCurrent', 'valKcal', 'valProt', 'valCHO', 'valLip'];
+    badges.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = (id.includes('val') || id.includes('res')) ? '--' : '0';
+    });
+
+    // Update Display
+    const patientBadge = document.getElementById('currentPatientName');
+    if (patientBadge) patientBadge.innerText = 'Nuevo Paciente';
+
+    updateFormulaSelect();
+    runSimulation();
+    showToast("✨ Formulario reseteado para nuevo paciente");
+}
+
+function initTabNavigation() {
     const p = AppState.patient;
     const vol = parseFloat(document.getElementById('volume').value) || 0;
     const dil = (parseFloat(document.getElementById('dilution').value) || 100) / 100;
@@ -1148,10 +1290,43 @@ function updateCompareResults(k1, p1, c1, l1) {
         const labelB = document.getElementById('lblFormulaB');
         if (labelB) labelB.innerText = `Fórmula B: ${formulaB.name}`;
 
-        document.getElementById('valKcalB').innerText = Math.round(k2);
-        document.getElementById('valProtB').innerText = p2.toFixed(1);
-        document.getElementById('valCHOB').innerText = c2.toFixed(1);
-        document.getElementById('valLipB').innerText = l2.toFixed(1);
+        // Factor in Modules V3.50
+        let modK = 0, modP = 0, modC = 0, modL = 0;
+
+        const mNess = parseFloat(document.getElementById('modNessucar').value) || 0;
+        modK += (mNess * MODULE_DATA.nessucar.kcal / 100);
+        modC += (mNess * MODULE_DATA.nessucar.c / 100);
+
+        const mMCT = parseFloat(document.getElementById('modMCT').value) || 0;
+        modK += (mMCT * MODULE_DATA.mct.kcal / 100);
+        modL += (mMCT * MODULE_DATA.mct.f / 100);
+
+        const mEnt = parseFloat(document.getElementById('modEnterex').value) || 0;
+        modK += (mEnt * MODULE_DATA.enterex.kcal / 100);
+        modC += (mEnt * MODULE_DATA.enterex.c / 100);
+
+        const mBan = parseFloat(document.getElementById('modBanatrol').value) || 0;
+        modK += (mBan * MODULE_DATA.banatrol.kcal / 100);
+        modC += (mBan * MODULE_DATA.banatrol.c / 100);
+
+        const mProt = parseFloat(document.getElementById('modProteinex').value) || 0;
+        modK += (mProt * MODULE_DATA.proteinex.kcal / 100);
+        modP += (mProt * MODULE_DATA.proteinex.p / 100);
+
+        const mFres = parseFloat(document.getElementById('modFresubin').value) || 0;
+        modK += (mFres * MODULE_DATA.fresubin.kcal / 100);
+        modP += (mFres * MODULE_DATA.fresubin.p / 100);
+
+        k1 += modK;
+        p1 += modP;
+        c1 += modC;
+        l1 += modL;
+
+        // Refresh UI
+        document.getElementById('valKcal').innerText = Math.round(k1);
+        document.getElementById('valProt').innerText = p1.toFixed(1);
+        document.getElementById('valCHO').innerText = c1.toFixed(1);
+        document.getElementById('valLip').innerText = l1.toFixed(1);
     }
 
     // --- differences ---
@@ -1286,7 +1461,10 @@ function calcRoss() {
             weight = (2.02 * atr) + (64.19 - (0.04 * age));
         }
 
-        // Display in Input Field
+        // Display in UI V3.51
+        const display = document.getElementById('valRossWeightDisplay');
+        if (display) display.innerText = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
+
         if (badgeW) badgeW.value = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
 
         // Update Timestamp
@@ -1471,17 +1649,85 @@ function initGlobalEvents() {
     if (inpNUU) inpNUU.oninput = fnBN;
     if (inpNFactor) inpNFactor.oninput = fnBN;
 
-    // Purpose & Protocol Toggle Logic V3.43
-    const btnProtToggle = document.getElementById('btnOpenPurpose');
-    const fabProt = document.getElementById('btnProtocolOpen');
-    if (btnProtToggle && fabProt) {
-        btnProtToggle.onclick = () => {
-            const isVisible = fabProt.style.display === 'block';
-            fabProt.style.display = isVisible ? 'none' : 'block';
-            btnProtToggle.classList.toggle('active');
+    // Drug Interaction Search Logic V3.50
+    const inpDrug = document.getElementById('drugSearch');
+    const outDrug = document.getElementById('drugInteractionResult');
+    if (inpDrug && outDrug) {
+        inpDrug.oninput = (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            if (query.length < 3) {
+                outDrug.innerHTML = '<span style="opacity:0.5;">Busca un medicamento para ver recomendaciones...</span>';
+                return;
+            }
+            const drugKey = Object.keys(DRUG_INTERACTIONS).find(k => k.includes(query));
+            if (drugKey) {
+                outDrug.innerHTML = `<div style="padding:10px; background:rgba(231, 76, 60, 0.1); border-radius:10px; border-left:4px solid #e74c3c;">
+                    <strong>${drugKey.toUpperCase()}:</strong><br>${DRUG_INTERACTIONS[drugKey]}
+                </div>`;
+            } else {
+                outDrug.innerHTML = '<span style="color:#888;">No se encontró el fármaco. Intenta con una palabra clave.</span>';
+            }
         };
     }
-    // Note: btnPurposeClose is no longer strictly needed but kept for modal refs if any
+
+    // Clinical Note Generator V3.50
+    const btnNote = document.getElementById('btnGenerateNote');
+    if (btnNote) btnNote.onclick = function () {
+        const container = document.getElementById('clinicalNoteContainer');
+        const content = document.getElementById('noteContent');
+        if (!container || !content) return;
+
+        const p = AppState.activePatient;
+        if (!p) { alert("Selecciona un paciente primero."); return; }
+
+        const fId = document.getElementById('formulaSelect').value;
+        const formula = AppState.formulas.find(f => f.id === fId);
+        const vol = parseFloat(document.getElementById('volume').value) || 0;
+        const goal = parseFloat(document.getElementById('goalKcal').value) || 0;
+
+        // Modules info
+        let modulesText = "";
+        const mods = ["Nessucar", "MCT", "Enterex", "Banatrol", "Proteinex", "Fresubin"];
+        mods.forEach(m => {
+            const val = parseFloat(document.getElementById('mod' + m).value) || 0;
+            if (val > 0) modulesText += `${m}: ${val}${m === "MCT" ? "ml" : "g"}, `;
+        });
+
+        const tableHTML = `
+            <table style="width:100%; border-collapse:collapse; margin-bottom:15px; border:1px solid #eee;">
+                <tr style="background:#f9f9f9;">
+                    <th style="padding:8px; border:1px solid #eee; text-align:left;">Parámetro</th>
+                    <th style="padding:8px; border:1px solid #eee; text-align:left;">Dato</th>
+                </tr>
+                <tr><td style="padding:8px; border:1px solid #eee;">Peso Actual</td><td style="padding:8px; border:1px solid #eee;">${p.weight} kg</td></tr>
+                <tr><td style="padding:8px; border:1px solid #eee;">Meta Kcal</td><td style="padding:8px; border:1px solid #eee;">${goal} kcal/día</td></tr>
+                <tr><td style="padding:8px; border:1px solid #eee;">Prescripción</td><td style="padding:8px; border:1px solid #eee;">${formula ? formula.name : 'N/A'} - ${vol} ml</td></tr>
+                ${modulesText ? `<tr><td style="padding:8px; border:1px solid #eee;">Módulos</td><td style="padding:8px; border:1px solid #eee;">${modulesText.slice(0, -2)}</td></tr>` : ''}
+            </table>
+        `;
+
+        const des = document.getElementById('diagnosticoPES').value || "(Sin diagnóstico ingresado)";
+        const textHTML = `<p><strong>Evolución Nutricional:</strong> Paciente bajo control de Nutrición. Meta calórica de ${goal} kcal/día (${(goal / p.weight).toFixed(1)} kcal/kg).
+            Prescripción actual: ${formula ? formula.name : '---'} en volumen de ${vol}ml. ${modulesText ? `Reforzado con módulos: ${modulesText.slice(0, -2)}.` : ''}</p>
+            <p><strong>Diagnóstico/PES:</strong> ${des}</p>`;
+
+        content.innerHTML = tableHTML + textHTML;
+        container.style.display = 'block';
+        container.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Copy Button
+    const btnCopy = document.getElementById('btnCopyNote');
+    if (btnCopy) btnCopy.onclick = () => {
+        const text = document.getElementById('noteContent').innerText;
+        navigator.clipboard.writeText(text).then(() => alert("Nota clínica copiada al portapapeles."));
+    };
+
+    // Module Input Watcher
+    document.querySelectorAll('.input-module').forEach(inp => {
+        inp.oninput = updateSimulator;
+    });
+
 }
 
 
