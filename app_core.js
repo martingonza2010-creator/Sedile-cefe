@@ -1164,34 +1164,26 @@ function updateCompareResults(k1, p1, c1, l1) {
 
     // User wants ONLY the "Vs:" part here
     box.innerHTML = `<div><b>Vs:</b> ${getBadge(diffK, ' kcal')}</div>`;
-}
 
-// Update Secondary Stack Bar
-const stackSec = document.getElementById('stackCompare');
-if (stackSec) {
-    stackSec.style.display = 'flex';
-    setTimeout(() => { stackSec.style.opacity = '0.6'; stackSec.style.transform = 'translateY(18px)'; }, 50);
+    // Update Secondary Stack Bar
+    const stackSec = document.getElementById('stackCompare');
+    if (stackSec) {
+        stackSec.style.display = 'flex';
+        setTimeout(() => { stackSec.style.opacity = '0.6'; stackSec.style.transform = 'translateY(18px)'; }, 50);
 
-    // Calculate % relative to Kcal Total (approx) or same scale as primary
-    // Primary scale: width% = (g * 4 / TotalKcal) * 100 ? No, usually stacked 100% of weight?
-    // Let's us simple distribution % for bar width
-    const totalK = k2 || 1;
-    const pPct = ((p2 * 4) / totalK) * 100;
-    const cPct = ((formulaB.c * (v1 / 100) * 4) / totalK) * 100; // approx
-    // Actually simpler: Just copy the logic from updateStackBar but for B
-    // We need 'c' and 'l' for formula B
-    const c2 = AppState.calcMode === 'vol' ? formulaB.c * (v1 / 100) : formulaB.c * (v2 / 100);
-    const l2 = AppState.calcMode === 'vol' ? formulaB.f * (v1 / 100) : formulaB.f * (v2 / 100);
+        // Distribution
+        const c2 = AppState.calcMode === 'vol' ? formulaB.c * (v1 / 100) : formulaB.c * (v2 / 100);
+        const l2 = AppState.calcMode === 'vol' ? formulaB.f * (v1 / 100) : formulaB.f * (v2 / 100);
 
-    // Distribution
-    const calP = p2 * 4;
-    const calC = c2 * 4;
-    const calL = l2 * 9;
-    const totalCal = calP + calC + calL || 1;
+        const calP = p2 * 4;
+        const calC = c2 * 4;
+        const calL = l2 * 9;
+        const totalCal = calP + calC + calL || 1;
 
-    document.getElementById('barProtB').style.width = (calP / totalCal * 100) + "%";
-    document.getElementById('barCHOB').style.width = (calC / totalCal * 100) + "%";
-    document.getElementById('barLipB').style.width = (calL / totalCal * 100) + "%";
+        document.getElementById('barProtB').style.width = (calP / totalCal * 100) + "%";
+        document.getElementById('barCHOB').style.width = (calC / totalCal * 100) + "%";
+        document.getElementById('barLipB').style.width = (calL / totalCal * 100) + "%";
+    }
 }
 
 // --- 15. COMPLETE ASSESSMENT LOGIC (NEW) ---
@@ -1683,8 +1675,13 @@ async function generateNutriIAAnalysis() {
         }
 
     } catch (err) {
-        console.error("Error Nutri IA:", err);
-        alert("Error al conectar con la Nutri IA. Verifica tu conexión.");
+        console.error("🔴 Error Nutri IA Detallado:", err);
+        // Show more specific message if it's a known error type
+        let userMsg = "Error al conectar con la Nutri IA. Verifica tu conexión.";
+        if (err.message && err.message.includes("403")) userMsg = "Error 403: Acceso denegado a la IA (API Key inválida).";
+        if (err.message && err.message.includes("429")) userMsg = "Error 429: Se ha superado el límite de uso de la IA.";
+
+        alert(userMsg);
     } finally {
         btn.disabled = false;
         if (label) label.style.display = 'block';
@@ -1748,6 +1745,12 @@ async function callGeminiAPI(prompt) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`API Error ${res.status}: ${errorData.error?.message || res.statusText}`);
+    }
+
     const data = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al generar análisis.";
 }
