@@ -1116,8 +1116,8 @@ function updateCompareResults(k1, p1, c1, l1) {
     const formulaB = AppState.formulas.find(f => f.id === fIdB);
 
     if (!formulaB) {
-        box.innerHTML = '';
-        macroBox.innerHTML = '';
+        if (box) box.innerHTML = '';
+        if (macroBox) macroBox.innerHTML = '';
         // Hide formula B specific macro board if it exists
         const boardB = document.getElementById('macroBoardB');
         if (boardB) boardB.style.display = 'none';
@@ -1471,14 +1471,17 @@ function initGlobalEvents() {
     if (inpNUU) inpNUU.oninput = fnBN;
     if (inpNFactor) inpNFactor.oninput = fnBN;
 
-    // Purpose Modal Logic
-    const modPurpose = document.getElementById('purposeModal');
-    if (modPurpose) {
-        const btnOpen = document.getElementById('btnOpenPurpose');
-        const btnClose = document.getElementById('btnPurposeClose');
-        if (btnOpen) btnOpen.onclick = () => modPurpose.classList.add('active');
-        if (btnClose) btnClose.onclick = () => modPurpose.classList.remove('active');
+    // Purpose & Protocol Toggle Logic V3.43
+    const btnProtToggle = document.getElementById('btnOpenPurpose');
+    const fabProt = document.getElementById('btnProtocolOpen');
+    if (btnProtToggle && fabProt) {
+        btnProtToggle.onclick = () => {
+            const isVisible = fabProt.style.display === 'block';
+            fabProt.style.display = isVisible ? 'none' : 'block';
+            btnProtToggle.classList.toggle('active');
+        };
     }
+    // Note: btnPurposeClose is no longer strictly needed but kept for modal refs if any
 }
 
 

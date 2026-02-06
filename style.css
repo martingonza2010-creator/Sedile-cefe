@@ -170,6 +170,17 @@ header.main-header {
     font-weight: 700;
 }
 
+/* Mobile Brand Centering */
+@media (max-width: 600px) {
+    .brand-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+    }
+}
+
 .logout-btn {
     position: fixed;
     top: 20px;
@@ -284,10 +295,13 @@ header.main-header {
     border-radius: 20px;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
+    flex-wrap: wrap;
+    /* NEW FOR 2+1 LAYOUT */
 }
 
 .tab-btn {
-    flex: 1;
+    flex: 1 1 30%;
+    /* Standard behavior */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -302,6 +316,20 @@ header.main-header {
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     white-space: nowrap;
+}
+
+/* Mobile 2+1 Tab Layout V3.43 */
+@media (max-width: 600px) {
+    .tab-btn {
+        flex: 1 1 45%;
+        font-size: 0.8rem;
+        padding: 10px 5px;
+    }
+
+    .tab-btn[data-view="nutri-ia"] {
+        flex: 1 1 90%;
+        margin: 0 auto;
+    }
 }
 
 .tab-btn .tab-icon {
@@ -425,19 +453,55 @@ header.main-header {
     box-shadow: 0 10px 20px rgba(142, 68, 173, 0.2);
 }
 
-/* Protocols & Modals */
+/* --- FLOATING PROTOCOL BUTTON --- */
 .protocol-fab {
     position: fixed;
-    top: 20px;
-    right: 200px;
-    padding: 8px 18px;
-    background: white;
-    border: 1px solid var(--primary);
+    bottom: 25px;
+    right: 20px;
+    background: var(--primary);
+    color: white;
+    padding: 8px 15px;
+    /* SHRUNK V3.43 */
     border-radius: 50px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.75rem;
+    /* SMALLER V3.43 */
+    box-shadow: 0 10px 25px rgba(142, 68, 173, 0.3);
+    cursor: pointer;
+    z-index: 1000;
+    transition: 0.3s;
+    display: none;
+    /* HIDDEN BY DEFAULT V3.43 */
+}
+
+/* Premium Pill Button for Header */
+.btn-premium-toggle {
+    background: white;
+    border: 1px solid rgba(142, 68, 173, 0.3);
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
     cursor: pointer;
-    z-index: 100;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.btn-premium-toggle:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(142, 68, 173, 0.2);
+}
+
+.btn-premium-toggle.active {
+    background: var(--primary);
+    color: white;
 }
 
 .protocol-modal {

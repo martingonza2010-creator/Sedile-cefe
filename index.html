@@ -10,7 +10,7 @@
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.42">
+    <link rel="stylesheet" href="style.css?v=3.43">
     <link rel="manifest" href="manifest.json">
 </head>
 
@@ -35,8 +35,8 @@
     <!-- APLICACIÓN PRINCIPAL (OCULTA HASTA LOGIN) -->
     <div id="main-app" class="app-container compact-mode" style="display:none;">
 
-        <!-- Info Protocol Button -->
-        <button class="protocol-fab" id="btnProtocolOpen" title="Protocolos Institucionales">
+        <!-- Info Protocol Button (Hidden by default V3.43) -->
+        <button class="protocol-fab" id="btnProtocolOpen" title="Protocolos Institucionales" style="display:none;">
             <span>i</span> Protocolos HRA
         </button>
 
@@ -53,9 +53,11 @@
             </div>
 
             <div class="header-right-group">
-                <!-- Purpose & Logout -->
+                <!-- Protocols & Logout -->
                 <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; justify-content: flex-end;">
-                    <button class="btn-icon-circle" id="btnOpenPurpose" title="Propósito de la App">ℹ️</button>
+                    <button class="btn-premium-toggle" id="btnOpenPurpose" title="Propósito y Protocolos">
+                        <span>📋 Protocolos V.Infusion</span>
+                    </button>
                     <button class="btn-icon-circle" id="btnLogoutHeader" title="Cerrar Sesión">🚪</button>
                 </div>
 
@@ -431,8 +433,7 @@
                 </div>
             </div>
 
-            <button class="btn-primary-wide" id="btnSaveHistory" style="margin-top:20px;">Prescribir y Guardar
-                Cloud</button>
+            <!-- Prescribir button removed in V3.43 as requested (non-functional) -->
         </div><!-- End View Dashboard -->
 
         <!-- VISTA EVALUACIÓN COMPLETA (NUEVO) -->
@@ -885,7 +886,7 @@
                 });
             }
         </script>
-        <script src="app_core.js?v=3.42"></script>
+        <script src="app_core.js?v=3.43"></script>
 </body>
 
 </html>
