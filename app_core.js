@@ -931,12 +931,6 @@ function initHydrationLogic() {
 function toggleHydMethod() {
     const isMlKg = document.querySelector('input[name="hydMethod"][value="mlkg"]').checked;
     document.getElementById('hydFactorRow').style.display = isMlKg ? 'block' : 'none';
-    // Tab Navigation
-    initTabNavigation();
-
-    // New Patient Logic V3.51
-    const btnNew = document.getElementById('btnAddPatient');
-    if (btnNew) btnNew.onclick = resetPatientForm;
     calcHydration();
 }
 
@@ -1003,7 +997,7 @@ function resetPatientForm() {
     showToast("✨ Formulario reseteado para nuevo paciente");
 }
 
-function initTabNavigation() {
+function calcHydration() {
     const p = AppState.patient;
     const vol = parseFloat(document.getElementById('volume').value) || 0;
     const dil = (parseFloat(document.getElementById('dilution').value) || 100) / 100;
@@ -1649,6 +1643,10 @@ function initGlobalEvents() {
     if (inpNUU) inpNUU.oninput = fnBN;
     if (inpNFactor) inpNFactor.oninput = fnBN;
 
+    // New Patient Logic V3.51/V3.6
+    const btnNew = document.getElementById('btnAddPatient');
+    if (btnNew) btnNew.onclick = resetPatientForm;
+
     // Drug Interaction Search Logic V3.50
     const inpDrug = document.getElementById('drugSearch');
     const outDrug = document.getElementById('drugInteractionResult');
@@ -1677,7 +1675,7 @@ function initGlobalEvents() {
         const content = document.getElementById('noteContent');
         if (!container || !content) return;
 
-        const p = AppState.activePatient;
+        const p = AppState.patient;
         if (!p) { alert("Selecciona un paciente primero."); return; }
 
         const fId = document.getElementById('formulaSelect').value;
