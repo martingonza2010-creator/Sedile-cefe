@@ -497,25 +497,6 @@
                         </div>
                     </div>
 
-                    <div class="ross-box-featured" id="chumleaContainer"
-                        style="margin-bottom:20px; display:none; background:rgba(39, 174, 96, 0.05); padding:15px; border-radius:12px; border:1px solid rgba(39, 174, 96, 0.2);">
-                        <div
-                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h5 style="color:#27ae60; margin:0; font-size:0.8rem;">📏 Estimación de Peso (Chumlea)</h5>
-                            <div id="valChumleaDate" style="font-size:0.6rem; color:#888; font-style:italic;">Última
-                                act:
-                                --</div>
-                        </div>
-                        <div style="text-align:center;">
-                            <span
-                                style="font-size:0.65rem; color:#666; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:5px;">Peso
-                                Estimado (Chumlea)</span>
-                            <div id="valChumleaWeightDisplay"
-                                style="font-size:1.8rem; font-weight:bold; color:#27ae60;">--
-                                kg</div>
-                            <input type="hidden" id="valChumleaWeight">
-                        </div>
-                    </div>
 
                     <!-- Frisancho/NHANES Red Box -->
                     <div class="ross-box-featured" id="frisanchoContainer"
@@ -600,8 +581,23 @@
                                 </div>
                                 <div class="mini-input"><label>Env. Completa</label><input type="number" id="envcomp">
                                 </div>
-                                <div class="mini-input"><label>Altura rodilla ATR (cm)</label><input type="number"
-                                        id="altrodilla" class="input-watch-chumlea" placeholder="cm"></div>
+                                <div class="mini-input">
+                                    <label>Altura rodilla ATR (cm)</label>
+                                    <input type="number" id="altrodilla" class="input-watch-chumlea" placeholder="cm">
+                                    <div id="estContainerStacked"
+                                        style="display:none; margin-top:8px; flex-direction:column; gap:5px;">
+                                        <div id="valRossStatureBadge"
+                                            style="background:rgba(155, 89, 182, 0.1); color:#8e44ad; padding:5px; border-radius:10px; font-size:0.7rem; font-weight:700; border:1px solid rgba(155, 89, 182, 0.2); text-align:center;">
+                                            Talla Ross: --
+                                        </div>
+                                        <div id="valChumleaWeightBadge"
+                                            style="background:rgba(39, 174, 96, 0.1); color:#27ae60; padding:5px; border-radius:10px; font-size:0.7rem; font-weight:700; border:1px solid rgba(39, 174, 96, 0.2); text-align:center;">
+                                            Peso Chumlea: --
+                                        </div>
+                                        <input type="hidden" id="valChumleaWeight">
+                                        <input type="hidden" id="valRossStature">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </details>

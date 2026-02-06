@@ -1481,37 +1481,40 @@ function calcChumleaWeight() {
     const age = parseFloat(document.getElementById('edad')?.value) || 0;
     const sex = document.getElementById('sexo')?.value;
 
-    const resBox = document.getElementById('chumleaContainer');
+    const resBox = document.getElementById('estContainerStacked');
     const badgeW = document.getElementById('valChumleaWeight');
-    const badgeDate = document.getElementById('valChumleaDate');
+    const badgeS = document.getElementById('valRossStature');
+    const badgeWDisplay = document.getElementById('valChumleaWeightBadge');
+    const badgeSDisplay = document.getElementById('valRossStatureBadge');
 
-    // Trigger: Aparece cuando se coloca ATR (Altura Rodilla)
     if (atr > 0) {
-        if (resBox) resBox.style.display = 'block';
+        if (resBox) resBox.style.display = 'flex';
 
+        // 1. Ross Stature Formula
+        let stature = 0;
+        if (sex === 'f') {
+            stature = (1.83 * atr) + (84.8 - (0.24 * age));
+        } else {
+            stature = (2.02 * atr) + (64.19 - (0.04 * age));
+        }
+
+        // 2. Chumlea Weight Formula
         let weight = 0;
-        const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30; // 30 is a safe default if missing
-
-        // Chumlea Weight Formula V3.62/V3.63
-        // Uses ATR and CB (MUAC) if available.
+        const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30; // Default Muac
         if (sex === 'f') {
             weight = (1.27 * atr) + (0.87 * cb) + (0.41 * 35) + (0.11 * 15) - 43.1;
         } else {
             weight = (0.98 * atr) + (1.16 * cb) + (0.37 * 35) + (1.16 * 15) - 35.8;
         }
 
-        // Display in UI V3.63
-        const display = document.getElementById('valChumleaWeightDisplay');
-        if (display) display.innerText = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
+        // Update UI Badges
+        if (badgeSDisplay) badgeSDisplay.innerText = `Talla Ross: ${stature.toFixed(1)} cm`;
+        if (badgeWDisplay) badgeWDisplay.innerText = `Peso Chumlea: ${weight.toFixed(1)} kg`;
 
-        if (badgeW) badgeW.value = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
+        // Update hidden inputs for persistence/IA
+        if (badgeW) badgeW.value = weight.toFixed(1) + ' kg';
+        if (badgeS) badgeS.value = stature.toFixed(1) + ' cm';
 
-        // Update Timestamp
-        if (badgeDate) {
-            const now = new Date();
-            const timeStr = now.toLocaleDateString('es-CL') + ' ' + now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-            badgeDate.innerText = `Última estimación: ${timeStr}`;
-        }
     } else {
         if (resBox) resBox.style.display = 'none';
     }
@@ -1991,7 +1994,8 @@ function constructNutriIAPrompt() {
             diagnosticoIPT: document.getElementById('valIPTClass')?.innerText,
             cintura: document.getElementById('ccintura')?.value,
             braquial: document.getElementById('cbraquial')?.value,
-            chumlea: document.getElementById('valChumleaWeight')?.value
+            chumlea: document.getElementById('valChumleaWeight')?.value,
+            ross: document.getElementById('valRossStature')?.value
         },
         bioquimica: Array.from(document.querySelectorAll('#examsContainer .exam-row')).map(row => {
             const inputs = row.querySelectorAll('input');
