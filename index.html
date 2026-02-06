@@ -308,11 +308,6 @@
                             <button class="mode-toggle" data-mode="grams">Gramaje</button>
                         </div>
 
-                        <!-- NEW: Compare Toggle -->
-                        <button id="btnToggleCompare" class="btn-micro"
-                            style="margin-left:auto; display:flex; align-items:center; gap:5px; border-color:#888; color:#555;">
-                            <span>⚖️</span> Comparar
-                        </button>
 
                         <div class="progress-container-mini">
                             <div class="prog-label">Meta: <span id="simGoal">--</span> kcal</div>
@@ -357,9 +352,6 @@
                                 <select id="formulaSelect" class="select-modern"></select>
                                 <button id="btnToggleFav" class="btn-micro" style="font-size:1.2rem; padding: 5px 10px;"
                                     title="Marcar como Favorita">☆</button>
-                                <button id="btnToggleCompare" class="btn-premium-toggle" style="height:42px;">
-                                    <span>🆚</span> Comparar
-                                </button>
                             </div>
                         </div>
 
@@ -449,13 +441,13 @@
                 <div id="lblFormulaB"
                     style="grid-column: 1 / -1; font-size: 0.75rem; font-weight: 700; color: var(--primary); margin-bottom: 5px; text-align: center;">
                     Fórmula B</div>
-                <div class="macro-item k" style="background:transparent;"><label>Energía</label><span id="valKcalB"
+                <div class="macro-item k"><label>Energía</label><span id="valKcalB"
                         style="font-size:1.1rem;">0</span><small>kcal</small></div>
-                <div class="macro-item p" style="background:transparent;"><label>Prot</label><span id="valProtB"
+                <div class="macro-item p"><label>Proteína</label><span id="valProtB"
                         style="font-size:1.1rem;">0</span><small>g</small></div>
-                <div class="macro-item c" style="background:transparent;"><label>CHO</label><span id="valCHOB"
+                <div class="macro-item c"><label>H. Carbono</label><span id="valCHOB"
                         style="font-size:1.1rem;">0</span><small>g</small></div>
-                <div class="macro-item f" style="background:transparent;"><label>Líp</label><span id="valLipB"
+                <div class="macro-item f"><label>Lípidos</label><span id="valLipB"
                         style="font-size:1.1rem;">0</span><small>g</small></div>
             </div>
 
@@ -606,8 +598,8 @@
                                 </div>
                                 <div class="mini-input"><label>Env. Completa</label><input type="number" id="envcomp">
                                 </div>
-                                <div class="mini-input"><label>Rodilla (ATR)</label><input type="number" id="altrodilla"
-                                        class="input-watch-ross" placeholder="cm"></div>
+                                <div class="mini-input"><label>Altura rodilla ATR (cm)</label><input type="number"
+                                        id="altrodilla" class="input-watch-ross" placeholder="cm"></div>
                             </div>
                         </div>
                     </details>

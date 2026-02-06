@@ -677,6 +677,11 @@ function initSimulatorLogic() {
     if (dil) dil.oninput = runSimulation;
     if (btnSave) btnSave.onclick = savePrescription;
 
+    // Trigger update on any module input change
+    document.querySelectorAll('.input-module').forEach(inp => {
+        inp.oninput = runSimulation;
+    });
+
     // Favorites Logic
     const btnFav = document.getElementById('btnToggleFav');
     if (btnFav) {
@@ -1342,16 +1347,21 @@ function updateCompareResults(k1, p1, c1, l1) {
         modK += (mFres * MODULE_DATA.fresubin.kcal / 100);
         modP += (mFres * MODULE_DATA.fresubin.p / 100);
 
-        k1 += modK;
-        p1 += modP;
-        c1 += modC;
-        l1 += modL;
-
-        // Refresh UI
+        // Primary formula A already has modules added in runSimulation
+        // But if we want to update the text labels again here:
         document.getElementById('valKcal').innerText = Math.round(k1);
         document.getElementById('valProt').innerText = p1.toFixed(1);
         document.getElementById('valCHO').innerText = c1.toFixed(1);
         document.getElementById('valLip').innerText = l1.toFixed(1);
+
+        // FORMULA B Board Update
+        // Calculate B macros + same modules (since modules are added to the 'preparación')
+        k2 += modK; p2 += modP; c2 += modC; l2 += modL;
+
+        document.getElementById('valKcalB').innerText = Math.round(k2);
+        document.getElementById('valProtB').innerText = p2.toFixed(1);
+        document.getElementById('valCHOB').innerText = c2.toFixed(1);
+        document.getElementById('valLipB').innerText = l2.toFixed(1);
     }
 
     // --- differences ---
@@ -1477,13 +1487,16 @@ function calcRoss() {
         if (resBox) resBox.style.display = 'block';
 
         let weight = 0;
-        // Formula Ross 2.0 (User provided)
-        // Hombres: (2.02 × ATR) + (64.19 - (0.04 × Edad))
-        // Mujeres: (1.83 × ATR) + (84.8 - (0.24 × Edad))
+        const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30; // 30 is a safe default if missing
+
+        // Ross Weight Formula V3.62 (Simplified Chumlea)
+        // Uses ATR and CB (MUAC) if available.
         if (sex === 'f') {
-            weight = (1.83 * atr) + (84.8 - (0.24 * age));
+            // (1.27 × ATR) + (0.87 × CB) + (0.41 × CP[35]) + (0.11 × PSE[15]) - 43.1
+            weight = (1.27 * atr) + (0.87 * cb) + (0.41 * 35) + (0.11 * 15) - 43.1;
         } else {
-            weight = (2.02 * atr) + (64.19 - (0.04 * age));
+            // (0.98 × ATR) + (1.16 × CB) + (1.73 × CP[35]) + (0.37 × PSE[15]) - 81.69
+            weight = (0.98 * atr) + (1.16 * cb) + (0.37 * 35) + (1.16 * 15) - 35.8;
         }
 
         // Display in UI V3.51
