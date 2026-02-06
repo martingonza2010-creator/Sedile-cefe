@@ -1459,12 +1459,15 @@ function initAssessmentLogic() {
         });
     }
 
-    // NEW V3.16: ROSS Estimation (Pediatrics)
-    const rossInputs = ['altrodilla', 'edad', 'sexo'];
-    rossInputs.forEach(id => {
+    // NEW V3.16: CHUMLEA Estimation (Pediatrics/Adults)
+    const chumleaInputs = ['altrodilla', 'edad', 'sexo'];
+    chumleaInputs.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('input', calcRoss);
+        if (el) el.addEventListener('input', calcChumleaWeight);
     });
+
+    const chumleaWatcher = document.querySelectorAll('.input-watch-chumlea');
+    chumleaWatcher.forEach(inp => inp.oninput = calcChumleaWeight);
 
     // NEW V3.41: Advanced Anthropometry (Frisancho/NHANES)
     ['cbraquial', 'ptricipital', 'edad', 'sexo'].forEach(id => {
@@ -1473,14 +1476,14 @@ function initAssessmentLogic() {
     });
 }
 
-function calcRoss() {
+function calcChumleaWeight() {
     const atr = parseFloat(document.getElementById('altrodilla')?.value) || 0;
     const age = parseFloat(document.getElementById('edad')?.value) || 0;
     const sex = document.getElementById('sexo')?.value;
 
-    const resBox = document.getElementById('rossContainer');
-    const badgeW = document.getElementById('valRossWeight');
-    const badgeDate = document.getElementById('valRossDate');
+    const resBox = document.getElementById('chumleaContainer');
+    const badgeW = document.getElementById('valChumleaWeight');
+    const badgeDate = document.getElementById('valChumleaDate');
 
     // Trigger: Aparece cuando se coloca ATR (Altura Rodilla)
     if (atr > 0) {
@@ -1489,18 +1492,16 @@ function calcRoss() {
         let weight = 0;
         const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30; // 30 is a safe default if missing
 
-        // Ross Weight Formula V3.62 (Simplified Chumlea)
+        // Chumlea Weight Formula V3.62/V3.63
         // Uses ATR and CB (MUAC) if available.
         if (sex === 'f') {
-            // (1.27 × ATR) + (0.87 × CB) + (0.41 × CP[35]) + (0.11 × PSE[15]) - 43.1
             weight = (1.27 * atr) + (0.87 * cb) + (0.41 * 35) + (0.11 * 15) - 43.1;
         } else {
-            // (0.98 × ATR) + (1.16 × CB) + (1.73 × CP[35]) + (0.37 × PSE[15]) - 81.69
             weight = (0.98 * atr) + (1.16 * cb) + (0.37 * 35) + (1.16 * 15) - 35.8;
         }
 
-        // Display in UI V3.51
-        const display = document.getElementById('valRossWeightDisplay');
+        // Display in UI V3.63
+        const display = document.getElementById('valChumleaWeightDisplay');
         if (display) display.innerText = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
 
         if (badgeW) badgeW.value = (weight > 0 ? weight : 0).toFixed(1) + ' kg';
@@ -1990,7 +1991,7 @@ function constructNutriIAPrompt() {
             diagnosticoIPT: document.getElementById('valIPTClass')?.innerText,
             cintura: document.getElementById('ccintura')?.value,
             braquial: document.getElementById('cbraquial')?.value,
-            ross: document.getElementById('valRossWeight')?.value
+            chumlea: document.getElementById('valChumleaWeight')?.value
         },
         bioquimica: Array.from(document.querySelectorAll('#examsContainer .exam-row')).map(row => {
             const inputs = row.querySelectorAll('input');
