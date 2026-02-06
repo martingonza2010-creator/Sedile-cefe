@@ -137,7 +137,7 @@ body {
 
 /* APP LAYOUT */
 .app-container {
-    max-width: 1100px;
+    max-width: 1250px;
     margin: 40px auto;
     padding: 0 20px;
     animation: fadeIn 0.5s ease-out;
@@ -150,9 +150,10 @@ header.main-header {
     margin-bottom: 30px;
     background: var(--glass);
     backdrop-filter: var(--glass-blur);
-    padding: 15px 25px;
+    padding: 15px 30px;
     border-radius: 20px;
     box-shadow: var(--shadow);
+    width: 100%;
 }
 
 .logo-small {
@@ -296,7 +297,7 @@ header.main-header {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
     flex-wrap: wrap;
-    /* NEW FOR 2+1 LAYOUT */
+    width: 100%;
 }
 
 .tab-btn {

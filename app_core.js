@@ -71,6 +71,28 @@ const AppState = {
     chart: null
 };
 
+// --- DATA STRUCTURES (V3.50/V3.61) ---
+const MODULE_DATA = {
+    nessucar: { kcal: 380, p: 0, c: 96, f: 0 },
+    mct: { kcal: 855, p: 0, c: 0, f: 95 },
+    enterex: { kcal: 383, p: 0, c: 95, f: 0 },
+    banatrol: { kcal: 372, p: 0, c: 65.11, f: 0 },
+    proteinex: { kcal: 357, p: 90, c: 0, f: 0 },
+    fresubin: { kcal: 360, p: 87, c: 0, f: 0 }
+};
+
+const DRUG_INTERACTIONS = {
+    "fenitoina": "⚠️ Separar de la nutrición enteral (NE) al menos 1-2 horas antes y después para evitar reducción en su absorción. Monitorizar niveles séricos.",
+    "propofol": "⚠️ Aporta 1.1 kcal/ml de lípidos. Considerar este aporte calórico graso dentro del balance calórico total para evitar sobrealimentación.",
+    "omeprazol": "⚠️ Administrar preferentemente en ayunas o 30-60 min antes de la NE para asegurar eficacia. No mezclar directamente con la fórmula.",
+    "furosemida": "⚠️ Puede causar hipopotasemia e hipomagnesemia. Monitorizar electrolitos periódicamente si se usa con NE a largo plazo.",
+    "levodopa": "⚠️ Las proteínas de la dieta pueden competir con su absorción. Ajustar tiempos de toma si el control motor fluctúa.",
+    "warfarina": "⚠️ El contenido de Vitamina K de algunas fórmulas enterales puede interferir con el efecto anticoagulante. Mantener aporte constante.",
+    "metformina": "⚠️ Puede causar déficit de B12 con uso prolongado. Considerar suplementación si existen signos clínicos.",
+    "cloroquina": "⚠️ Puede causar hipoglicemia severa. Monitorizar glicemia capilar.",
+    "ciprofloxacino": "⚠️ La absorción se reduce significativamente con productos lácteos o fórmulas enterales cálcicas. Suspender NE 2h antes/después."
+};
+
 // Safely load favorites
 try {
     const stored = localStorage.getItem('sedile_favs');
@@ -92,19 +114,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnLogoutHeader = document.getElementById('btnLogoutHeader');
     if (btnLogoutHeader) btnLogoutHeader.onclick = logout;
 
-    initCompactLayout();
-    initTabNavigation();
-    initProtocolModal();
-    initHistoryModal();
-    initPatientLogic();
-    initSimulatorLogic();
-    initInfusionLogic();
-    initHydrationLogic();
-    initCompareLogic();
-    initChartSim();
-    initAssessmentLogic();
-    initGlobalEvents();
-    try { initNutriIA(); } catch (e) { console.error("NutriIA Init Error:", e); }
+    const safelyInit = (fn, name) => {
+        try { fn(); } catch (e) { console.error(`❌ Init Error (${name}):`, e); }
+    };
+
+    safelyInit(initCompactLayout, "CompactLayout");
+    safelyInit(initTabNavigation, "TabNavigation");
+    safelyInit(initProtocolModal, "ProtocolModal");
+    safelyInit(initHistoryModal, "HistoryModal");
+    safelyInit(initPatientLogic, "PatientLogic");
+    safelyInit(initSimulatorLogic, "SimulatorLogic");
+    safelyInit(initInfusionLogic, "InfusionLogic");
+    safelyInit(initHydrationLogic, "HydrationLogic");
+    safelyInit(initCompareLogic, "CompareLogic");
+    safelyInit(initChartSim, "ChartSim");
+    safelyInit(initAssessmentLogic, "AssessmentLogic");
+    safelyInit(initGlobalEvents, "GlobalEvents");
+    safelyInit(initNutriIA, "NutriIA");
 
     updateFormulaSelect();
     initFormulaSearch();
@@ -452,29 +478,6 @@ function renderEvolutionChart(history) {
     const height = canvas.height;
     const VERSION = "3.50";
 
-    // NEW V3.50: MODULE DATA (Nutritional values per 100g or 100ml)
-    const MODULE_DATA = {
-        nessucar: { kcal: 380, p: 0, c: 96, f: 0 },
-        mct: { kcal: 855, p: 0, c: 0, f: 95 },
-        enterex: { kcal: 383, p: 0, c: 95, f: 0 },
-        banatrol: { kcal: 372, p: 0, c: 65.11, f: 0 },
-        proteinex: { kcal: 357, p: 90, c: 0, f: 0 },
-        fresubin: { kcal: 360, p: 87, c: 0, f: 0 }
-    };
-
-    // NEW V3.50: DRUG INTERACTIONS
-    const DRUG_INTERACTIONS = {
-        "fenitoina": "⚠️ Separar de la nutrición enteral (NE) al menos 1-2 horas antes y después para evitar reducción en su absorción. Monitorizar niveles séricos.",
-        "propofol": "⚠️ Aporta 1.1 kcal/ml de lípidos. Considerar este aporte calórico graso dentro del balance calórico total para evitar sobrealimentación.",
-        "omeprazol": "⚠️ Administrar preferentemente en ayunas o 30-60 min antes de la NE para asegurar eficacia. No mezclar directamente con la fórmula.",
-        "furosemida": "⚠️ Puede causar hipopotasemia e hipomagnesemia. Monitorizar electrolitos periódicamente si se usa con NE a largo plazo.",
-        "levodopa": "⚠️ Las proteínas de la dieta pueden competir con su absorción. Ajustar tiempos de toma si el control motor fluctúa.",
-        "warfarina": "⚠️ El contenido de Vitamina K de algunas fórmulas enterales puede interferir con el efecto anticoagulante. Mantener aporte constante.",
-        "metformina": "⚠️ Puede causar déficit de B12 con uso prolongado. Considerar suplementación si existen signos clínicos.",
-        "cloroquina": "⚠️ Puede causar hipoglicemia severa. Monitorizar glicemia capilar.",
-        "ciprofloxacino": "⚠️ La absorción se reduce significativamente con productos lácteos o fórmulas enterales cálcicas. Suspender NE 2h antes/después."
-    };
-
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
@@ -816,6 +819,34 @@ function runSimulation() {
         c = formula.c * (grams / 100);
         l = formula.f * (grams / 100);
     }
+
+    // Factor in Modules V3.50/V3.61
+    let modK = 0, modP = 0, modC = 0, modL = 0;
+    const mNess = parseFloat(document.getElementById('modNessucar').value) || 0;
+    modK += (mNess * MODULE_DATA.nessucar.kcal / 100);
+    modC += (mNess * MODULE_DATA.nessucar.c / 100);
+
+    const mMCT = parseFloat(document.getElementById('modMCT').value) || 0;
+    modK += (mMCT * MODULE_DATA.mct.kcal / 100);
+    modL += (mMCT * MODULE_DATA.mct.f / 100);
+
+    const mEnt = parseFloat(document.getElementById('modEnterex').value) || 0;
+    modK += (mEnt * MODULE_DATA.enterex.kcal / 100);
+    modC += (mEnt * MODULE_DATA.enterex.c / 100);
+
+    const mBan = parseFloat(document.getElementById('modBanatrol').value) || 0;
+    modK += (mBan * MODULE_DATA.banatrol.kcal / 100);
+    modC += (mBan * MODULE_DATA.banatrol.c / 100);
+
+    const mProt = parseFloat(document.getElementById('modProteinex').value) || 0;
+    modK += (mProt * MODULE_DATA.proteinex.kcal / 100);
+    modP += (mProt * MODULE_DATA.proteinex.p / 100);
+
+    const mFres = parseFloat(document.getElementById('modFresubin').value) || 0;
+    modK += (mFres * MODULE_DATA.fresubin.kcal / 100);
+    modP += (mFres * MODULE_DATA.fresubin.p / 100);
+
+    k += modK; p += modP; c += modC; l += modL;
 
     // Animation: Count Up Numbers
     animateValue("valKcal", Math.round(k));
