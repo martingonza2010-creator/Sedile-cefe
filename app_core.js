@@ -467,7 +467,7 @@ async function loadHistory() {
     }
 
     listContainer.innerHTML = data.map(p => `
-        <div class="history-mini-card" onclick="loadPatient(${p.id})">
+        <div class="history-mini-card" onclick="loadPatient('${p.id}')">
             <h4>${p.nombre}</h4>
             <div class="diag">${p.diagnostico || 'Sin diagnóstico registrado'}</div>
             <div class="bottom-row">
