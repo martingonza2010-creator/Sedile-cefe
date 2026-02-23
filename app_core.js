@@ -428,8 +428,16 @@ function initGoalLogic() {
 }
 
 async function loadHistory() {
-    const container = document.getElementById('historyContainer');
-    container.innerHTML = '<p style="text-align:center; opacity:0.6;">Buscando tus pacientes...</p>';
+    let listContainer = document.getElementById('patientListContainer');
+    if (!listContainer) {
+        // Fallback or setup if first time
+        const container = document.getElementById('historyContainer');
+        const chartHTML = document.getElementById('chartContainer') ? document.getElementById('chartContainer').outerHTML : '';
+        container.innerHTML = chartHTML + '<div id="patientListContainer"></div>';
+        listContainer = document.getElementById('patientListContainer');
+    }
+
+    listContainer.innerHTML = '<p style="text-align:center; opacity:0.6;">Buscando tus pacientes...</p>';
 
     const { data, error } = await supabaseClient
         .from('pacientes')
@@ -438,7 +446,7 @@ async function loadHistory() {
         .order('created_at', { ascending: false });
 
     if (error || !data.length) {
-        container.innerHTML = '<p style="text-align:center; opacity:0.6;">Aún no tienes pacientes guardados.</p>';
+        listContainer.innerHTML = '<p style="text-align:center; opacity:0.6;">Aún no tienes pacientes guardados.</p>';
         return;
     }
 
@@ -447,15 +455,18 @@ async function loadHistory() {
         const topPatient = data[0];
         const history = data.filter(p => p.nombre === topPatient.nombre).slice(0, 5).reverse();
 
-        if (history.length > 1) {
-            document.getElementById('chartContainer').style.display = 'block';
-            renderEvolutionChart(history);
-        } else {
-            document.getElementById('chartContainer').style.display = 'none';
+        const chartContainerE = document.getElementById('chartContainer');
+        if (chartContainerE) {
+            if (history.length > 1) {
+                chartContainerE.style.display = 'block';
+                renderEvolutionChart(history);
+            } else {
+                chartContainerE.style.display = 'none';
+            }
         }
     }
 
-    container.innerHTML += data.map(p => `
+    listContainer.innerHTML = data.map(p => `
         <div class="history-mini-card" onclick="loadPatient(${p.id})">
             <h4>${p.nombre}</h4>
             <div class="diag">${p.diagnostico || 'Sin diagnóstico registrado'}</div>
@@ -477,6 +488,7 @@ function renderEvolutionChart(history) {
     const width = canvas.width;
     const height = canvas.height;
     const VERSION = "3.50";
+    const padding = 20;
 
     // Clear canvas
     ctx.clearRect(0, 0, width, height);

@@ -834,7 +834,9 @@
                         <p style="text-align:center; font-size:0.7rem; color:#888; margin-top:5px;">Evolución de Peso
                             (Últimos 5 registros)</p>
                     </div>
-                    <p style="text-align:center; opacity:0.6;">Cargando tus registros...</p>
+                    <div id="patientListContainer">
+                        <p style="text-align:center; opacity:0.6;">Cargando tus registros...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -943,9 +945,9 @@
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        if (!localStorage.getItem('sw_purged_3.6')) {
+                        if (!localStorage.getItem('sw_purged_3.7')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_3.6', 'true');
+                            localStorage.setItem('sw_purged_3.7', 'true');
                             window.location.reload();
                         }
                     }
