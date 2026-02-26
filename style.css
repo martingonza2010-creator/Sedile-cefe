@@ -1201,3 +1201,31 @@ body::before {
         transform: rotate(360deg);
     }
 }
+
+@keyframes pulseSoft {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* --- WARD KANBAN V3.60 --- */
+.ward-card {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.ward-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.kanban-list {
+    padding-bottom: 20px;
+}

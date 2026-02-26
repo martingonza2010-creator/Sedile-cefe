@@ -87,6 +87,10 @@
             <button class="tab-btn" data-view="nutri-ia">
                 <span class="tab-icon">🦦</span> Nutri IA
             </button>
+            <!-- NEW V3.60: WARD KANBAN TAB -->
+            <button class="tab-btn" data-view="ward">
+                <span class="tab-icon">🏥</span> Vista de Sala
+            </button>
         </nav>
 
         <!-- VISTA DASHBOARD (PRINCIPAL) -->
@@ -887,6 +891,46 @@
                 Dejar aplicación en pantalla de inicio 📱
             </span>
         </div> <!-- End Main App -->
+
+        <!-- VISTA KANBAN DE SALA (NEW V3.60) -->
+        <div id="view-ward" class="view-section">
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2>🏥 Gestión de Sala (Pacientes Activos)</h2>
+                    <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;">🔄
+                        Actualizar</button>
+                </div>
+                <!-- Kanban Board -->
+                <div class="kanban-board"
+                    style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; margin-top: 15px;">
+                    <!-- Columna: Activos / Prioritarios -->
+                    <div class="kanban-column"
+                        style="background:#f8f9fa; border-radius:15px; padding:15px; border-top: 4px solid #3498db;">
+                        <h3 style="font-size:0.95rem; margin-bottom:15px; display:flex; justify-content:space-between;">
+                            En Curso <span id="countActivos"
+                                style="background:#eee; padding:2px 8px; border-radius:12px; font-size:0.8rem;">0</span>
+                        </h3>
+                        <div id="colActivos" class="kanban-list"
+                            style="display:flex; flex-direction:column; gap:10px; min-height:200px;">
+                            <!-- Cards inserted here by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Columna: Observación / Críticos -->
+                    <div class="kanban-column"
+                        style="background:#f8f9fa; border-radius:15px; padding:15px; border-top: 4px solid #e74c3c;">
+                        <h3 style="font-size:0.95rem; margin-bottom:15px; display:flex; justify-content:space-between;">
+                            Críticos / Alertas <span id="countCriticos"
+                                style="background:#eee; padding:2px 8px; border-radius:12px; font-size:0.8rem;">0</span>
+                        </h3>
+                        <div id="colCriticos" class="kanban-list"
+                            style="display:flex; flex-direction:column; gap:10px; min-height:200px;">
+                            <!-- Cards inserted here by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- MODAL DE HISTORIAL -->
         <div class="protocol-modal" id="historyModal">

@@ -131,6 +131,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     safelyInit(initAssessmentLogic, "AssessmentLogic");
     safelyInit(initGlobalEvents, "GlobalEvents");
     safelyInit(initNutriIA, "NutriIA");
+    safelyInit(initVoiceDictation, "VoiceDictation");
+    safelyInit(initWardKanban, "WardKanban");
 
     updateFormulaSelect();
     initFormulaSearch();
@@ -480,6 +482,119 @@ async function loadHistory() {
         </div>
     `).join('');
 }
+
+// --- NEW V3.60: WARD KANBAN LOGIC ---
+function initWardKanban() {
+    const btnRefresh = document.getElementById('btnRefreshWard');
+    if (btnRefresh) {
+        btnRefresh.onclick = loadWardKanban;
+    }
+}
+
+async function loadWardKanban() {
+    const colActivos = document.getElementById('colActivos');
+    const colCriticos = document.getElementById('colCriticos');
+    const cntActivos = document.getElementById('countActivos');
+    const cntCriticos = document.getElementById('countCriticos');
+
+    if (!colActivos || !colCriticos) return;
+
+    colActivos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
+    colCriticos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
+
+    // Fetch patients that are not discharged
+    const { data, error } = await supabaseClient
+        .from('pacientes')
+        .select('*')
+        .eq('user_id', AppState.user.id)
+        .neq('estado_sala', 'de_alta')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error loading ward:", error);
+        colActivos.innerHTML = '<p style="color:red;">Error al cargar</p>';
+        return;
+    }
+
+    // Filter to latest entry per patient conceptually, 
+    // but usually in a ward list you only have one active entry per patient.
+    // For safety, we keep only the latest row per 'nombre' if they create duplicates without discharging.
+    const activeMap = new Map();
+    data.forEach(p => {
+        if (!activeMap.has(p.nombre) || new Date(p.created_at) > new Date(activeMap.get(p.nombre).created_at)) {
+            activeMap.set(p.nombre, p);
+        }
+    });
+
+    const uniqueActivePatients = Array.from(activeMap.values());
+
+    const actHTML = [];
+    const critHTML = [];
+
+    uniqueActivePatients.forEach(p => {
+        const isCritico = p.estado_sala === 'critico' || p.requiere_atencion;
+
+        // Automated Alert Logic
+        let alertBadge = '';
+        if (p.fecha_dispositivo) {
+            const dateSNG = new Date(p.fecha_dispositivo);
+            const today = new Date();
+            const diffTime = Math.abs(today - dateSNG);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays >= 30) {
+                alertBadge += `<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem; margin-right:5px;">⚠️ Sonda > 30d</span>`;
+            }
+        }
+
+        // Fast Check Weight drop (simulate if multiple histories exist but for now simple badge)
+        if (p.requiere_atencion) {
+            alertBadge += `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem;">⚠️ Revisar Peso</span>`;
+        }
+
+        const cardHTML = `
+            <div class="ward-card" style="background:white; border-radius:10px; padding:12px; box-shadow:0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid ${isCritico ? '#e74c3c' : '#3498db'}; cursor:pointer;" onclick="loadPatient('${p.id}')">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <h4 style="margin:0; font-size:0.9rem; color:#333;">${p.nombre}</h4>
+                    <span style="font-size:0.75rem; color:#888; font-weight:600; background:#eee; padding:2px 6px; border-radius:6px;">Cama ${p.cama || '--'}</span>
+                </div>
+                <div style="font-size:0.75rem; color:#666; margin:4px 0;">${p.diagnostico || 'Sin Dx'}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                    <span style="font-size:0.75rem; font-weight:600; color:var(--primary);">${p.peso_kg} kg | ${p.tmt ? Math.round(p.tmt) + ' kcal' : '--'}</span>
+                    <button onclick="event.stopPropagation(); window.togglePatientState('${p.id}', '${p.estado_sala === 'critico' ? 'activo' : 'critico'}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Cambiar a ${isCritico ? 'En Curso' : 'Crítico'}">
+                        ${isCritico ? '↩️' : '🚨'}
+                    </button>
+                    <button onclick="event.stopPropagation(); window.dischargePatient('${p.id}')" style="background:none; border:none; color:#27ae60; cursor:pointer;" title="Dar de Alta">
+                        ✔️
+                    </button>
+                </div>
+                <div style="margin-top:6px;">${alertBadge}</div>
+            </div>
+        `;
+
+        if (isCritico) {
+            critHTML.push(cardHTML);
+        } else {
+            actHTML.push(cardHTML);
+        }
+    });
+
+    colActivos.innerHTML = actHTML.join('') || '<p style="opacity:0.5; font-size:0.8rem;">No hay pacientes</p>';
+    colCriticos.innerHTML = critHTML.join('') || '<p style="opacity:0.5; font-size:0.8rem;">No hay pacientes críticos</p>';
+
+    if (cntActivos) cntActivos.innerText = actHTML.length;
+    if (cntCriticos) cntCriticos.innerText = critHTML.length;
+}
+
+window.togglePatientState = async (id, newState) => {
+    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: newState }).eq('id', id);
+    if (!error) loadWardKanban();
+};
+
+window.dischargePatient = async (id) => {
+    if (!confirm("¿Dar de alta a este paciente de la sala? Seguirá en tu historial, pero no en este Kanban.")) return;
+    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', id);
+    if (!error) loadWardKanban();
+};
 
 function renderEvolutionChart(history) {
     const canvas = document.getElementById('evolutionChart');
@@ -1692,6 +1807,13 @@ function initTabNavigation() {
                 // Trigger reflow for animation
                 void activeView.offsetWidth;
                 activeView.classList.add('active-view');
+            }
+
+            // Action Triggers based on Tab
+            if (targetView === 'nutri-ia') {
+                // Placeholder for future AI-related actions
+            } else if (targetView === 'ward') {
+                loadWardKanban();
             }
         };
     });
