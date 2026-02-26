@@ -1927,37 +1927,44 @@ function initTabNavigation() {
     const tabs = document.querySelectorAll('.tab-btn');
     const views = document.querySelectorAll('.view-section');
 
+    window.switchAppView = (targetView) => {
+        // UI Update: Tabs (only affects app-tabs, not the header button)
+        tabs.forEach(t => {
+            t.classList.remove('active');
+            if (t.dataset.view === targetView) {
+                t.classList.add('active');
+            }
+        });
+
+        // UI Update: Views
+        views.forEach(v => {
+            v.classList.remove('active-view');
+            v.style.display = 'none';
+        });
+
+        const activeView = document.getElementById(`view-${targetView}`);
+        if (activeView) {
+            activeView.style.display = 'block';
+            void activeView.offsetWidth; // Trigger reflow
+            activeView.classList.add('active-view');
+        }
+
+        // Action Triggers based on Tab
+        if (targetView === 'ward') {
+            loadWardKanban();
+        }
+    };
+
+    // Bind original tabs
     tabs.forEach(tab => {
-        tab.onclick = () => {
-            const targetView = tab.dataset.view;
-            console.log("Switching to tab:", targetView);
-
-            // UI Update: Tabs
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-
-            // UI Update: Views
-            views.forEach(v => {
-                v.classList.remove('active-view');
-                v.style.display = 'none';
-            });
-
-            const activeView = document.getElementById(`view-${targetView}`);
-            if (activeView) {
-                activeView.style.display = 'block';
-                // Trigger reflow for animation
-                void activeView.offsetWidth;
-                activeView.classList.add('active-view');
-            }
-
-            // Action Triggers based on Tab
-            if (targetView === 'nutri-ia') {
-                // Placeholder for future AI-related actions
-            } else if (targetView === 'ward') {
-                loadWardKanban();
-            }
-        };
+        tab.onclick = () => window.switchAppView(tab.dataset.view);
     });
+
+    // Bind new Header Ward button
+    const btnWardHeader = document.getElementById('btnOpenWard');
+    if (btnWardHeader) {
+        btnWardHeader.onclick = () => window.switchAppView('ward');
+    }
 }
 
 function showToast(msg) {
