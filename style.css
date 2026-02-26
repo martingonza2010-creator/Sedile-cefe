@@ -1232,3 +1232,45 @@ body::before {
 .kanban-list {
     padding-bottom: 20px;
 }
+
+/* --- PRINT MEDIA QUERIES (HANDOFF REPORT) V3.60 --- */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #printHandoffArea,
+    #printHandoffArea * {
+        visibility: visible;
+    }
+
+    #printHandoffArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+    }
+
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .print-table th,
+    .print-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+        font-size: 0.85rem;
+    }
+
+    .print-table th {
+        background-color: #f2f2f2 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

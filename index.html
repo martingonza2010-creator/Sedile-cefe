@@ -897,8 +897,12 @@
             <div class="card" style="margin-bottom: 20px;">
                 <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
                     <h2>🏥 Gestión de Sala (Pacientes Activos)</h2>
-                    <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;">🔄
-                        Actualizar</button>
+                    <div style="display:flex; gap:10px;">
+                        <button id="btnPrintHandoff" class="btn-micro" style="background:#27ae60; color:white;">🖨️
+                            Imprimir Entrega</button>
+                        <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;">🔄
+                            Actualizar</button>
+                    </div>
                 </div>
                 <!-- Kanban Board -->
                 <div class="kanban-board"
@@ -949,6 +953,19 @@
                     <div id="patientListContainer">
                         <p style="text-align:center; opacity:0.6;">Cargando tus registros...</p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW V3.60: MODAL QUICK VIEW (MEDICAL ROUND) -->
+        <div class="protocol-modal" id="quickViewModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>📋 Resumen de Bolsillo</h2>
+                    <button class="btn-close" id="btnQuickViewClose">&times;</button>
+                </div>
+                <div id="quickViewContent" style="flex:1; overflow-y:auto; padding-right:10px; font-size:0.9rem;">
+                    <!-- Content injected by JS -->
                 </div>
             </div>
         </div>
@@ -1068,6 +1085,9 @@
         </script>
         <script src="config.js"></script>
         <script src="app_core.js?v=3.43"></script>
+
+        <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
+        <div id="printHandoffArea"></div>
 </body>
 
 </html>

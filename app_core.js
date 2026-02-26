@@ -493,9 +493,13 @@ async function loadHistory() {
 // --- NEW V3.60: WARD KANBAN LOGIC ---
 function initWardKanban() {
     const btnRefresh = document.getElementById('btnRefreshWard');
-    if (btnRefresh) {
-        btnRefresh.onclick = loadWardKanban;
-    }
+    if (btnRefresh) btnRefresh.onclick = loadWardKanban;
+
+    const btnPrint = document.getElementById('btnPrintHandoff');
+    if (btnPrint) btnPrint.onclick = generateShiftHandoff;
+
+    const btnQuickClose = document.getElementById('btnQuickViewClose');
+    if (btnQuickClose) btnQuickClose.onclick = () => document.getElementById('quickViewModal').classList.remove('active');
 }
 
 async function loadWardKanban() {
@@ -569,6 +573,9 @@ async function loadWardKanban() {
                 <div style="font-size:0.75rem; color:#666; margin:4px 0;">${p.diagnostico || 'Sin Dx'}</div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
                     <span style="font-size:0.75rem; font-weight:600; color:var(--primary);">${p.peso_kg} kg | ${p.tmt ? Math.round(p.tmt) + ' kcal' : '--'}</span>
+                    <button onclick="event.stopPropagation(); window.openQuickView('${p.id}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Resumen de Bolsillo">
+                        🔍
+                    </button>
                     <button onclick="event.stopPropagation(); window.togglePatientState('${p.id}', '${p.estado_sala === 'critico' ? 'activo' : 'critico'}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Cambiar a ${isCritico ? 'En Curso' : 'Crítico'}">
                         ${isCritico ? '↩️' : '🚨'}
                     </button>
@@ -604,6 +611,131 @@ window.dischargePatient = async (id) => {
     const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', id);
     if (!error) loadWardKanban();
 };
+
+window.openQuickView = async (id) => {
+    const modal = document.getElementById('quickViewModal');
+    const content = document.getElementById('quickViewContent');
+    if (!modal || !content) return;
+
+    content.innerHTML = '<p style="text-align:center; opacity:0.5;">Cargando paciente...</p>';
+    modal.classList.add('active');
+
+    const { data: p, error } = await supabaseClient.from('pacientes').select('*').eq('id', id).single();
+
+    if (error || !p) {
+        content.innerHTML = '<p style="color:red;">Error al cargar datos.</p>';
+        return;
+    }
+
+    // Try to extract prescribed formula name from metadata if possible, otherwise generic
+    let formulaDesc = "Fórmula Enteral";
+    let volDesc = "--";
+    let velDesc = "--";
+
+    if (p.metadata) {
+        if (p.metadata.prescripcion) {
+            formulaDesc = p.metadata.prescripcion.formula_id || formulaDesc;
+            volDesc = p.metadata.prescripcion.volumen ? `${p.metadata.prescripcion.volumen} ml` : volDesc;
+        }
+    }
+
+    const html = `
+        <div style="text-align:center; margin-bottom:15px;">
+            <div style="font-size:2.5rem; margin-bottom:5px;">🛌</div>
+            <h3 style="color:var(--primary); margin:0;">${p.nombre}</h3>
+            <span style="font-size:0.8rem; background:#f0f2f5; padding:2px 8px; border-radius:10px;">Cama ${p.cama || 'S/N'}</span>
+        </div>
+        
+        <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
+            <tr><td style="padding:6px; border-bottom:1px solid #eee; color:#666;">Edad/Género</td><td style="padding:6px; border-bottom:1px solid #eee; font-weight:600; text-align:right;">${p.edad}a / ${p.sexo === 'm' ? 'Masc' : 'Fem'}</td></tr>
+            <tr><td style="padding:6px; border-bottom:1px solid #eee; color:#666;">Peso Actual</td><td style="padding:6px; border-bottom:1px solid #eee; font-weight:600; text-align:right;">${p.peso_kg} kg</td></tr>
+            <tr><td style="padding:6px; border-bottom:1px solid #eee; color:#666;">Meta (TMT)</td><td style="padding:6px; border-bottom:1px solid #eee; font-weight:600; text-align:right; color:var(--primary);">${p.tmt ? Math.round(p.tmt) + ' kcal' : '--'}</td></tr>
+        </table>
+
+        <div style="background:#f8f9fa; padding:12px; border-radius:12px; margin-bottom:15px; border-left:4px solid #3498db;">
+            <p style="margin:0 0 5px 0; font-size:0.75rem; color:#888; text-transform:uppercase;">Esquema Actual Registrado</p>
+            <strong style="display:block; font-size:1.1rem; color:#333;">${formulaDesc}</strong>
+            <span style="font-size:0.85rem; color:#555;">Volumen: ${volDesc}</span>
+        </div>
+
+        <div>
+            <p style="margin:0 0 5px 0; font-size:0.75rem; color:#888; text-transform:uppercase;">Diagnóstico / Evolución</p>
+            <div style="font-size:0.85rem; color:#444; background:#fdfdfd; padding:10px; border-radius:8px; border:1px solid #eee;">
+                ${p.diagnostico || 'Sin diagnóstico ingresado.'}
+            </div>
+        </div>
+    `;
+
+    content.innerHTML = html;
+};
+
+async function generateShiftHandoff() {
+    const { data: patients, error } = await supabaseClient
+        .from('pacientes')
+        .select('*')
+        .eq('user_id', AppState.user.id)
+        .neq('estado_sala', 'de_alta')
+        .order('cama', { ascending: true, nullsFirst: false });
+
+    if (error || !patients || patients.length === 0) {
+        alert("No hay pacientes activos en la sala para generar el reporte.");
+        return;
+    }
+
+    // Filter unique latest per patient
+    const activeMap = new Map();
+    patients.forEach(p => {
+        if (!activeMap.has(p.nombre) || new Date(p.created_at) > new Date(activeMap.get(p.nombre).created_at)) {
+            activeMap.set(p.nombre, p);
+        }
+    });
+
+    const uniquePatients = Array.from(activeMap.values());
+    uniquePatients.sort((a, b) => (a.cama || '').localeCompare(b.cama || ''));
+
+    let rows = '';
+    uniquePatients.forEach(p => {
+        rows += `
+            <tr>
+                <td><b>${p.cama || '--'}</b></td>
+                <td><b>${p.nombre}</b><br><span style="font-size:0.75rem; color:#555;">${p.edad}a | ${p.peso_kg}kg</span></td>
+                <td>${p.diagnostico || '--'}</td>
+                <td>${p.tmt ? Math.round(p.tmt) : '--'} kcal</td>
+                <td>${p.estado_sala === 'critico' ? '⚠️ CRÍTICO' : 'En Curso'}</td>
+            </tr>
+        `;
+    });
+
+    const reportHTML = `
+        <div style="text-align:center; margin-bottom:20px; font-family:'Poppins', sans-serif;">
+            <h2 style="margin:0; color:#333;">🏥 Reporte Entrega de Turno: SEDILE HRA</h2>
+            <p style="margin:5px 0 0 0; color:#666;">Generado el: ${new Date().toLocaleString('es-CL')}</p>
+        </div>
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width:10%;">Cama</th>
+                    <th style="width:25%;">Paciente</th>
+                    <th style="width:40%;">Diagnóstico / Evolución</th>
+                    <th style="width:10%;">Meta</th>
+                    <th style="width:15%;">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows}
+            </tbody>
+        </table>
+        <div style="margin-top:30px; font-size:0.8rem; color:#888; text-align:center; font-family:'Poppins', sans-serif;">
+            "La nutrición adecuada es vital para la recuperación."
+        </div>
+    `;
+
+    const printArea = document.getElementById('printHandoffArea');
+    if (printArea) {
+        printArea.innerHTML = reportHTML;
+        window.print();
+    }
+}
 
 function renderEvolutionChart(history) {
     const canvas = document.getElementById('evolutionChart');
