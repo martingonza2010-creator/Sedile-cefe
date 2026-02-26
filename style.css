@@ -206,16 +206,15 @@ header.main-header {
     color: white;
 }
 
-/* Dashboard Grid */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr 1.5fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
     gap: 25px;
 }
 
 @media (max-width: 850px) {
     .dashboard-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -371,7 +370,7 @@ header.main-header {
 /* Form Styles */
 .grid-col-4 {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     margin: 15px 0;
 }
@@ -404,7 +403,7 @@ header.main-header {
 /* Simulator & Results */
 .macro-board {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
     margin: 25px 0;
 }

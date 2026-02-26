@@ -276,7 +276,7 @@
 
                     <!-- NEW V3.12: Clinical Hydration Row -->
                     <div
-                        style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:10px; border-top:1px solid rgba(0,0,0,0.05); padding-top:10px; text-align:center;">
+                        style="display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px; margin-top:10px; border-top:1px solid rgba(0,0,0,0.05); padding-top:10px; text-align:center;">
                         <div>
                             <span style="font-size:0.6rem; color:#888; display:block;">Ingreso Actual</span>
                             <strong style="font-size:0.85rem;" id="valHydTotal">0 ml</strong>
@@ -389,7 +389,7 @@
                         <summary style="font-weight:700; color:var(--primary);">➕ Calculadora de Módulos (Refuerzos)
                         </summary>
                         <div class="modules-grid"
-                            style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; padding-top:10px;">
+                            style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
                             <div class="mini-input">
                                 <label>Nessucar (g)</label>
                                 <input type="number" id="modNessucar" class="input-module" placeholder="g">
@@ -512,7 +512,7 @@
                         </div>
 
                         <div class="anth-grid"
-                            style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+                            style="display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap:10px; margin-bottom:12px;">
                             <div style="border-right: 1px solid rgba(192,57,43,0.1); padding-right:10px;">
                                 <label
                                     style="font-size:0.6rem; color:#666; text-transform:uppercase; display:block; margin-bottom:2px;">Circ.
@@ -771,7 +771,7 @@
             <!-- NEW V3.50: GENERADOR DE NOTA CLÍNICA -->
             <div style="margin: 25px 15px;">
                 <button class="btn-ia-generate" id="btnGenerateNote"
-                    style="background: linear-gradient(135s, #8e44ad, #9b59b6); margin-bottom: 15px;">
+                    style="background: linear-gradient(135deg, #8e44ad, #9b59b6); margin-bottom: 15px;">
                     ✨ Generar Nota Clínica (Copy)
                 </button>
 
