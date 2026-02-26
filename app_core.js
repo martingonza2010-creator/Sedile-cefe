@@ -689,9 +689,9 @@ function initSimulatorLogic() {
     if (dil) dil.oninput = runSimulation;
     if (btnSave) btnSave.onclick = savePrescription;
 
-    // Trigger update on any module input change
-    document.querySelectorAll('.input-module').forEach(inp => {
-        inp.oninput = runSimulation;
+    // Trigger update on any module/oral/iv input change
+    document.querySelectorAll('.input-module, .input-oral, .input-iv, #ivType').forEach(inp => {
+        inp.addEventListener('input', runSimulation);
     });
 
     // Favorites Logic
@@ -863,7 +863,29 @@ function runSimulation() {
     modK += (mFres * MODULE_DATA.fresubin.kcal / 100);
     modP += (mFres * MODULE_DATA.fresubin.p / 100);
 
-    k += modK; p += modP; c += modC; l += modL;
+    // NEW V3.60: Factor in Oral Intake
+    const oralK = parseFloat(document.getElementById('oralKcal').value) || 0;
+    const oralP = parseFloat(document.getElementById('oralProt').value) || 0;
+    const oralC = parseFloat(document.getElementById('oralCHO').value) || 0;
+    const oralL = parseFloat(document.getElementById('oralLip').value) || 0;
+
+    // NEW V3.60: Factor in IV Fluids (Sueroterapia)
+    const ivType = document.getElementById('ivType').value;
+    const ivVol = parseFloat(document.getElementById('ivVolume').value) || 0;
+    let ivK = 0, ivC = 0;
+
+    if (ivType === 'sg5') {
+        ivC = ivVol * 0.05;     // 5g per 100ml
+        ivK = ivC * 3.4;        // 3.4 kcal per g of IV dextrose
+    } else if (ivType === 'sg10') {
+        ivC = ivVol * 0.10;     // 10g per 100ml
+        ivK = ivC * 3.4;
+    }
+
+    k += (modK + oralK + ivK);
+    p += (modP + oralP);
+    c += (modC + oralC + ivC);
+    l += (modL + oralL);
 
     // Animation: Count Up Numbers
     animateValue("valKcal", Math.round(k));
@@ -997,11 +1019,18 @@ function resetPatientForm() {
     });
 
     // 2. Simulator Inputs
-    const simIds = ['formulaSelect', 'volume', 'dilution', 'modNessucar', 'modMCT', 'modEnterex', 'modBanatrol', 'modProteinex', 'modFresubin'];
+    const simIds = [
+        'formulaSelect', 'volume', 'dilution',
+        'modNessucar', 'modMCT', 'modEnterex', 'modBanatrol', 'modProteinex', 'modFresubin',
+        'oralKcal', 'oralProt', 'oralCHO', 'oralLip', 'oralWater', 'ivVolume'
+    ];
     simIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
+
+    const ivTypeEl = document.getElementById('ivType');
+    if (ivTypeEl) ivTypeEl.value = 'none';
 
     // 3. Assessment Inputs
     const assessIds = [
@@ -1049,7 +1078,13 @@ function calcHydration() {
     const p = AppState.patient;
     const vol = parseFloat(document.getElementById('volume').value) || 0;
     const dil = (parseFloat(document.getElementById('dilution').value) || 100) / 100;
-    const realVol = vol * dil; // Effective volume
+    let realVol = vol * dil; // Effective volume from formula
+
+    // NEW V3.60: Add Oral Water and IV Volume to Real Volume
+    const oralWater = parseFloat(document.getElementById('oralWater').value) || 0;
+    const ivVol = parseFloat(document.getElementById('ivVolume').value) || 0;
+
+    realVol += oralWater + ivVol;
 
     if (p.peso <= 0) return;
 

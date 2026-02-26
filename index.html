@@ -419,6 +419,66 @@
                             suman al aporte total de la fórmula seleccionada.</small>
                     </details>
                 </section>
+
+                <!-- NEW V3.60: INGESTA ORAL Y SUEROTERAPIA -->
+                <section class="card simulator-card" style="margin-top: -15px;">
+                    <details class="folds-accordion" id="oralIvAccordion">
+                        <summary style="font-weight:700; color:var(--primary);">🏥 Ingesta Oral y Sueroterapia</summary>
+
+                        <!-- Sueroterapia (IV Fluids) -->
+                        <h4
+                            style="font-size: 0.8rem; color: #555; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                            💧 Sueroterapia (Fluidos IV)</h4>
+                        <div class="modules-grid"
+                            style="display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap:10px; padding-top:10px;">
+                            <div class="mini-input">
+                                <label>Tipo de Suero</label>
+                                <select id="ivType"
+                                    style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); width:100%; font-size:0.85rem;">
+                                    <option value="none">Ninguno</option>
+                                    <option value="sg5">Suero Glucosado 5%</option>
+                                    <option value="sg10">Suero Glucosado 10%</option>
+                                    <option value="sf">Suero Fisiológico 0.9%</option>
+                                    <option value="ringer">Ringer Lactato</option>
+                                </select>
+                            </div>
+                            <div class="mini-input">
+                                <label>Volumen Total (ml/día)</label>
+                                <input type="number" id="ivVolume" class="input-iv" placeholder="ml">
+                            </div>
+                        </div>
+
+                        <!-- Ingesta Oral -->
+                        <h4
+                            style="font-size: 0.8rem; color: #555; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                            🍲 Ingesta Oral / Bandeja</h4>
+                        <div class="modules-grid"
+                            style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
+                            <div class="mini-input">
+                                <label>Energía (kcal)</label>
+                                <input type="number" id="oralKcal" class="input-oral" placeholder="kcal">
+                            </div>
+                            <div class="mini-input">
+                                <label>Proteínas (g)</label>
+                                <input type="number" id="oralProt" class="input-oral" placeholder="g">
+                            </div>
+                            <div class="mini-input">
+                                <label>H. de Carbono (g)</label>
+                                <input type="number" id="oralCHO" class="input-oral" placeholder="g">
+                            </div>
+                            <div class="mini-input">
+                                <label>Lípidos (g)</label>
+                                <input type="number" id="oralLip" class="input-oral" placeholder="g">
+                            </div>
+                            <div class="mini-input">
+                                <label>Agua / Líquidos (ml)</label>
+                                <input type="number" id="oralWater" class="input-oral" placeholder="ml">
+                            </div>
+                        </div>
+                        <small style="display:block; margin-top:10px; opacity:0.6; font-size:0.65rem;">El suero y la vía
+                            oral se suman automáticamente al total de aportes contra los requerimientos.</small>
+                    </details>
+                </section>
             </main>
 
             <div class="macro-stack-wrapper">
