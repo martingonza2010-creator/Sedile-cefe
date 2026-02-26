@@ -470,14 +470,21 @@ async function loadHistory() {
 
     listContainer.innerHTML = data.map(p => `
         <div class="history-mini-card" onclick="loadPatient('${p.id}')">
-            <h4>${p.nombre}</h4>
-            <div class="diag">${p.diagnostico || 'Sin diagnóstico registrado'}</div>
-            <div class="bottom-row">
-                <span>${p.peso_kg}kg | ${p.edad}a</span>
-                <span class="bed-badge">🛋️ ${p.cama || '--'}</span>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <h4>${p.nombre}</h4>
+                ${p.estado_sala === 'critico' ? `<span style="font-size:0.8rem;" title="Crítico">🚨</span>` : ''}
             </div>
-            <div style="font-size:0.6rem; margin-top:3px; opacity:0.5; text-align:right;">
-                ${new Date(p.created_at).toLocaleDateString()}
+            
+            <div class="diag" style="margin:2px 0;">${p.diagnostico || 'Sin diagnóstico registrado'}</div>
+            
+            <div class="bottom-row">
+                <span><b style="color:var(--primary);">${p.peso_kg}</b> kg | ${p.edad}a</span>
+                <span><b style="color:var(--secondary);">${p.tmt ? Math.round(p.tmt) : '--'}</b> kcal</span>
+            </div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                <span class="bed-badge" style="font-size:0.75rem;">🛋️ ${p.cama || '--'}</span>
+                <div style="font-size:0.6rem; opacity:0.6;"><i style="font-style:normal;">🕒 ${new Date(p.created_at).toLocaleDateString('es-CL')}</i></div>
             </div>
         </div>
     `).join('');
@@ -502,12 +509,11 @@ async function loadWardKanban() {
     colActivos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
     colCriticos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
 
-    // Fetch patients that are not discharged
+    // Fetch patients that are not discharged OR where estado_sala is null
     const { data, error } = await supabaseClient
         .from('pacientes')
         .select('*')
         .eq('user_id', AppState.user.id)
-        .neq('estado_sala', 'de_alta')
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -521,6 +527,9 @@ async function loadWardKanban() {
     // For safety, we keep only the latest row per 'nombre' if they create duplicates without discharging.
     const activeMap = new Map();
     data.forEach(p => {
+        // Enforce exclusion of discharged patients here since we fetched all
+        if (p.estado_sala === 'de_alta') return;
+
         if (!activeMap.has(p.nombre) || new Date(p.created_at) > new Date(activeMap.get(p.nombre).created_at)) {
             activeMap.set(p.nombre, p);
         }
