@@ -820,10 +820,18 @@
                         <h3>📑 Diagnóstico Nutricional Integrado</h3>
                     </div>
                     <div class="input-group">
-                        <label>Evolución / PES / Diagnóstico</label>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <label style="margin-bottom: 0;">Evolución / PES / Diagnóstico</label>
+                            <button id="btnMicPES" class="btn-micro"
+                                style="background: transparent; border: 1px solid var(--primary); color: var(--primary); display: flex; align-items: center; gap: 5px;"
+                                title="Dictado por Voz">
+                                🎙️ <span id="micStatus">Dictar</span>
+                            </button>
+                        </div>
                         <textarea id="diagnosticoPES" rows="4"
                             style="width:100%; border-radius:10px; border:1px solid #ddd; padding:10px; font-size:0.85rem;"
-                            placeholder="Escriba el diagnóstico integrado aquí..."></textarea>
+                            placeholder="Escriba el diagnóstico integrado aquí (o use el micrófono)..."></textarea>
                     </div>
                 </section>
             </div>

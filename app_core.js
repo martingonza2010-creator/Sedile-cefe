@@ -2106,3 +2106,82 @@ function formatIAResponse(text) {
             </div>`;
 }
 
+// --- 18. VOICE DICTATION (NEW V3.60) ---
+function initVoiceDictation() {
+    const btnMic = document.getElementById('btnMicPES');
+    const txtPES = document.getElementById('diagnosticoPES');
+    const micStatus = document.getElementById('micStatus');
+
+    if (!btnMic || !txtPES) return;
+
+    // Check compatibility
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        btnMic.style.display = 'none'; // Hide if browser doesn't support
+        console.warn("Speech API not supported in this browser.");
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-CL'; // Chilean Spanish
+    recognition.interimResults = true; // Show words as they are spoken
+    recognition.continuous = false; // Stop when the user stops talking
+
+    let isRecording = false;
+
+    // Toggle logic
+    btnMic.onclick = () => {
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            recognition.start();
+        }
+    };
+
+    recognition.onstart = () => {
+        isRecording = true;
+        if (micStatus) micStatus.innerText = "Escuchando...";
+        btnMic.style.background = 'rgba(231, 76, 60, 0.1)';
+        btnMic.style.color = '#e74c3c';
+        btnMic.style.borderColor = '#e74c3c';
+    };
+
+    recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+
+        if (finalTranscript !== '') {
+            const currentText = txtPES.value.trim();
+            txtPES.value = currentText ? currentText + ' ' + finalTranscript : finalTranscript;
+        }
+    };
+
+    // If there is no input after starting
+    recognition.onspeechend = () => {
+        recognition.stop();
+    };
+
+    recognition.onerror = (event) => {
+        console.error("Speech Recognition Error:", event.error);
+        if (event.error === 'not-allowed') {
+            alert("Acceso al micrófono denegado. Por favor dale permiso al navegador.");
+        }
+        recognition.stop();
+    };
+
+    recognition.onend = () => {
+        isRecording = false;
+        if (micStatus) micStatus.innerText = "Dictar";
+        btnMic.style.background = 'transparent';
+        btnMic.style.color = 'var(--primary)';
+        btnMic.style.borderColor = 'var(--primary)';
+    };
+}
