@@ -2046,7 +2046,7 @@ function initGlobalEvents() {
         const fId = document.getElementById('formulaSelect').value;
         const formula = AppState.formulas.find(f => f.id === fId);
         const vol = parseFloat(document.getElementById('volume').value) || 0;
-        const goal = parseFloat(document.getElementById('goalKcal').value) || 0;
+        const goal = parseFloat(document.getElementById('goalTotal').value) || 0;
 
         // Modules info
         let modulesText = "";
