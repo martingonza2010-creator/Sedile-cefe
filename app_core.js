@@ -1081,10 +1081,22 @@ function runSimulation() {
 
     if (AppState.calcMode === 'vol') {
         const vol = v1;
-        k = formula.k * (vol / 100);
-        p = formula.p * (vol / 100);
-        c = formula.c * (vol / 100);
-        l = formula.f * (vol / 100);
+        if (formula.type === 'p') {
+            // Polvos (Powders): Volumen * (Dilucion / 100) = Gramos
+            const dil = v2 > 0 ? v2 : 0;
+            const grams = vol * (dil / 100);
+            k = formula.k * (grams / 100);
+            p = formula.p * (grams / 100);
+            c = formula.c * (grams / 100);
+            l = formula.f * (grams / 100);
+        } else {
+            // Líquidos (Liquids): Volumen base. Si hay dilución, aplica %
+            const dilPct = v2 > 0 ? (v2 / 100) : 1;
+            k = formula.k * (vol / 100) * dilPct;
+            p = formula.p * (vol / 100) * dilPct;
+            c = formula.c * (vol / 100) * dilPct;
+            l = formula.f * (vol / 100) * dilPct;
+        }
     } else {
         const grams = v2;
         k = formula.k * (grams / 100);
