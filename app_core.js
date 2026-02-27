@@ -126,8 +126,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     safelyInit(initSimulatorLogic, "SimulatorLogic");
     safelyInit(initInfusionLogic, "InfusionLogic");
     safelyInit(initHydrationLogic, "HydrationLogic");
-    safelyInit(initCompareLogic, "CompareLogic");
     safelyInit(initChartSim, "ChartSim");
+    safelyInit(initGoalMacroChart, "GoalMacroChart");
     safelyInit(initAssessmentLogic, "AssessmentLogic");
     safelyInit(initGlobalEvents, "GlobalEvents");
     safelyInit(initNutriIA, "NutriIA");
@@ -344,9 +344,9 @@ function initPatientLogic() {
                         volume: document.getElementById('volume').value,
                         dilution: document.getElementById('dilution').value,
                         goal_total: tmt,
-                        goal_prot: document.getElementById('goalProt').value,
-                        goal_cho: document.getElementById('goalCHO').value,
-                        goal_lip: document.getElementById('goalLip').value,
+                        goal_prot: document.getElementById('goalProtKg').value,
+                        goal_cho: document.getElementById('goalCHOKg').value,
+                        goal_lip: document.getElementById('goalLipKg').value,
                         modules: {
                             nessucar: document.getElementById('modNessucar').value,
                             mct: document.getElementById('modMCT').value,
@@ -825,6 +825,16 @@ window.loadPatient = async (id) => {
 
         // Trigger calc
         calculateRequirements();
+
+        // Restore goals if exist
+        if (data.metadata && data.metadata.simulator) {
+            const sim = data.metadata.simulator;
+            if (sim.goal_prot) document.getElementById('goalProtKg').value = sim.goal_prot;
+            if (sim.goal_cho) document.getElementById('goalCHOKg').value = sim.goal_cho;
+            if (sim.goal_lip) document.getElementById('goalLipKg').value = sim.goal_lip;
+            if (typeof updateMacroGoals === 'function') updateMacroGoals();
+        }
+
         document.getElementById('historyModal').classList.remove('active');
     }
 };
@@ -1359,7 +1369,7 @@ function resetPatientForm() {
         'ptricipital', 'pbicipital', 'piliaco', 'pabdominal',
         'mediaenv', 'envcomp', 'edemaGrade', 'diagPES', 'diagnosticoPES',
         'residuo', 'diarrea', 'distension', 'accesoTipo', 'accesoFecha',
-        'goalProt', 'goalCHO', 'goalLip'
+        'goalProtKg', 'goalCHOKg', 'goalLipKg'
     ];
     assessIds.forEach(id => {
         const el = document.getElementById(id);
@@ -2527,4 +2537,78 @@ function initVoiceDictation() {
         btnMic.style.color = 'var(--primary)';
         btnMic.style.borderColor = 'var(--primary)';
     };
+}
+
+// --- 19. MACRONUTRIENT GOALS (NEW V3.63) ---
+let goalChartInstance = null;
+
+function initGoalMacroChart() {
+    const ctx = document.getElementById('goalMacroChart')?.getContext('2d');
+    if (!ctx) return;
+
+    goalChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Proteínas', 'Carbohidratos', 'Lípidos'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: ['#e74c3c', '#f1c40f', '#3498db'],
+                borderWidth: 0,
+                cutout: '70%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.label}: ${Math.round(ctx.raw)} kcal`
+                    }
+                }
+            }
+        }
+    });
+
+    const inputs = ['goalProtKg', 'goalCHOKg', 'goalLipKg', 'peso'];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateMacroGoals);
+    });
+}
+
+function updateMacroGoals() {
+    const peso = AppState.patient.peso || 0;
+
+    const protKg = parseFloat(document.getElementById('goalProtKg')?.value) || 0;
+    const choKg = parseFloat(document.getElementById('goalCHOKg')?.value) || 0;
+    const lipKg = parseFloat(document.getElementById('goalLipKg')?.value) || 0;
+
+    const gProt = protKg * peso;
+    const gCHO = choKg * peso;
+    const gLip = lipKg * peso;
+
+    const elP = document.getElementById('goalProt');
+    if (elP) { elP.dataset.val = gProt; elP.innerText = gProt.toFixed(1) + " g/día"; }
+    const elC = document.getElementById('goalCHO');
+    if (elC) { elC.dataset.val = gCHO; elC.innerText = gCHO.toFixed(1) + " g/día"; }
+    const elL = document.getElementById('goalLip');
+    if (elL) { elL.dataset.val = gLip; elL.innerText = gLip.toFixed(1) + " g/día"; }
+
+    const kcalProt = gProt * 4;
+    const kcalCHO = gCHO * 4;
+    const kcalLip = gLip * 9;
+    const totalKcal = kcalProt + kcalCHO + kcalLip;
+
+    const elMacroKcal = document.getElementById('goalMacroKcal');
+    if (elMacroKcal) elMacroKcal.innerText = Math.round(totalKcal);
+
+    if (goalChartInstance) {
+        goalChartInstance.data.datasets[0].data = [kcalProt, kcalCHO, kcalLip];
+        goalChartInstance.update();
+    }
+
+    // Auto-update adequacy
+    runSimulation();
 }

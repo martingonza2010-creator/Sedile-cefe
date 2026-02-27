@@ -238,21 +238,39 @@
                                 style="margin-top:10px; padding:10px; background:rgba(52, 152, 219, 0.05); border-radius:8px; border:1px solid rgba(52, 152, 219, 0.2);">
                                 <label
                                     style="font-size:0.75rem; font-weight:700; color:#3498db; margin-bottom:5px; display:block;">Metas
-                                    de Macronutrientes (Gramos)</label>
-                                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
-                                    <div class="mini-input">
-                                        <label>Prot (g)</label>
-                                        <input type="number" id="goalProt" placeholder="g/día">
+                                    de Macronutrientes (g/kg)</label>
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <div style="flex:1; display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                                        <div class="mini-input">
+                                            <label>Prot (g/kg)</label>
+                                            <input type="number" id="goalProtKg" placeholder="Ej. 1.5" step="0.1">
+                                            <div id="goalProt" data-val="0"
+                                                style="font-size:0.7rem; color:#888; font-weight:600; text-align:center; margin-top:2px;">
+                                                0 g/día</div>
+                                        </div>
+                                        <div class="mini-input">
+                                            <label>CHO (g/kg)</label>
+                                            <input type="number" id="goalCHOKg" placeholder="Ej. 5.0" step="0.1">
+                                            <div id="goalCHO" data-val="0"
+                                                style="font-size:0.7rem; color:#888; font-weight:600; text-align:center; margin-top:2px;">
+                                                0 g/día</div>
+                                        </div>
+                                        <div class="mini-input">
+                                            <label>Líp (g/kg)</label>
+                                            <input type="number" id="goalLipKg" placeholder="Ej. 1.0" step="0.1">
+                                            <div id="goalLip" data-val="0"
+                                                style="font-size:0.7rem; color:#888; font-weight:600; text-align:center; margin-top:2px;">
+                                                0 g/día</div>
+                                        </div>
                                     </div>
-                                    <div class="mini-input">
-                                        <label>CHO (g)</label>
-                                        <input type="number" id="goalCHO" placeholder="g/día">
-                                    </div>
-                                    <div class="mini-input">
-                                        <label>Líp (g)</label>
-                                        <input type="number" id="goalLip" placeholder="g/día">
+                                    <!-- Goal Chart -->
+                                    <div style="width:70px; height:70px; position:relative; flex-shrink:0;">
+                                        <canvas id="goalMacroChart"></canvas>
                                     </div>
                                 </div>
+                                <div
+                                    style="text-align:right; font-size:0.65rem; color:#666; font-style:italic; margin-top:4px;">
+                                    Kcal teórica macros: <strong id="goalMacroKcal">0</strong> kcal</div>
                             </div>
                         </div>
 
