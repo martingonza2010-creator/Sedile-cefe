@@ -232,6 +232,28 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- NUEVO: Metas de Macronutrientes -->
+                            <div
+                                style="margin-top:10px; padding:10px; background:rgba(52, 152, 219, 0.05); border-radius:8px; border:1px solid rgba(52, 152, 219, 0.2);">
+                                <label
+                                    style="font-size:0.75rem; font-weight:700; color:#3498db; margin-bottom:5px; display:block;">Metas
+                                    de Macronutrientes (Gramos)</label>
+                                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                                    <div class="mini-input">
+                                        <label>Prot (g)</label>
+                                        <input type="number" id="goalProt" placeholder="g/día">
+                                    </div>
+                                    <div class="mini-input">
+                                        <label>CHO (g)</label>
+                                        <input type="number" id="goalCHO" placeholder="g/día">
+                                    </div>
+                                    <div class="mini-input">
+                                        <label>Líp (g)</label>
+                                        <input type="number" id="goalLip" placeholder="g/día">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="input-row-multi" style="margin-top:15px;">
@@ -529,6 +551,43 @@
                     <div class="macro-item c"><label>CHO</label><span id="valCHO">0</span><small>g</small></div>
                     <div class="macro-item f"><label>Líp</label><span id="valLip">0</span><small>g</small></div>
                 </div>
+            </div>
+
+            <!-- NUEVO V3.62: Tarjeta de Adecuación -->
+            <div id="adequacyCard"
+                style="display:none; margin-top:20px; background:white; padding:15px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.05); border-left:4px solid #27ae60;">
+                <h4
+                    style="margin:0 0 10px 0; font-size:0.85rem; color:#333; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;">
+                    <span>🎯 Porcentaje de Adecuación</span>
+                </h4>
+
+                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; text-align:center;">
+                    <!-- Kcal -->
+                    <div style="background:#f8f9fa; padding:10px; border-radius:10px; border-bottom:3px solid #8e44ad;">
+                        <span
+                            style="font-size:0.65rem; color:#888; display:block; text-transform:uppercase;">Kcal</span>
+                        <strong id="adeqKcal" style="font-size:1.2rem; color:#8e44ad;">0%</strong>
+                    </div>
+                    <!-- Prot -->
+                    <div style="background:#f8f9fa; padding:10px; border-radius:10px; border-bottom:3px solid #e74c3c;">
+                        <span
+                            style="font-size:0.65rem; color:#888; display:block; text-transform:uppercase;">Prot</span>
+                        <strong id="adeqProt" style="font-size:1.2rem; color:#e74c3c;">0%</strong>
+                    </div>
+                    <!-- CHO -->
+                    <div style="background:#f8f9fa; padding:10px; border-radius:10px; border-bottom:3px solid #f1c40f;">
+                        <span style="font-size:0.65rem; color:#888; display:block; text-transform:uppercase;">CHO</span>
+                        <strong id="adeqCHO" style="font-size:1.2rem; color:#f39c12;">0%</strong>
+                    </div>
+                    <!-- Lipidos -->
+                    <div style="background:#f8f9fa; padding:10px; border-radius:10px; border-bottom:3px solid #3498db;">
+                        <span style="font-size:0.65rem; color:#888; display:block; text-transform:uppercase;">Líp</span>
+                        <strong id="adeqLip" style="font-size:1.2rem; color:#3498db;">0%</strong>
+                    </div>
+                </div>
+                <small
+                    style="display:block; text-align:center; opacity:0.6; font-size:0.65rem; margin-top:10px;">Compara
+                    lo aportado por la fórmula vs. metas establecidas</small>
             </div>
 
             <!-- Prescribir button removed in V3.43 as requested (non-functional) -->

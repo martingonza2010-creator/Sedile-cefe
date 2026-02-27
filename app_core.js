@@ -344,6 +344,9 @@ function initPatientLogic() {
                         volume: document.getElementById('volume').value,
                         dilution: document.getElementById('dilution').value,
                         goal_total: tmt,
+                        goal_prot: document.getElementById('goalProt').value,
+                        goal_cho: document.getElementById('goalCHO').value,
+                        goal_lip: document.getElementById('goalLip').value,
                         modules: {
                             nessucar: document.getElementById('modNessucar').value,
                             mct: document.getElementById('modMCT').value,
@@ -1186,6 +1189,56 @@ function runSimulation() {
         updateCompareResults(k, p, c, l);
     }
 
+    // NEW V3.62: Update Adequacy Card
+    const adeqCard = document.getElementById('adequacyCard');
+    const adeqKcal = document.getElementById('adeqKcal');
+    const adeqProt = document.getElementById('adeqProt');
+    const adeqCHO = document.getElementById('adeqCHO');
+    const adeqLip = document.getElementById('adeqLip');
+
+    // Read goals (grams)
+    const goalP = parseFloat(document.getElementById('goalProt').value) || 0;
+    const goalC = parseFloat(document.getElementById('goalCHO').value) || 0;
+    const goalL = parseFloat(document.getElementById('goalLip').value) || 0;
+
+    if (adeqCard) {
+        if (goal > 0 || goalP > 0 || goalC > 0 || goalL > 0) {
+            adeqCard.style.display = 'block';
+
+            // Kcal Adequacy
+            if (goal > 0) {
+                const pctK = (k / goal) * 100;
+                adeqKcal.innerText = Math.round(pctK) + "%";
+                adeqKcal.style.color = (pctK < 90) ? '#e67e22' : (pctK > 110) ? '#e74c3c' : '#27ae60';
+            } else { adeqKcal.innerText = "--"; adeqKcal.style.color = '#888'; }
+
+            // Prot Adequacy
+            if (goalP > 0) {
+                const pctP = (p / goalP) * 100;
+                adeqProt.innerText = Math.round(pctP) + "%";
+                adeqProt.style.color = (pctP < 90) ? '#e67e22' : (pctP > 110) ? '#e74c3c' : '#27ae60';
+            } else { adeqProt.innerText = "--"; adeqProt.style.color = '#888'; }
+
+            // CHO Adequacy
+            if (goalC > 0) {
+                const pctC = (c / goalC) * 100;
+                adeqCHO.innerText = Math.round(pctC) + "%";
+                adeqCHO.style.color = (pctC < 90) ? '#e67e22' : (pctC > 110) ? '#e74c3c' : '#27ae60';
+            } else { adeqCHO.innerText = "--"; adeqCHO.style.color = '#888'; }
+
+            // Lip Adequacy
+            if (goalL > 0) {
+                const pctL = (l / goalL) * 100;
+                adeqLip.innerText = Math.round(pctL) + "%";
+                adeqLip.style.color = (pctL < 90) ? '#e67e22' : (pctL > 110) ? '#e74c3c' : '#27ae60';
+            } else { adeqLip.innerText = "--"; adeqLip.style.color = '#888'; }
+
+        } else {
+            // Hide card if no goals exist
+            adeqCard.style.display = 'none';
+        }
+    }
+
     // Trigger Infusion Calc update if volume changes
     calcInfusion();
     calcHydration();
@@ -1305,7 +1358,8 @@ function resetPatientForm() {
         'ccintura', 'cbraquial', 'cpantorrilla', 'altrodilla',
         'ptricipital', 'pbicipital', 'piliaco', 'pabdominal',
         'mediaenv', 'envcomp', 'edemaGrade', 'diagPES', 'diagnosticoPES',
-        'residuo', 'diarrea', 'distension', 'accesoTipo', 'accesoFecha'
+        'residuo', 'diarrea', 'distension', 'accesoTipo', 'accesoFecha',
+        'goalProt', 'goalCHO', 'goalLip'
     ];
     assessIds.forEach(id => {
         const el = document.getElementById(id);
@@ -1773,6 +1827,13 @@ function initAssessmentLogic() {
             if (lastGoalLabel) lastGoalLabel.innerText = `Ultima meta: ${today}`;
         });
     }
+
+    // NEW V3.62: Macro Goals Triggers
+    const macroGoalsIds = ['goalProt', 'goalCHO', 'goalLip'];
+    macroGoalsIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', runSimulation);
+    });
 
     // NEW V3.16: CHUMLEA Estimation (Pediatrics/Adults)
     const chumleaInputs = ['altrodilla', 'edad', 'sexo'];
