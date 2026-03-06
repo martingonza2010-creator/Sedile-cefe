@@ -1215,10 +1215,14 @@ function runSimulation() {
     const adeqCHO = document.getElementById('adeqCHO');
     const adeqLip = document.getElementById('adeqLip');
 
-    // Read goals (grams)
-    const goalP = parseFloat(document.getElementById('goalProt').value) || 0;
-    const goalC = parseFloat(document.getElementById('goalCHO').value) || 0;
-    const goalL = parseFloat(document.getElementById('goalLip').value) || 0;
+    // Read goals (grams) from dataset values
+    const elP = document.getElementById('goalProt');
+    const elC = document.getElementById('goalCHO');
+    const elL = document.getElementById('goalLip');
+
+    const goalP = elP ? (parseFloat(elP.dataset.val) || 0) : 0;
+    const goalC = elC ? (parseFloat(elC.dataset.val) || 0) : 0;
+    const goalL = elL ? (parseFloat(elL.dataset.val) || 0) : 0;
 
     if (adeqCard) {
         if (goal > 0 || goalP > 0 || goalC > 0 || goalL > 0) {
