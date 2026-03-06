@@ -434,15 +434,21 @@ function initGoalLogic() {
     // Redundant block merged into initAssessmentLogic
 }
 
-async function loadHistoryList() {
-    const list = document.getElementById('histList');
+window.loadHistoryList = async (showPapelera = false) => {
+    // Update tabs
+    const tabActivos = document.getElementById('tabHistActivos');
+    const tabPapelera = document.getElementById('tabHistPapelera');
+    if (tabActivos) tabActivos.classList.toggle('active', !showPapelera);
+    if (tabPapelera) tabPapelera.classList.toggle('active', showPapelera);
+
+    const list = document.getElementById('patientListContainer');
     if (!list) return;
 
     list.innerHTML = '<p style="text-align:center;">Cargando historial...</p>';
 
     const { data: records, error } = await supabaseClient
         .from('pacientes')
-        .select('id, nombre, edad, peso_kg, tmt, created_at, estado_sala')
+        .select('*, metadata') // Select everything to maintain chart support and metadata for deletion
         .eq('user_id', AppState.user.id)
         .order('created_at', { ascending: false });
 
@@ -456,60 +462,53 @@ async function loadHistoryList() {
         return;
     }
 
-    // V3.62 Filter out null names and group by unqiue names
+    // Filter out null names
     const validRecords = records.filter(r => r.nombre && r.nombre.trim() !== '');
 
-    let html = '';
+    const now = new Date();
+    const toHardDelete = [];
+    const showRecords = [];
+
     validRecords.forEach(r => {
-        const dateStr = new Date(r.created_at).toLocaleDateString('es-CL');
-        html += `
-            <div style="background:#f8f9fa; border:1px solid #eee; border-radius:10px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <strong style="color:var(--primary); font-size:1.1rem; display:block; margin-bottom:3px;">${r.nombre}</strong>
-                    <span style="font-size:0.8rem; color:#666;">${dateStr} | ${r.edad} años | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal</span>
-                </div>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">📂 Cargar</button>
-                    <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Eliminar paciente">🗑️</button>
-                </div>
-            </div>
-        `;
+        const isTrash = r.estado_sala === 'eliminado';
+        if (isTrash) {
+            // Calculate remaining days
+            const delDateStr = r.metadata?.deleted_at;
+            let daysLeft = 30;
+            if (delDateStr) {
+                const diffTime = Math.abs(now - new Date(delDateStr));
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                daysLeft = 30 - diffDays;
+            } else {
+                // Fallback simulating from created date if no deleted_at metadata
+                const diffTime = Math.abs(now - new Date(r.created_at));
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                daysLeft = 30 - diffDays;
+            }
+
+            if (daysLeft <= 0) {
+                toHardDelete.push(r.id);
+            } else if (showPapelera) {
+                r._daysLeft = daysLeft;
+                showRecords.push(r);
+            }
+        } else if (!showPapelera && r.estado_sala !== 'eliminado') {
+            showRecords.push(r);
+        }
     });
 
-    list.innerHTML = html;
-}
+    // Auto-purge expired records quietly in background
+    toHardDelete.forEach(async (id) => {
+        console.log(`Auto-purging expired patient ${id}`);
+        await supabaseClient.from('pacientes').delete().eq('id', id);
+    });
 
-// Original loadHistory function (renamed or removed if loadHistoryList is the replacement)
-// Keeping it for now, but it's likely intended to be replaced by loadHistoryList
-async function loadHistory() {
-    let listContainer = document.getElementById('patientListContainer');
-    if (!listContainer) {
-        // Fallback or setup if first time
-        const container = document.getElementById('historyContainer');
-        const chartHTML = document.getElementById('chartContainer') ? document.getElementById('chartContainer').outerHTML : '';
-        container.innerHTML = chartHTML + '<div id="patientListContainer"></div>';
-        listContainer = document.getElementById('patientListContainer');
-    }
+    // Draw Chart for the most recent active patient name
+    const chartContainerE = document.getElementById('chartContainer');
+    if (!showPapelera && showRecords.length > 0) {
+        const topPatient = showRecords[0];
+        const history = records.filter(p => p.nombre === topPatient.nombre && p.estado_sala !== 'eliminado').slice(0, 5).reverse();
 
-    listContainer.innerHTML = '<p style="text-align:center; opacity:0.6;">Buscando tus pacientes...</p>';
-
-    const { data, error } = await supabaseClient
-        .from('pacientes')
-        .select('*')
-        .eq('user_id', AppState.user.id)
-        .order('created_at', { ascending: false });
-
-    if (error || !data.length) {
-        listContainer.innerHTML = '<p style="text-align:center; opacity:0.6;">Aún no tienes pacientes guardados.</p>';
-        return;
-    }
-
-    // Draw Chart for the most recent patient name
-    if (data.length > 0) {
-        const topPatient = data[0];
-        const history = data.filter(p => p.nombre === topPatient.nombre).slice(0, 5).reverse();
-
-        const chartContainerE = document.getElementById('chartContainer');
         if (chartContainerE) {
             if (history.length > 1) {
                 chartContainerE.style.display = 'block';
@@ -518,29 +517,56 @@ async function loadHistory() {
                 chartContainerE.style.display = 'none';
             }
         }
+    } else if (chartContainerE) {
+        chartContainerE.style.display = 'none';
     }
 
-    listContainer.innerHTML = data.map(p => `
-        <div class="history-mini-card" onclick="loadPatient('${p.id}')">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <h4>${p.nombre}</h4>
-                ${p.estado_sala === 'critico' ? `<span style="font-size:0.8rem;" title="Crítico">🚨</span>` : ''}
-            </div>
-            
-            <div class="diag" style="margin:2px 0;">${p.diagnostico || 'Sin diagnóstico registrado'}</div>
-            
-            <div class="bottom-row">
-                <span><b style="color:var(--primary);">${p.peso_kg}</b> kg | ${p.edad}a</span>
-                <span><b style="color:var(--secondary);">${p.tmt ? Math.round(p.tmt) : '--'}</b> kcal</span>
-            </div>
-            
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-                <span class="bed-badge" style="font-size:0.75rem;">🛋️ ${p.cama || '--'}</span>
-                <div style="font-size:0.6rem; opacity:0.6;"><i style="font-style:normal;">🕒 ${new Date(p.created_at).toLocaleDateString('es-CL')}</i></div>
-            </div>
-        </div>
-    `).join('');
-}
+    if (showRecords.length === 0) {
+        list.innerHTML = `<p style="text-align:center; opacity:0.6;">${showPapelera ? 'La papelera está vacía.' : 'Ningún registro guardado aún.'}</p>`;
+        return;
+    }
+
+    // Grouping to only show the most recent record per patient in the list to avoid clutter
+    const mapUniques = new Map();
+    showRecords.forEach(r => {
+        if (!mapUniques.has(r.nombre)) mapUniques.set(r.nombre, r);
+    });
+    const uniqueDisplay = Array.from(mapUniques.values());
+
+    let html = '';
+    uniqueDisplay.forEach(r => {
+        const dateStr = new Date(r.created_at).toLocaleDateString('es-CL');
+        if (showPapelera) {
+            html += `
+                <div style="background:#fff3ef; border:1px solid #ffcccb; border-radius:10px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="color:#c0392b; font-size:1.1rem; display:block; margin-bottom:3px;">${r.nombre}</strong>
+                        <span style="font-size:0.8rem; color:#666;">Se eliminará en ${r._daysLeft} días</span>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background:#27ae60;" onclick="window.restorePatient('${r.id}')">↩️ Restaurar</button>
+                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.hardDeletePatient('${r.id}')" title="Eliminar definitivamente">🗑️</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div style="background:#f8f9fa; border:1px solid #eee; border-radius:10px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="color:var(--primary); font-size:1.1rem; display:block; margin-bottom:3px;">${r.nombre}</strong>
+                        <span style="font-size:0.8rem; color:#666;">${dateStr} | ${r.edad} años | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal</span>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">📂 Cargar</button>
+                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a papelera">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    list.innerHTML = html;
+};
 
 // --- NEW V3.60: WARD KANBAN LOGIC ---
 function initWardKanban() {
@@ -670,17 +696,25 @@ window.dischargePatient = async (id) => {
 };
 
 window.deletePatient = async (id) => {
-    if (!confirm("🚨 ADVERTENCIA: ¿Estás seguro de que quieres eliminar PERMANENTEMENTE a este paciente y todo su historial? Esta acción no se puede deshacer.")) return;
-    const { error } = await supabaseClient.from('pacientes').delete().eq('id', id);
+    if (!confirm("El paciente se moverá a la papelera (permanecerá ahí 30 días antes de su eliminación automática). ¿Continuar?")) return;
+
+    // Set state to 'eliminado' and inject deleted_at metadata
+    const { data: p } = await supabaseClient.from('pacientes').select('metadata').eq('id', id).single();
+    let meta = p?.metadata || {};
+    meta.deleted_at = new Date().toISOString();
+
+    const { error } = await supabaseClient.from('pacientes').update({
+        estado_sala: 'eliminado',
+        metadata: meta
+    }).eq('id', id);
+
     if (error) {
-        console.error("Error deleting patient:", error);
-        alert("Error al eliminar el paciente: " + error.message);
+        console.error("Error moviendo paciente a papelera:", error);
+        alert("Error al eliminar: " + error.message);
     } else {
-        alert("Paciente eliminado con éxito.");
-        // Reload both history and kanban views
-        if (typeof loadHistoryList === 'function') loadHistoryList();
+        if (typeof window.loadHistoryList === 'function') window.loadHistoryList(false);
         if (typeof loadWardKanban === 'function') loadWardKanban();
-        // If the deleted patient was actively loaded, reload the app layout or clear the inputs
+        // Clear inputs if currently loaded
         if (AppState.patient && AppState.patient.id === id) {
             AppState.patient.id = null;
             document.getElementById('nombre').value = "";
@@ -688,6 +722,19 @@ window.deletePatient = async (id) => {
             document.getElementById('valGET').innerText = "0 kcal";
         }
     }
+};
+
+window.hardDeletePatient = async (id) => {
+    if (!confirm("🚨 ADVERTENCIA PÚBLICA: ¿Quieres eliminar PERMANENTEMENTE a este paciente de la base de datos de inmediato?")) return;
+    const { error } = await supabaseClient.from('pacientes').delete().eq('id', id);
+    if (!error) window.loadHistoryList(true);
+};
+
+window.restorePatient = async (id) => {
+    // Return to generic 'activo' state
+    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'activo' }).eq('id', id);
+    if (!error) window.loadHistoryList(true);
+    if (typeof loadWardKanban === 'function') loadWardKanban();
 };
 
 window.openQuickView = async (id) => {

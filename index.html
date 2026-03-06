@@ -1100,6 +1100,12 @@
                     <h2>Historial de Pacientes</h2>
                     <button class="btn-close" id="btnHistoryClose">&times;</button>
                 </div>
+                <div class="tab-nav" style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                    <button class="tab-btn active" id="tabHistActivos" onclick="window.loadHistoryList(false)">Registros
+                        Activos</button>
+                    <button class="tab-btn" id="tabHistPapelera" onclick="window.loadHistoryList(true)">🗑️ Papelera (30
+                        días)</button>
+                </div>
                 <div class="history-list" id="historyContainer">
                     <div id="chartContainer"
                         style="display:none; margin-bottom: 20px; padding: 10px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
