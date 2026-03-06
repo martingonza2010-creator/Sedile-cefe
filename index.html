@@ -458,32 +458,24 @@
                             </div>
                         </div>
 
-                        <!-- NEW V3.64: FORMULA 2 -->
-                        <div class="input-group" id="formula2Container"
-                            style="margin-top:15px; padding-top:15px; border-top:1px dashed rgba(0,0,0,0.1);">
-                            <label
-                                style="color:#d35400; font-weight:700; border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:10px;">🧪
-                                Fórmula 2 (Complementaria)</label>
-
-                            <div style="margin-bottom:8px;">
-                                <input type="text" id="formula2Search" placeholder="🔍 Buscar fórmula 2..."
-                                    style="width:100%; padding:6px 10px; font-size:0.8rem; border-radius:8px; border:1px solid #ddd; outline:none; background:rgba(255,255,255,0.8);">
+                        <!-- NEW V3.65: BASE FORMULA SUBTOTAL -->
+                        <div style="margin-top:15px; border-top:1px dashed rgba(0,0,0,0.1); padding-top:15px;">
+                            <div style="width:100%; text-align:center; margin-bottom:10px;">
+                                <span
+                                    style="font-size:0.75rem; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:1px;">Aporte
+                                    Fórmula Principal</span>
                             </div>
-                            <div style="display:flex; gap:10px; align-items:center;">
-                                <select id="formula2Select" class="select-modern">
-                                    <option value="none">-- Sin Fórmula 2 --</option>
-                                    <!-- Options injected via JS -->
-                                </select>
-                            </div>
-                        </div>
-                        <div class="grid-col-2" style="margin-top:10px;" id="formula2Params">
-                            <div class="input-group">
-                                <label>Volumen F2 (ml)</label>
-                                <input type="number" id="volume2" placeholder="ml">
-                            </div>
-                            <div class="input-group">
-                                <label id="lblDilution2">Dilución F2 (%)</label>
-                                <input type="number" id="dilution2" placeholder="%">
+                            <!-- Subtotal Board -->
+                            <div class="macro-board"
+                                style="margin:0; background:rgba(52, 152, 219, 0.05); border:1px solid rgba(52, 152, 219, 0.2); box-shadow:none;">
+                                <div class="macro-item k"><label>Energía</label><span
+                                        id="subKcalBase">0</span><small>kcal</small></div>
+                                <div class="macro-item p"><label>Prot</label><span
+                                        id="subProtBase">0</span><small>g</small></div>
+                                <div class="macro-item c"><label>CHO</label><span
+                                        id="subCHOBase">0</span><small>g</small></div>
+                                <div class="macro-item f"><label>Líp</label><span
+                                        id="subLipBase">0</span><small>g</small></div>
                             </div>
                         </div>
                     </div>
@@ -622,22 +614,6 @@
             <!-- Donut Chart + Macros -->
             <div
                 style="display:flex; gap:15px; align-items:center; margin-top:10px; justify-content:center; flex-wrap:wrap;">
-
-                <!-- NEW V3.64: BASE FORMULA SUBTOTAL -->
-                <div style="width:100%; text-align:center; margin-top:10px;">
-                    <span
-                        style="font-size:0.75rem; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid #ddd; padding-bottom:3px;">Aporte
-                        Fórmulas Base (F1+F2)</span>
-                </div>
-                <!-- Subtotal Board -->
-                <div class="macro-board"
-                    style="flex:1; margin:0; max-width:400px; background:rgba(52, 152, 219, 0.05); border:1px solid rgba(52, 152, 219, 0.2); box-shadow:none;">
-                    <div class="macro-item k"><label>Energía</label><span id="subKcalBase">0</span><small>kcal</small>
-                    </div>
-                    <div class="macro-item p"><label>Prot</label><span id="subProtBase">0</span><small>g</small></div>
-                    <div class="macro-item c"><label>CHO</label><span id="subCHOBase">0</span><small>g</small></div>
-                    <div class="macro-item f"><label>Líp</label><span id="subLipBase">0</span><small>g</small></div>
-                </div>
 
                 <div style="width:100%; text-align:center; margin-top:15px;">
                     <span
