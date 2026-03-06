@@ -1020,6 +1020,14 @@ function initFormulaSearch() {
             updateFormulaSelect(e.target.value);
         };
     }
+
+    // NEW V3.64: Formula 2 Search
+    const search2 = document.getElementById('formula2Search');
+    if (search2) {
+        search2.oninput = (e) => {
+            updateFormulaSelect2(e.target.value);
+        };
+    }
 }
 
 function updateFormulaSelect(filter = "") {
@@ -1091,6 +1099,38 @@ function updateFormulaSelect(filter = "") {
     }
 }
 
+// NEW V3.64: Filter just Formula 2
+function updateFormulaSelect2(filter = "") {
+    if (!AppState.formulas || AppState.formulas.length === 0) return;
+
+    const sel = document.getElementById('formula2Select');
+    if (!sel) return;
+
+    const normalizedFilter = filter.toLowerCase().trim();
+    const sortedFormulas = [...AppState.formulas].filter(f => !normalizedFilter || f.name.toLowerCase().includes(normalizedFilter) || f.cat.toLowerCase().includes(normalizedFilter));
+    const cats = [...new Set(sortedFormulas.map(i => i.cat))];
+
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="none">-- Sin Fórmula 2 --</option>';
+
+    cats.forEach(cat => {
+        const group = document.createElement('optgroup');
+        group.label = cat;
+        sortedFormulas.filter(i => i.cat === cat).forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            opt.textContent = item.name;
+            group.appendChild(opt);
+        });
+        sel.appendChild(group);
+    });
+
+    if (currentVal) sel.value = currentVal;
+
+    // Bind change listener
+    sel.onchange = runSimulation;
+}
+
 function runSimulation() {
     const fId = document.getElementById('formulaSelect').value;
     const formula = AppState.formulas.find(f => f.id === fId);
@@ -1119,13 +1159,61 @@ function runSimulation() {
             c = formula.c * (vol / 100) * dilPct;
             l = formula.f * (vol / 100) * dilPct;
         }
+
+        // --- NEW V3.64: FORMULA 2 CALCULATION ---
+        const fId2 = document.getElementById('formula2Select')?.value;
+        if (fId2 && fId2 !== 'none') {
+            const formula2 = AppState.formulas.find(f => f.id === fId2);
+            if (formula2) {
+                const f2v1 = parseFloat(document.getElementById('volume2')?.value) || 0;
+                const f2v2 = parseFloat(document.getElementById('dilution2')?.value) || 0;
+                if (formula2.type === 'p') {
+                    const dil2 = f2v2 > 0 ? f2v2 : 0;
+                    const grams2 = f2v1 * (dil2 / 100);
+                    k += formula2.k * (grams2 / 100);
+                    p += formula2.p * (grams2 / 100);
+                    c += formula2.c * (grams2 / 100);
+                    l += formula2.f * (grams2 / 100);
+                } else {
+                    const dilPct2 = f2v2 > 0 ? (f2v2 / 100) : 1;
+                    k += formula2.k * (f2v1 / 100) * dilPct2;
+                    p += formula2.p * (f2v1 / 100) * dilPct2;
+                    c += formula2.c * (f2v1 / 100) * dilPct2;
+                    l += formula2.f * (f2v1 / 100) * dilPct2;
+                }
+            }
+        }
+
     } else {
         const grams = v2;
         k = formula.k * (grams / 100);
         p = formula.p * (grams / 100);
         c = formula.c * (grams / 100);
         l = formula.f * (grams / 100);
+
+        // Formula 2 in Grams Mode
+        const fId2 = document.getElementById('formula2Select')?.value;
+        if (fId2 && fId2 !== 'none') {
+            const formula2 = AppState.formulas.find(f => f.id === fId2);
+            if (formula2) {
+                const f2v2 = parseFloat(document.getElementById('dilution2')?.value) || 0;
+                k += formula2.k * (f2v2 / 100);
+                p += formula2.p * (f2v2 / 100);
+                c += formula2.c * (f2v2 / 100);
+                l += formula2.f * (f2v2 / 100);
+            }
+        }
     }
+
+    // NEW V3.64: Update Base Formula Subtotal Board BEFORE adding modules/oral
+    const elSubK = document.getElementById('subKcalBase');
+    const elSubP = document.getElementById('subProtBase');
+    const elSubC = document.getElementById('subCHOBase');
+    const elSubL = document.getElementById('subLipBase');
+    if (elSubK) elSubK.innerText = Math.round(k);
+    if (elSubP) elSubP.innerText = p.toFixed(1);
+    if (elSubC) elSubC.innerText = c.toFixed(1);
+    if (elSubL) elSubL.innerText = l.toFixed(1);
 
     // Factor in Modules V3.50/V3.61
     let modK = 0, modP = 0, modC = 0, modL = 0;
@@ -1364,13 +1452,15 @@ function resetPatientForm() {
 
     // 2. Simulator Inputs
     const simIds = [
-        'formulaSelect', 'volume', 'dilution',
+        'formulaSearch', 'formulaSelect', 'volume', 'dilution',
+        'formula2Search', 'formula2Select', 'volume2', 'dilution2',
         'modNessucar', 'modMCT', 'modEnterex', 'modBanatrol', 'modProteinex', 'modFresubin',
-        'oralKcal', 'oralProt', 'oralCHO', 'oralLip', 'oralWater', 'ivVolume'
+        'oralKcal', 'oralProt', 'oralCHO', 'oralLip', 'oralWater',
+        'ivType', 'ivVolume', 'goalTotal'
     ];
     simIds.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.value = '';
+        if (el) el.value = (id === 'formula2Select') ? 'none' : '';
     });
 
     const ivTypeEl = document.getElementById('ivType');
@@ -1623,6 +1713,9 @@ function attachSearch(inputId, selectId) {
         }
     });
 }
+
+// --- 13.1 Update Formula Select (V3.62) ---
+// Removing inline version of this hook, we already have updateFormulaSelect and updateFormulaSelect2
 
 // --- 14. CHART LOGIC (NEW) ---
 function initChartSim() {
