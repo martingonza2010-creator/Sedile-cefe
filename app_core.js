@@ -345,6 +345,7 @@ function initPatientLogic() {
                         volume: document.getElementById('volume').value,
                         dilution: document.getElementById('dilution').value,
                         goal_total: tmt,
+                        macro_mode: macroGoalMode || 'gkg',
                         goal_prot: document.getElementById('goalProtKg').value,
                         goal_cho: document.getElementById('goalCHOKg').value,
                         goal_lip: document.getElementById('goalLipKg').value,
@@ -830,6 +831,13 @@ window.loadPatient = async (id) => {
         // Restore goals if exist
         if (data.metadata && data.metadata.simulator) {
             const sim = data.metadata.simulator;
+            if (sim.macro_mode) {
+                if (sim.macro_mode === 'pct') {
+                    document.getElementById('btnModePct')?.click();
+                } else {
+                    document.getElementById('btnModeGkg')?.click();
+                }
+            }
             if (sim.goal_prot) document.getElementById('goalProtKg').value = sim.goal_prot;
             if (sim.goal_cho) document.getElementById('goalCHOKg').value = sim.goal_cho;
             if (sim.goal_lip) document.getElementById('goalLipKg').value = sim.goal_lip;
@@ -2542,6 +2550,7 @@ function initVoiceDictation() {
 
 // --- 19. MACRONUTRIENT GOALS (NEW V3.63) ---
 let goalChartInstance = null;
+let macroGoalMode = 'gkg'; // 'gkg' or 'pct'
 
 function initGoalMacroChart() {
     const ctx = document.getElementById('goalMacroChart')?.getContext('2d');
@@ -2572,23 +2581,115 @@ function initGoalMacroChart() {
         }
     });
 
-    const inputs = ['goalProtKg', 'goalCHOKg', 'goalLipKg', 'peso'];
+    const inputs = ['goalProtKg', 'goalCHOKg', 'goalLipKg', 'peso', 'goalTotal'];
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', updateMacroGoals);
     });
+
+    // Toggle Modes
+    const btnGkg = document.getElementById('btnModeGkg');
+    const btnPct = document.getElementById('btnModePct');
+    if (btnGkg && btnPct) {
+        btnGkg.onclick = () => {
+            macroGoalMode = 'gkg';
+            btnGkg.classList.add('active');
+            btnPct.classList.remove('active');
+            document.getElementById('lblProtGoal').innerText = "Prot (g/kg)";
+            document.getElementById('lblCHOGoal').innerText = "CHO (g/kg)";
+            document.getElementById('lblLipGoal').innerText = "Líp (g/kg)";
+
+            document.getElementById('macroPctProt').style.display = 'none';
+            document.getElementById('macroPctCHO').style.display = 'none';
+            document.getElementById('macroPctLip').style.display = 'none';
+            document.getElementById('pctTotalWarning').style.display = 'none';
+
+            updateMacroGoals();
+        };
+        btnPct.onclick = () => {
+            macroGoalMode = 'pct';
+            btnPct.classList.add('active');
+            btnGkg.classList.remove('active');
+            document.getElementById('lblProtGoal').innerText = "Prot (%)";
+            document.getElementById('lblCHOGoal').innerText = "CHO (%)";
+            document.getElementById('lblLipGoal').innerText = "Líp (%)";
+
+            document.getElementById('macroPctProt').style.display = 'block';
+            document.getElementById('macroPctCHO').style.display = 'block';
+            document.getElementById('macroPctLip').style.display = 'block';
+
+            updateMacroGoals();
+        };
+    }
+
+    // GET Selector Logic
+    const getSelector = document.getElementById('getSelector');
+    if (getSelector) {
+        getSelector.addEventListener('change', (e) => {
+            const mode = e.target.value;
+            const goalTotalEl = document.getElementById('goalTotal');
+
+            if (mode === 'manual') return; // Do nothing, let user type
+
+            let val = 0;
+            if (mode === 'factorial') {
+                const box = document.getElementById('goalKcalBox').value;
+                const peso = AppState.patient.peso || 0;
+                val = (parseFloat(box) || 0) * peso;
+            } else if (mode === 'hb') {
+                val = AppState.patient._tempHB || 0;
+            } else if (mode === 'schofield') {
+                val = AppState.patient._tempSchofield || 0;
+            } else if (mode === 'fao') {
+                val = AppState.patient._tempFAO || 0;
+            }
+
+            if (val > 0) {
+                goalTotalEl.value = Math.round(val);
+                // Dispatch input event to trigger downstream updates like runSimulation
+                goalTotalEl.dispatchEvent(new Event('input'));
+            }
+        });
+    }
 }
 
 function updateMacroGoals() {
     const peso = AppState.patient.peso || 0;
+    const getTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
 
-    const protKg = parseFloat(document.getElementById('goalProtKg')?.value) || 0;
-    const choKg = parseFloat(document.getElementById('goalCHOKg')?.value) || 0;
-    const lipKg = parseFloat(document.getElementById('goalLipKg')?.value) || 0;
+    const valP = parseFloat(document.getElementById('goalProtKg')?.value) || 0;
+    const valC = parseFloat(document.getElementById('goalCHOKg')?.value) || 0;
+    const valL = parseFloat(document.getElementById('goalLipKg')?.value) || 0;
 
-    const gProt = protKg * peso;
-    const gCHO = choKg * peso;
-    const gLip = lipKg * peso;
+    let gProt = 0, gCHO = 0, gLip = 0;
+    let pctP = 0, pctC = 0, pctL = 0;
+
+    if (macroGoalMode === 'gkg') {
+        gProt = valP * peso;
+        gCHO = valC * peso;
+        gLip = valL * peso;
+
+        if (getTotal > 0) {
+            pctP = ((gProt * 4) / getTotal) * 100;
+            pctC = ((gCHO * 4) / getTotal) * 100;
+            pctL = ((gLip * 9) / getTotal) * 100;
+        }
+    } else {
+        // Mode: PCT
+        if (getTotal > 0) {
+            pctP = valP;
+            pctC = valC;
+            pctL = valL;
+
+            gProt = (getTotal * (pctP / 100)) / 4;
+            gCHO = (getTotal * (pctC / 100)) / 4;
+            gLip = (getTotal * (pctL / 100)) / 9;
+        }
+    }
+
+    const gkgP = peso > 0 ? (gProt / peso) : 0;
+    const gkgC = peso > 0 ? (gCHO / peso) : 0;
+    const gkgL = peso > 0 ? (gLip / peso) : 0;
 
     const elP = document.getElementById('goalProt');
     if (elP) { elP.dataset.val = gProt; elP.innerText = gProt.toFixed(1) + " g/día"; }
@@ -2596,6 +2697,30 @@ function updateMacroGoals() {
     if (elC) { elC.dataset.val = gCHO; elC.innerText = gCHO.toFixed(1) + " g/día"; }
     const elL = document.getElementById('goalLip');
     if (elL) { elL.dataset.val = gLip; elL.innerText = gLip.toFixed(1) + " g/día"; }
+
+    // Update internal sub-labels
+    if (macroGoalMode === 'pct') {
+        document.getElementById('macroPctProt').innerText = `(${gkgP.toFixed(2)} g/kg)`;
+        document.getElementById('macroPctCHO').innerText = `(${gkgC.toFixed(2)} g/kg)`;
+        document.getElementById('macroPctLip').innerText = `(${gkgL.toFixed(2)} g/kg)`;
+
+        // Show warning if total % != 100
+        const totalPct = pctP + pctC + pctL;
+        const warnLabel = document.getElementById('pctTotalWarning');
+        const warnVal = document.getElementById('pctTotalVal');
+        if (warnLabel && warnVal) {
+            if (valP > 0 || valC > 0 || valL > 0) {
+                if (Math.round(totalPct) !== 100) {
+                    warnLabel.style.display = 'inline';
+                    warnVal.innerText = totalPct.toFixed(1);
+                } else {
+                    warnLabel.style.display = 'none';
+                }
+            } else {
+                warnLabel.style.display = 'none';
+            }
+        }
+    }
 
     const kcalProt = gProt * 4;
     const kcalCHO = gCHO * 4;
