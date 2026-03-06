@@ -304,7 +304,7 @@ function initHistoryModal() {
     const btnClose = document.getElementById('btnHistoryClose');
     if (btnOpen) btnOpen.onclick = () => {
         modal.classList.add('active');
-        loadHistory();
+        loadHistoryList(); // Changed from loadHistory to loadHistoryList
     };
     if (btnClose) btnClose.onclick = () => modal.classList.remove('active');
 }
@@ -410,7 +410,7 @@ function initPatientLogic() {
 
                 if (!error) {
                     showToast("✅ Ficha completa guardada en historial");
-                    loadHistory();
+                    loadHistoryList(); // Changed from loadHistory to loadHistoryList
                     btn.innerHTML = `<span>✔</span> ¡Guardado!`;
                     setTimeout(() => {
                         btn.disabled = false;
@@ -434,6 +434,53 @@ function initGoalLogic() {
     // Redundant block merged into initAssessmentLogic
 }
 
+async function loadHistoryList() {
+    const list = document.getElementById('histList');
+    if (!list) return;
+
+    list.innerHTML = '<p style="text-align:center;">Cargando historial...</p>';
+
+    const { data: records, error } = await supabaseClient
+        .from('pacientes')
+        .select('id, nombre, edad, peso_kg, tmt, created_at, estado_sala')
+        .eq('user_id', AppState.user.id)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        list.innerHTML = '<p>Error cargando historial.</p>';
+        return;
+    }
+
+    if (!records || records.length === 0) {
+        list.innerHTML = '<p style="text-align:center; opacity:0.6;">Ningún registro guardado aún.</p>';
+        return;
+    }
+
+    // V3.62 Filter out null names and group by unqiue names
+    const validRecords = records.filter(r => r.nombre && r.nombre.trim() !== '');
+
+    let html = '';
+    validRecords.forEach(r => {
+        const dateStr = new Date(r.created_at).toLocaleDateString('es-CL');
+        html += `
+            <div style="background:#f8f9fa; border:1px solid #eee; border-radius:10px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong style="color:var(--primary); font-size:1.1rem; display:block; margin-bottom:3px;">${r.nombre}</strong>
+                    <span style="font-size:0.8rem; color:#666;">${dateStr} | ${r.edad} años | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal</span>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">📂 Cargar</button>
+                    <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Eliminar paciente">🗑️</button>
+                </div>
+            </div>
+        `;
+    });
+
+    list.innerHTML = html;
+}
+
+// Original loadHistory function (renamed or removed if loadHistoryList is the replacement)
+// Keeping it for now, but it's likely intended to be replaced by loadHistoryList
 async function loadHistory() {
     let listContainer = document.getElementById('patientListContainer');
     if (!listContainer) {
@@ -581,7 +628,7 @@ async function loadWardKanban() {
                     <button onclick="event.stopPropagation(); window.openQuickView('${p.id}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Resumen de Bolsillo">
                         🔍
                     </button>
-                    <button onclick="event.stopPropagation(); window.togglePatientState('${p.id}', '${p.estado_sala === 'critico' ? 'activo' : 'critico'}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Cambiar a ${isCritico ? 'En Curso' : 'Crítico'}">
+                    <button onclick="event.stopPropagation(); window.togglePatientState('${p.id}', '${isCritico ? 'activo' : 'critico'}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Cambiar a ${isCritico ? 'En Curso' : 'Crítico'}">
                         ${isCritico ? '↩️' : '🚨'}
                     </button>
                     <button onclick="event.stopPropagation(); window.dischargePatient('${p.id}')" style="background:none; border:none; color:#27ae60; cursor:pointer;" title="Dar de Alta">
@@ -608,13 +655,39 @@ async function loadWardKanban() {
 
 window.togglePatientState = async (id, newState) => {
     const { error } = await supabaseClient.from('pacientes').update({ estado_sala: newState }).eq('id', id);
-    if (!error) loadWardKanban();
+    if (error) {
+        console.error("Error toggling patient state:", error);
+        alert("Error al cambiar estado: " + error.message);
+    } else {
+        loadWardKanban();
+    }
 };
 
 window.dischargePatient = async (id) => {
     if (!confirm("¿Dar de alta a este paciente de la sala? Seguirá en tu historial, pero no en este Kanban.")) return;
     const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', id);
     if (!error) loadWardKanban();
+};
+
+window.deletePatient = async (id) => {
+    if (!confirm("🚨 ADVERTENCIA: ¿Estás seguro de que quieres eliminar PERMANENTEMENTE a este paciente y todo su historial? Esta acción no se puede deshacer.")) return;
+    const { error } = await supabaseClient.from('pacientes').delete().eq('id', id);
+    if (error) {
+        console.error("Error deleting patient:", error);
+        alert("Error al eliminar el paciente: " + error.message);
+    } else {
+        alert("Paciente eliminado con éxito.");
+        // Reload both history and kanban views
+        if (typeof loadHistoryList === 'function') loadHistoryList();
+        if (typeof loadWardKanban === 'function') loadWardKanban();
+        // If the deleted patient was actively loaded, reload the app layout or clear the inputs
+        if (AppState.patient && AppState.patient.id === id) {
+            AppState.patient.id = null;
+            document.getElementById('nombre').value = "";
+            document.getElementById('simGoal').innerText = "--";
+            document.getElementById('valGET').innerText = "0 kcal";
+        }
+    }
 };
 
 window.openQuickView = async (id) => {
@@ -800,6 +873,41 @@ function renderEvolutionChart(history) {
         ctx.fillText(h.peso_kg + 'kg', x - 10, y - 10);
         ctx.fillStyle = '#8e44ad';
     });
+}
+
+// Ensure initProtocolModal exists
+function initProtocolModal() {
+    const modal = document.getElementById('protocolModal');
+    const btnOpen = document.getElementById('btnProtocolOpen');
+    const btnClose = document.getElementById('btnProtocolClose');
+
+    if (btnOpen && modal) {
+        btnOpen.onclick = (e) => {
+            e.preventDefault();
+            modal.classList.add('active');
+        };
+    }
+    if (btnClose && modal) {
+        btnClose.onclick = () => {
+            modal.classList.remove('active');
+        };
+    }
+
+    // Modal tabs
+    window.switchProtocolTab = (index) => {
+        const tabs = modal.querySelectorAll('.tab-btn');
+        const contents = modal.querySelectorAll('.tab-content');
+
+        tabs.forEach((t, i) => {
+            if (i === index) t.classList.add('active');
+            else t.classList.remove('active');
+        });
+
+        contents.forEach((c, i) => {
+            if (i === index) c.style.display = 'block';
+            else c.style.display = 'none';
+        });
+    };
 }
 
 window.loadPatient = async (id) => {
@@ -2699,6 +2807,11 @@ function initGoalMacroChart() {
             document.getElementById('lblCHOGoal').innerText = "CHO (g/kg)";
             document.getElementById('lblLipGoal').innerText = "Líp (g/kg)";
 
+            // Update placeholders for g/kg
+            document.getElementById('goalProtKg').placeholder = "Ej. 1.5";
+            document.getElementById('goalCHOKg').placeholder = "Ej. 5.0";
+            document.getElementById('goalLipKg').placeholder = "Ej. 2.0";
+
             document.getElementById('macroPctProt').style.display = 'none';
             document.getElementById('macroPctCHO').style.display = 'none';
             document.getElementById('macroPctLip').style.display = 'none';
@@ -2713,6 +2826,11 @@ function initGoalMacroChart() {
             document.getElementById('lblProtGoal').innerText = "Prot (%)";
             document.getElementById('lblCHOGoal').innerText = "CHO (%)";
             document.getElementById('lblLipGoal').innerText = "Líp (%)";
+
+            // Update placeholders for pct
+            document.getElementById('goalProtKg').placeholder = "Ej. 15%";
+            document.getElementById('goalCHOKg').placeholder = "Ej. 55%";
+            document.getElementById('goalLipKg').placeholder = "Ej. 30%";
 
             document.getElementById('macroPctProt').style.display = 'block';
             document.getElementById('macroPctCHO').style.display = 'block';
