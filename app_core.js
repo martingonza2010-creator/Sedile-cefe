@@ -126,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     safelyInit(initSimulatorLogic, "SimulatorLogic");
     safelyInit(initInfusionLogic, "InfusionLogic");
     safelyInit(initHydrationLogic, "HydrationLogic");
+    safelyInit(initCompareLogic, "CompareLogic");
     safelyInit(initChartSim, "ChartSim");
     safelyInit(initGoalMacroChart, "GoalMacroChart");
     safelyInit(initAssessmentLogic, "AssessmentLogic");
