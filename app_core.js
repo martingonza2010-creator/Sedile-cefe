@@ -913,49 +913,114 @@ function calculateRequirements() {
     if (p.peso > 0 && p.edad > 0) {
         // --- TMB (OMS/WHO) AUTOMATIC ---
         let bmr = 0;
-        if (sexo === 'm') {
-            if (p.edad < 3) bmr = (60.9 * p.peso) - 54;
-            else if (p.edad < 10) bmr = (22.7 * p.peso) + 495;
-            else if (p.edad < 18) bmr = (17.5 * p.peso) + 651;
-            else if (p.edad < 30) bmr = (15.3 * p.peso) + 679;
-            else if (p.edad < 60) bmr = (11.6 * p.peso) + 879;
-            else bmr = (13.5 * p.peso) + 487;
-        } else {
-            if (p.edad < 3) bmr = (61.0 * p.peso) - 51;
-            else if (p.edad < 10) bmr = (22.5 * p.peso) + 499;
-            else if (p.edad < 18) bmr = (12.2 * p.peso) + 746;
-            else if (p.edad < 30) bmr = (14.7 * p.peso) + 496;
-            else if (p.edad < 60) bmr = (8.7 * p.peso) + 829;
-            else bmr = (10.5 * p.peso) + 596;
+        let method = document.getElementById('tmbMethod').value;
+        const cm = p.estatura * 100;
+
+        // FAO/OMS
+        if (method === 'oms') {
+            if (sexo === 'm') {
+                if (p.edad < 3) bmr = (60.9 * p.peso) - 54;
+                else if (p.edad < 10) bmr = (22.7 * p.peso) + 495;
+                else if (p.edad < 18) bmr = (17.5 * p.peso) + 651;
+                else if (p.edad < 30) bmr = (15.3 * p.peso) + 679;
+                else if (p.edad < 60) bmr = (11.6 * p.peso) + 879;
+                else bmr = (13.5 * p.peso) + 487;
+            } else {
+                if (p.edad < 3) bmr = (61.0 * p.peso) - 51;
+                else if (p.edad < 10) bmr = (22.5 * p.peso) + 499;
+                else if (p.edad < 18) bmr = (12.2 * p.peso) + 746;
+                else if (p.edad < 30) bmr = (14.7 * p.peso) + 496;
+                else if (p.edad < 60) bmr = (8.7 * p.peso) + 829;
+                else bmr = (10.5 * p.peso) + 596;
+            }
+        }
+        // Harris-Benedict (Original 1919 or Revised 1984 - typical clinical use is Roza/Shizgal 1984)
+        else if (method === 'hb') {
+            if (sexo === 'm') {
+                bmr = 88.362 + (13.397 * p.peso) + (4.799 * cm) - (5.677 * p.edad);
+            } else {
+                bmr = 447.593 + (9.247 * p.peso) + (3.098 * cm) - (4.330 * p.edad);
+            }
+        }
+        // Schofield (1985)
+        else if (method === 'schofield') {
+            if (sexo === 'm') {
+                if (p.edad < 3) bmr = (0.167 * p.peso) + (15.174 * p.estatura) - 0.6176;
+                else if (p.edad < 10) bmr = (19.59 * p.peso) + (130.3 * p.estatura) + 414.9;
+                else if (p.edad < 18) bmr = (16.25 * p.peso) + (137.2 * p.estatura) + 515.5;
+                else if (p.edad < 30) bmr = (15.057 * p.peso) + (692.6 * p.estatura) + 655.8; // Changed slightly due to units, standard is W+H
+                else if (p.edad < 60) bmr = (11.472 * p.peso) + (873.1 * p.estatura) + 864; // Approximation
+                else bmr = (11.711 * p.peso) + (587.7 * p.estatura) + 597;
+            } else {
+                // Females roughly
+                if (p.edad < 3) bmr = (16.25 * p.peso) + (1023.2 * p.estatura) - 413.5;
+                else if (p.edad < 10) bmr = (16.969 * p.peso) + (161.8 * p.estatura) + 371.2;
+                else if (p.edad < 18) bmr = (8.365 * p.peso) + (465 * p.estatura) + 200;
+                else if (p.edad < 30) bmr = (13.623 * p.peso) + (283 * p.estatura) + 98;
+                else if (p.edad < 60) bmr = (10.996 * p.peso) + (207.4 * p.estatura) + 795;
+                else bmr = (9.082 * p.peso) + (305.6 * p.estatura) + 746;
+            }
+        }
+        // Mifflin-St Jeor
+        else if (method === 'msj') {
+            if (sexo === 'm') {
+                bmr = (10 * p.peso) + (6.25 * cm) - (5 * p.edad) + 5;
+            } else {
+                bmr = (10 * p.peso) + (6.25 * cm) - (5 * p.edad) - 161;
+            }
         }
 
         const resTMB = document.getElementById('resTMB');
-        if (resTMB) resTMB.innerText = `${Math.round(bmr)} kcal`;
+        if (resTMB) resTMB.innerText = `${Math.round(bmr * p.actividad)} kcal (TMBxFA)`;
+        p.tmt_calculated = bmr * p.actividad;
 
-        // Update Requerimiento Total
-        if (!AppState.userOverridesGoal) {
-            p.tmt = bmr * p.actividad;
-            const goalTotalBox = document.getElementById('goalTotal');
-            // const goalKcalBox = document.getElementById('goalKcalBox'); // REMOVED V3.21: Stop auto-overwrite
+        // Ensure factorial is also calculated
+        calcFactorialNoRecursion();
 
-            if (goalTotalBox) goalTotalBox.value = Math.round(p.tmt);
-            // if (goalKcalBox) goalKcalBox.value = (p.tmt / p.peso).toFixed(1); // REMOVED V3.21
+        // Update Official GET Based on Selection
+        window.updateSelectedGET();
 
-            // Keep the automatic Evolution Badge update ONLY if the user hasn't typed manually yet
-            // Actually, better to just clear it or leave it as TMB reference if needed, 
-            // but user wants manual control. Let's just update the badge if the box is empty?
-            // User request: "Evolución kcal/kg... no sea apenas coloque el peso... sino que yo coloque ejemplo 20"
-            // So we DO NOT touch the box value. We DO NOT touch the badge unless user types.
-
-            document.getElementById('simGoal').innerText = Math.round(p.tmt);
-        }
-
-        calcTMB_OMS();
-        calcFactorial();
         calcHydration();
         runSimulation();
     }
 }
+
+function calcFactorialNoRecursion() {
+    const p = AppState.patient;
+    const fKcal = parseFloat(document.getElementById('factorKcal')?.value) || 25;
+    if (p.peso > 0) {
+        const factTotal = p.peso * fKcal;
+        p.factorial_calculated = factTotal;
+        const resF = document.getElementById('resFactorial');
+        if (resF) resF.innerText = `${Math.round(factTotal)} kcal`;
+    }
+}
+
+window.calcFactorial = () => {
+    calcFactorialNoRecursion();
+    window.updateSelectedGET();
+    runSimulation();
+};
+
+window.calcTMB_OMS = () => {
+    calculateRequirements();
+};
+
+window.updateSelectedGET = () => {
+    const p = AppState.patient;
+    const isFactorial = document.getElementById('radioFactorial')?.checked;
+
+    let officialGET = 0;
+    if (isFactorial) {
+        officialGET = p.factorial_calculated || 0;
+    } else {
+        officialGET = p.tmt_calculated || 0;
+    }
+
+    p.tmt = officialGET;
+    document.getElementById('valGET').innerText = `${Math.round(officialGET)} kcal`;
+    updateMacroGoals();
+};
 
 // --- 8. SIMULATOR LOGIC ---
 function initSimulatorLogic() {
@@ -1234,13 +1299,16 @@ function runSimulation() {
     const goalC = elC ? (parseFloat(elC.dataset.val) || 0) : 0;
     const goalL = elL ? (parseFloat(elL.dataset.val) || 0) : 0;
 
+    // Use AppState.officialGET for kcal goal
+    const officialKcalGoal = AppState.officialGET || parseFloat(document.getElementById('goalTotal').value) || 2000;
+
     if (adeqCard) {
-        if (goal > 0 || goalP > 0 || goalC > 0 || goalL > 0) {
+        if (officialKcalGoal > 0 || goalP > 0 || goalC > 0 || goalL > 0) {
             adeqCard.style.display = 'block';
 
             // Kcal Adequacy
-            if (goal > 0) {
-                const pctK = (k / goal) * 100;
+            if (officialKcalGoal > 0) {
+                const pctK = (k / officialKcalGoal) * 100;
                 adeqKcal.innerText = Math.round(pctK) + "%";
                 adeqKcal.style.color = (pctK < 90) ? '#e67e22' : (pctK > 110) ? '#e74c3c' : '#27ae60';
             } else { adeqKcal.innerText = "--"; adeqKcal.style.color = '#888'; }
@@ -1654,9 +1722,9 @@ function initChartSim() {
             datasets: [{
                 data: [0, 0, 0],
                 backgroundColor: [
-                    '#e67e22',
-                    '#3498db',
-                    '#f1c40f'
+                    '#e74c3c', // Red (Proteins)
+                    '#3498db', // Blue (CHO)
+                    '#f1c40f'  // Yellow (Lipids)
                 ],
                 borderWidth: 0,
                 hoverOffset: 4
@@ -1665,7 +1733,7 @@ function initChartSim() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '70%',
+            cutout: '60%', // slightly thicker to fit text
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -1678,6 +1746,20 @@ function initChartSim() {
                             let percentage = Math.round((value / total) * 100) + '%';
                             return label + ': ' + percentage;
                         }
+                    }
+                },
+                // Require chartjs-plugin-datalabels
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 10 },
+                    formatter: (value, ctx) => {
+                        let sum = 0;
+                        let dataArr = ctx.chart.data.datasets[0].data;
+                        dataArr.map(data => {
+                            sum += data;
+                        });
+                        let percentage = (value * 100 / sum).toFixed(0) + "%";
+                        return value > 0 ? percentage : '';
                     }
                 }
             }
