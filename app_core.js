@@ -1046,7 +1046,13 @@ function calculateRequirements() {
     p.peso = parseFloat(pesoEl.value) || 0;
     p.estatura = parseFloat(estaturaEl.value) || 0;
     p.actividad = parseFloat(actividadEl.value) || 1.2;
-    const sexo = sexoEl.value;
+    p.sexo = sexoEl.value; // Store in AppState
+    const sexo = p.sexo;
+
+    p.type = document.querySelector('input[name="patientType"]:checked')?.value || 'adult';
+
+    // Pediatric Z-Score Execution Engine
+    renderPediatricZScores();
 
     // NEW V3.19: Ideal Weight & IPT (Real-time)
     if (p.estatura > 0 && p.edad > 0) {
@@ -1176,6 +1182,113 @@ function calcFactorialNoRecursion() {
         const resF = document.getElementById('resFactorial');
         if (resF) resF.innerText = `${Math.round(factTotal)} kcal`;
     }
+}
+
+// === NEW V3.80: PEDIATRIC & NEONATAL ENGINE ===
+
+window.togglePatientMode = () => {
+    const mode = document.querySelector('input[name="patientType"]:checked').value;
+    AppState.patient.type = mode;
+
+    document.getElementById('colEdad').style.display = mode === 'adult' ? 'block' : 'none';
+    document.getElementById('rowPediatric').style.display = mode === 'pediatric' ? 'flex' : 'none';
+    document.getElementById('rowNeonate').style.display = mode === 'neonate' ? 'flex' : 'none';
+    document.getElementById('pediatricAssessmentResults').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
+
+    const iwRow = document.getElementById('valIdealWeight')?.parentElement?.parentElement;
+    if (iwRow) iwRow.style.display = mode === 'adult' ? 'flex' : 'none';
+
+    calculateRequirements();
+};
+
+window.calculatePediatricAge = () => {
+    const fn = document.getElementById('fechaNacimiento').value;
+    if (!fn) return;
+    const birth = new Date(fn);
+    const now = new Date();
+
+    let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+    if (now.getDate() < birth.getDate()) months--;
+
+    let ageInYears = months / 12;
+    document.getElementById('edad').value = ageInYears.toFixed(2);
+
+    const years = Math.floor(months / 12);
+    const remMonths = Math.max(0, months % 12);
+    document.getElementById('lblExactAge').innerText = `${years} años, ${remMonths} meses`;
+
+    AppState.patient.exactMonths = months;
+    calculateRequirements();
+};
+
+function getZScore(indicator, keyVal, sexo, obs) {
+    if (!obs || !window.MINSAL_DATA || !window.MINSAL_DATA[indicator]) return null;
+    const sexKey = sexo === 'm' ? 'boys' : 'girls';
+    const table = window.MINSAL_DATA[indicator][sexKey];
+    if (!table || table.length === 0) return null;
+
+    let closest = table[0];
+    let minDiff = 9999;
+    for (let r of table) {
+        const diff = Math.abs(r.k - keyVal);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closest = r;
+        }
+    }
+
+    const L = closest.L;
+    const M = closest.M;
+    const S = closest.S;
+
+    if (L === 0) return Math.log(obs / M) / S;
+    return (Math.pow(obs / M, L) - 1) / (L * S);
+}
+
+function renderPediatricZScores() {
+    const p = AppState.patient;
+    const grid = document.getElementById('zscoreGrid');
+    if (!grid || !p) return;
+
+    if (p.type !== 'pediatric' && p.type !== 'neonate') return;
+
+    let m = p.exactMonths || 0;
+    if (m < 0) m = 0;
+
+    const cm = p.estatura > 3 ? p.estatura : p.estatura * 100;
+
+    let zWFA = getZScore('wfa', m, p.sexo, p.peso);
+    let zHFA = getZScore('hfa', m, p.sexo, cm);
+    let zBMI = getZScore('bmi', m, p.sexo, p.bmi);
+    let zWFH = getZScore('wfh', cm, p.sexo, p.peso);
+
+    let html = '';
+
+    const makeBadge = (title, z) => {
+        if (z === null || isNaN(z)) return '';
+        let color = '#27ae60';
+        let diag = 'N';
+        if (z > 2) { color = '#e74c3c'; diag = '+2DE'; }
+        else if (z > 1) { color = '#f39c12'; diag = '+1DE'; }
+        else if (z < -2) { color = '#c0392b'; diag = '-2DE'; }
+        else if (z < -1) { color = '#e67e22'; diag = '-1DE'; }
+
+        return `<div style="background:#fff; border:1px solid ${color}; padding:6px; border-radius:6px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+            <div style="font-size:0.6rem; color:#666; font-weight:600;">${title}</div>
+            <div style="font-size:1rem; font-weight:800; color:${color}; display:flex; justify-content:center; align-items:baseline; gap:4px;">
+                ${z > 0 ? '+' : ''}${z.toFixed(2)}
+                <span style="font-size:0.6rem; padding:2px 4px; background:${color}20; border-radius:4px;">${diag}</span>
+            </div>
+        </div>`;
+    };
+
+    html += makeBadge('P/E (Peso/Edad)', zWFA);
+    html += makeBadge('T/E (Talla/Edad)', zHFA);
+    if (m <= 60 && cm > 45) html += makeBadge('P/T (Peso/Talla)', zWFH);
+    if (m > 60) html += makeBadge('IMC/E', zBMI);
+
+    if (!html) html = '<div style="grid-column:span 2; text-align:center; font-size:0.8rem; color:#888;">Ingresa Fecha de Nacimiento, Peso y Talla</div>';
+    grid.innerHTML = html;
 }
 
 window.calcFactorial = () => {
