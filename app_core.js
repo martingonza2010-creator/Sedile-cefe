@@ -14,26 +14,53 @@ window.onerror = function (msg, url, line, col, error) {
 // --- 2. DATABASE (Vademécum HRA & RTH) ---
 const LOCAL_FORMULAS = [
     { cat: "Leches HRA", id: "alprem", name: "Alprem", type: "l", k: 80.0, p: 2.9, c: 8.1, f: 4.0 },
-    { cat: "Leches HRA", id: "f1", name: "F1", type: "l", k: 67.9, p: 1.2, c: 7.6, f: 3.6 },
-    { cat: "Leches HRA", id: "f2", name: "F2", type: "l", k: 68.0, p: 2.1, c: 8.2, f: 3.0 },
-    { cat: "Leches HRA", id: "f3", name: "F3", type: "l", k: 65.5, p: 2.4, c: 8.5, f: 2.4 },
-    { cat: "Leches HRA", id: "f4", name: "F4", type: "l", k: 98.6, p: 4.4, c: 8.7, f: 2.6 },
-    { cat: "Leches HRA", id: "f5", name: "F5", type: "l", k: 66.5, p: 2.2, c: 7.7, f: 3.4 },
-    { cat: "Leches HRA", id: "f7", name: "F7", type: "l", k: 71.0, p: 1.8, c: 7.6, f: 3.7 },
-    { cat: "Leches HRA", id: "f8", name: "F8", type: "l", k: 32.6, p: 2.4, c: 3.6, f: 1.0 },
-    { cat: "Leches HRA", id: "f9", name: "F9", type: "l", k: 72.8, p: 2.0, c: 7.3, f: 4.0 },
-    { cat: "Leches HRA", id: "sl", name: "Sin Lactosa", type: "l", k: 71.3, p: 1.5, c: 8.3, f: 3.6 },
-    { cat: "Leches HRA", id: "comfort", name: "Comfort", type: "l", k: 66.7, p: 1.3, c: 7.8, f: 3.4 },
+    { cat: "Leches HRA", id: "f1", name: "F1", type: "l", stdDil: 13, k: 67.9, p: 1.2, c: 7.6, f: 3.6 },
+    { cat: "Leches HRA", id: "f2", name: "F2", type: "l", stdDil: 14, k: 68.0, p: 2.1, c: 8.2, f: 3.0 },
+    {
+        cat: "Leches HRA", id: "f3", name: "F3", type: "recipe", recipe: [
+            { id: "comp_comfort", name: "Comfort", defPct: 10, k: 513.07, p: 10.0, c: 60.0, f: 26.15 },
+            { id: "comp_nido", name: "Nido +1", defPct: 5, k: 458.0, p: 17.0, c: 52.0, f: 20.2 }
+        ]
+    },
+    { cat: "Leches HRA", id: "f4", name: "F4", type: "l", stdDil: 20, k: 98.6, p: 4.4, c: 8.7, f: 2.6 },
+    { cat: "Leches HRA", id: "f5", name: "F5", type: "l", stdDil: 14, k: 66.5, p: 2.2, c: 7.7, f: 3.4 },
+    { cat: "Leches HRA", id: "f7", name: "F7", type: "l", stdDil: 14, k: 71.0, p: 1.8, c: 7.6, f: 3.7 },
+    { cat: "Leches HRA", id: "f8", name: "F8", type: "l", stdDil: 8, k: 32.6, p: 2.4, c: 3.6, f: 1.0 },
+    { cat: "Leches HRA", id: "f9", name: "F9", type: "l", stdDil: 14, k: 72.8, p: 2.0, c: 7.3, f: 4.0 },
+    { cat: "Leches HRA", id: "sl", name: "Sin Lactosa", type: "l", stdDil: 14, k: 71.3, p: 1.5, c: 8.3, f: 3.6 },
+    { cat: "Leches HRA", id: "comfort", name: "Comfort", type: "l", stdDil: 13, k: 66.7, p: 1.3, c: 7.8, f: 3.4 },
     { cat: "Leches HRA", id: "pediasure", name: "Pediasure", type: "l", k: 92.8, p: 2.8, c: 12.1, f: 3.6 },
     { cat: "Leches HRA", id: "frebini", name: "Frebini", type: "l", k: 150.0, p: 3.8, c: 18.7, f: 6.7 },
     { cat: "Leches HRA", id: "pediasure_drink", name: "Pediasure Drink", type: "l", k: 100.0, p: 3.0, c: 13.1, f: 3.9 },
     { cat: "Leches HRA", id: "ensure_compact", name: "Ensure Compact", type: "l", k: 240.0, p: 10.2, c: 28.7, f: 9.4 },
-    { cat: "Leches HRA", id: "e1", name: "E1", type: "l", k: 94.2, p: 3.5, c: 12.6, f: 3.1 },
-    { cat: "Leches HRA", id: "e2", name: "E2", type: "l", k: 139.2, p: 6.1, c: 12.6, f: 3.1 },
-    { cat: "Leches HRA", id: "e3", name: "E3", type: "l", k: 158.4, p: 6.1, c: 17.4, f: 3.1 },
-    { cat: "Leches HRA", id: "g1", name: "G1", type: "l", k: 95.3, p: 4.3, c: 9.1, f: 3.5 },
-    { cat: "Leches HRA", id: "g2", name: "G2", type: "l", k: 140.3, p: 6.9, c: 9.1, f: 3.5 },
-    { cat: "Leches HRA", id: "g3", name: "G3", type: "l", k: 159.5, p: 6.9, c: 13.9, f: 3.5 },
+    { cat: "Leches HRA", id: "e1", name: "E1", type: "l", stdDil: 22, k: 94.2, p: 3.5, c: 12.6, f: 3.1 },
+    {
+        cat: "Leches HRA", id: "e2", name: "E2", type: "recipe", recipe: [
+            { id: "comp_ensure", name: "Ensure", defPct: 22, k: 428.18, p: 15.9, c: 57.27, f: 14.09 },
+            { id: "comp_vivalitewp", name: "Vivalite WP", defPct: 3, k: 357.0, p: 90.0, c: 0.0, f: 0.0 }
+        ]
+    },
+    {
+        cat: "Leches HRA", id: "e3", name: "E3", type: "recipe", recipe: [
+            { id: "comp_ensure", name: "Ensure", defPct: 22, k: 428.18, p: 15.9, c: 57.27, f: 14.09 },
+            { id: "comp_vivalitewp", name: "Vivalite WP", defPct: 3, k: 357.0, p: 90.0, c: 0.0, f: 0.0 },
+            { id: "comp_nessucar", name: "Nessucar", defPct: 5, k: 380.0, p: 0.0, c: 96.0, f: 0.0 }
+        ]
+    },
+    { cat: "Leches HRA", id: "g1", name: "G1", type: "l", stdDil: 20, k: 95.3, p: 4.3, c: 9.1, f: 3.5 },
+    {
+        cat: "Leches HRA", id: "g2", name: "G2", type: "recipe", recipe: [
+            { id: "comp_vivalitegold", name: "Vivalite Gold", defPct: 20, k: 476.5, p: 21.5, c: 45.5, f: 17.5 },
+            { id: "comp_vivalitewp", name: "Vivalite WP", defPct: 3, k: 357.0, p: 90.0, c: 0.0, f: 0.0 }
+        ]
+    },
+    {
+        cat: "Leches HRA", id: "g3", name: "G3", type: "recipe", recipe: [
+            { id: "comp_vivalitegold", name: "Vivalite Gold", defPct: 20, k: 476.5, p: 21.5, c: 45.5, f: 17.5 },
+            { id: "comp_vivalitewp", name: "Vivalite WP", defPct: 3, k: 357.0, p: 90.0, c: 0.0, f: 0.0 },
+            { id: "comp_nessucar", name: "Nessucar", defPct: 5, k: 380.0, p: 0.0, c: 96.0, f: 0.0 }
+        ]
+    },
     { cat: "Leches HRA", id: "ff1", name: "FF1", type: "l", k: 100.1, p: 3.7, c: 13.3, f: 3.3 },
     { cat: "Leches HRA", id: "ff2", name: "FF2", type: "l", k: 145.1, p: 6.3, c: 13.3, f: 3.4 },
     { cat: "Leches HRA", id: "ff3", name: "FF3", type: "l", k: 164.3, p: 6.3, c: 18.1, f: 3.4 },
@@ -1299,6 +1326,8 @@ function updateFormulaSelect(filter = "") {
     // Event Listeners
     if (selects[0]) {
         selects[0].onchange = () => {
+            const f = AppState.formulas.find(x => x.id === selects[0].value);
+            renderFormulaInputs(f);
             runSimulation();
             checkFavoriteStatus();
         };
@@ -1308,6 +1337,44 @@ function updateFormulaSelect(filter = "") {
             AppState.formulaB = AppState.formulas.find(f => f.id === selects[1].value);
             runSimulation(); // Updates compare results
         };
+    }
+}
+
+function renderFormulaInputs(formula) {
+    const wrapper = document.getElementById('dilutionWrapper');
+    const container = document.getElementById('recipeInputsContainer');
+    const baseDilInput = document.getElementById('dilution');
+
+    if (!formula) {
+        if (wrapper) wrapper.style.display = 'block';
+        if (container) container.style.display = 'none';
+        return;
+    }
+
+    if (formula.type === 'recipe') {
+        if (wrapper) wrapper.style.display = 'none';
+        if (container) {
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+
+            let html = '';
+            formula.recipe.forEach((rec) => {
+                html += `
+                    <div class="input-group" style="flex: 1; min-width: 100px; margin-bottom: 0;">
+                        <label style="font-size:0.75rem; color:#2c3e50; line-height:1.1;">${rec.name} (%)</label>
+                        <input type="number" id="rec_${rec.id}" value="${rec.defPct}" oninput="runSimulation()">
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+    } else {
+        if (wrapper) wrapper.style.display = 'block';
+        if (container) container.style.display = 'none';
+        // Auto-fill standard dilution if present
+        if (formula.stdDil && baseDilInput) {
+            baseDilInput.value = formula.stdDil;
+        }
     }
 }
 
@@ -1323,9 +1390,20 @@ function runSimulation() {
 
     if (AppState.calcMode === 'vol') {
         const vol = v1;
-        if (formula.type === 'p') {
+        if (formula.type === 'recipe') {
+            // RECETAS DINÁMICAS (Dynamic Recipes)
+            formula.recipe.forEach(rec => {
+                const el = document.getElementById('rec_' + rec.id);
+                const dil = el ? (parseFloat(el.value) || 0) : rec.defPct;
+                const grams = vol * (dil / 100);
+                k += rec.k * (grams / 100);
+                p += rec.p * (grams / 100);
+                c += rec.c * (grams / 100);
+                l += rec.f * (grams / 100);
+            });
+        } else if (formula.type === 'p') {
             // Polvos (Powders): Volumen * (Dilucion / 100) = Gramos
-            const dil = v2 > 0 ? v2 : 0;
+            const dil = v2 > 0 ? v2 : (formula.stdDil || 0);
             const grams = vol * (dil / 100);
             k = formula.k * (grams / 100);
             p = formula.p * (grams / 100);
@@ -1333,19 +1411,34 @@ function runSimulation() {
             l = formula.f * (grams / 100);
         } else {
             // Líquidos o Fórmulas SEDILE listas: Volumen base.
-            // Ignoramos la casilla de dilución en la matemática para no doble-penalizar,
-            // ya que los macros en BD (ej. E1: 94kcal/100ml) ya reflejan su estado preparado.
-            k = formula.k * (vol / 100);
-            p = formula.p * (vol / 100);
-            c = formula.c * (vol / 100);
-            l = formula.f * (vol / 100);
+            let scl = 1;
+            // Si la fórmula tiene dilución estándar (ej F1 al 13%), calculamos su escala comparado a la estándar
+            if (formula.stdDil && v2 > 0) {
+                scl = v2 / formula.stdDil;
+            }
+            k = formula.k * (vol / 100) * scl;
+            p = formula.p * (vol / 100) * scl;
+            c = formula.c * (vol / 100) * scl;
+            l = formula.f * (vol / 100) * scl;
         }
     } else {
         const grams = v2;
-        k = formula.k * (grams / 100);
-        p = formula.p * (grams / 100);
-        c = formula.c * (grams / 100);
-        l = formula.f * (grams / 100);
+        if (formula.type === 'recipe') {
+            // Si usan modo gramos con una receta armada, distribuimos proporcionalmente
+            let totalDefPct = formula.recipe.reduce((sum, r) => sum + r.defPct, 0) || 1;
+            formula.recipe.forEach(rec => {
+                let compGrams = grams * (rec.defPct / totalDefPct);
+                k += rec.k * (compGrams / 100);
+                p += rec.p * (compGrams / 100);
+                c += rec.c * (compGrams / 100);
+                l += rec.f * (compGrams / 100);
+            });
+        } else {
+            k = formula.k * (grams / 100);
+            p = formula.p * (grams / 100);
+            c = formula.c * (grams / 100);
+            l = formula.f * (grams / 100);
+        }
     }
 
     // NEW V3.64: Update Base Formula Subtotal Board BEFORE adding modules/oral

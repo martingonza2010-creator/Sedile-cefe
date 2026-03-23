@@ -466,14 +466,20 @@
                             </div>
                         </div>
 
-                        <div class="grid-col-2">
+                        <div class="grid-col-2" style="position:relative;">
                             <div class="input-group">
                                 <label>Volumen (ml)</label>
                                 <input type="number" id="volume" placeholder="ml">
                             </div>
-                            <div class="input-group">
+                            <div class="input-group" id="dilutionWrapper">
                                 <label id="lblDilution">Dilución (%)</label>
                                 <input type="number" id="dilution" placeholder="%">
+                            </div>
+
+                            <!-- NEW V3.70: DYNAMIC RECIPE INPUTS -->
+                            <div id="recipeInputsContainer"
+                                style="display:none; grid-column: span 2; gap: 10px; margin-top: 5px; padding: 10px; background: rgba(52, 152, 219, 0.05); border: 1px dashed rgba(52, 152, 219, 0.3); border-radius: 8px;">
+                                <!-- Injected by JS -->
                             </div>
                         </div>
 
