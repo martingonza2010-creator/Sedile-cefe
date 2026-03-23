@@ -1264,28 +1264,64 @@ function renderPediatricZScores() {
 
     let html = '';
 
-    const makeBadge = (title, z) => {
-        if (z === null || isNaN(z)) return '';
-        let color = '#27ae60';
+    const makeBadge = (title, z, textOverride = null, colorOverride = null) => {
+        let color = colorOverride || '#27ae60';
         let diag = 'N';
-        if (z > 2) { color = '#e74c3c'; diag = '+2DE'; }
-        else if (z > 1) { color = '#f39c12'; diag = '+1DE'; }
-        else if (z < -2) { color = '#c0392b'; diag = '-2DE'; }
-        else if (z < -1) { color = '#e67e22'; diag = '-1DE'; }
+        let displayVal = textOverride;
 
-        return `<div style="background:#fff; border:1px solid ${color}; padding:6px; border-radius:6px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
-            <div style="font-size:0.6rem; color:#666; font-weight:600;">${title}</div>
-            <div style="font-size:1rem; font-weight:800; color:${color}; display:flex; justify-content:center; align-items:baseline; gap:4px;">
-                ${z > 0 ? '+' : ''}${z.toFixed(2)}
-                <span style="font-size:0.6rem; padding:2px 4px; background:${color}20; border-radius:4px;">${diag}</span>
+        if (textOverride === null) {
+            if (z === null || isNaN(z)) return '';
+            if (z > 2) { color = '#e74c3c'; diag = '+2DE'; }
+            else if (z > 1) { color = '#f39c12'; diag = '+1DE'; }
+            else if (z < -2) { color = '#c0392b'; diag = '-2DE'; }
+            else if (z < -1) { color = '#e67e22'; diag = '-1DE'; }
+            displayVal = `${z > 0 ? '+' : ''}${z.toFixed(2)}`;
+        } else {
+            diag = '★'; // Special star for string-based badges
+        }
+
+        return `<div style="background:#fff; border:1px solid ${color}; padding:5px; border-radius:6px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+            <div style="font-size:0.55rem; color:#666; font-weight:600; line-height:1.1;">${title}</div>
+            <div style="font-size:0.9rem; font-weight:800; color:${color}; display:flex; justify-content:center; align-items:baseline; gap:4px; margin-top:2px;">
+                ${displayVal}
+                <span style="font-size:0.55rem; padding:2px 3px; background:${color}20; border-radius:4px;">${diag}</span>
             </div>
         </div>`;
     };
 
-    html += makeBadge('P/E (Peso/Edad)', zWFA);
-    html += makeBadge('T/E (Talla/Edad)', zHFA);
-    if (m <= 60 && cm > 45) html += makeBadge('P/T (Peso/Talla)', zWFH);
-    if (m > 60) html += makeBadge('IMC/E', zBMI);
+    if (p.type === 'neonate') {
+        const sem = parseInt(document.getElementById('egSemanas').value) || 0;
+        const dias = parseInt(document.getElementById('egDias').value) || 0;
+        const clasD = document.getElementById('neoClasificacion').value;
+
+        const clasColor = clasD === 'AEG' ? '#27ae60' : (clasD === 'PEG' ? '#e67e22' : '#8e44ad');
+        html += makeBadge('Clasific. Nacer', null, clasD, clasColor);
+
+        if (sem > 0 && sem < 37) {
+            // Corrected Age calculation (40 weeks is term)
+            const totalEGA = sem + (dias / 7);
+            const missingWeeks = 40 - totalEGA;
+            const chronWeeks = m * 4.345;
+            let correctedWeeks = chronWeeks - missingWeeks;
+            if (correctedWeeks < 0) correctedWeeks = 0;
+
+            const correctedMonths = (correctedWeeks / 4.345).toFixed(1);
+            html += makeBadge('Edad Corregida', null, `${correctedMonths} m`, '#2980b9');
+        } else if (sem >= 37) {
+            html += makeBadge('Condición', null, 'Término', '#2980b9');
+        }
+    } else {
+        html += makeBadge('P/E (Peso/Edad)', zWFA);
+        html += makeBadge('T/E (Talla/Edad)', zHFA);
+        if (m <= 60) {
+            if (zWFH !== null && !isNaN(zWFH)) {
+                html += makeBadge('P/T (Peso/Talla)', zWFH);
+            } else {
+                html += makeBadge('P/T (Peso/Talla)', null, 'Falta Talla', '#95a5a6');
+            }
+        }
+        if (m > 60) html += makeBadge('IMC/E', zBMI);
+    }
 
     if (!html) html = '<div style="grid-column:span 2; text-align:center; font-size:0.8rem; color:#888;">Ingresa Fecha de Nacimiento, Peso y Talla</div>';
     grid.innerHTML = html;

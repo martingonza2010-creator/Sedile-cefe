@@ -176,6 +176,14 @@
                                 <label>Días extras (+)</label>
                                 <input type="number" id="egDias" placeholder="Días" oninput="calculateRequirements()">
                             </div>
+                            <div class="mini-input" style="flex:1.5;">
+                                <label>Clasificación Nac.</label>
+                                <select id="neoClasificacion" onchange="calculateRequirements()">
+                                    <option value="AEG">AEG (Adecuado)</option>
+                                    <option value="PEG">PEG (Pequeño)</option>
+                                    <option value="GEG">GEG (Grande)</option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- NEW V3.80: Pediatric Z-Score Results -->
