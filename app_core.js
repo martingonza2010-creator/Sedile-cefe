@@ -1332,12 +1332,13 @@ function runSimulation() {
             c = formula.c * (grams / 100);
             l = formula.f * (grams / 100);
         } else {
-            // Líquidos (Liquids): Volumen base. Si hay dilución, aplica %
-            const dilPct = v2 > 0 ? (v2 / 100) : 1;
-            k = formula.k * (vol / 100) * dilPct;
-            p = formula.p * (vol / 100) * dilPct;
-            c = formula.c * (vol / 100) * dilPct;
-            l = formula.f * (vol / 100) * dilPct;
+            // Líquidos o Fórmulas SEDILE listas: Volumen base.
+            // Ignoramos la casilla de dilución en la matemática para no doble-penalizar,
+            // ya que los macros en BD (ej. E1: 94kcal/100ml) ya reflejan su estado preparado.
+            k = formula.k * (vol / 100);
+            p = formula.p * (vol / 100);
+            c = formula.c * (vol / 100);
+            l = formula.f * (vol / 100);
         }
     } else {
         const grams = v2;
