@@ -1191,7 +1191,7 @@ window.togglePatientMode = () => {
     AppState.patient.type = mode;
 
     document.getElementById('colEdad').style.display = mode === 'adult' ? 'block' : 'none';
-    document.getElementById('rowPediatric').style.display = mode === 'pediatric' ? 'flex' : 'none';
+    document.getElementById('rowPediatric').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'flex' : 'none';
     document.getElementById('rowNeonate').style.display = mode === 'neonate' ? 'flex' : 'none';
     document.getElementById('pediatricAssessmentResults').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
 
@@ -1271,10 +1271,15 @@ function renderPediatricZScores() {
 
         if (textOverride === null) {
             if (z === null || isNaN(z)) return '';
-            if (z > 2) { color = '#e74c3c'; diag = '+2DE'; }
-            else if (z > 1) { color = '#f39c12'; diag = '+1DE'; }
-            else if (z < -2) { color = '#c0392b'; diag = '-2DE'; }
-            else if (z < -1) { color = '#e67e22'; diag = '-1DE'; }
+            
+            // Adjusting to match printed MINSAL tables rounding
+            const absZ = Math.round(z * 100) / 100;
+            
+            if (absZ >= 1.99) { color = '#e74c3c'; diag = '≥+2DE'; }
+            else if (absZ >= 0.99) { color = '#f39c12'; diag = '≥+1DE'; }
+            else if (absZ <= -1.99) { color = '#c0392b'; diag = '≤-2DE'; }
+            else if (absZ <= -0.99) { color = '#e67e22'; diag = '≤-1DE'; }
+            
             displayVal = `${z > 0 ? '+' : ''}${z.toFixed(2)}`;
         } else {
             diag = '★'; // Special star for string-based badges
@@ -1284,7 +1289,7 @@ function renderPediatricZScores() {
             <div style="font-size:0.55rem; color:#666; font-weight:600; line-height:1.1;">${title}</div>
             <div style="font-size:0.9rem; font-weight:800; color:${color}; display:flex; justify-content:center; align-items:baseline; gap:4px; margin-top:2px;">
                 ${displayVal}
-                <span style="font-size:0.55rem; padding:2px 3px; background:${color}20; border-radius:4px;">${diag}</span>
+                <span style="font-size:0.55rem; padding:2px 3px; background:${color}20; border-radius:4px; font-weight:700;">${diag}</span>
             </div>
         </div>`;
     };
@@ -1298,15 +1303,42 @@ function renderPediatricZScores() {
         html += makeBadge('Clasific. Nacer', null, clasD, clasColor);
 
         if (sem > 0 && sem < 37) {
-            // Corrected Age calculation (40 weeks is term)
-            const totalEGA = sem + (dias / 7);
-            const missingWeeks = 40 - totalEGA;
-            const chronWeeks = m * 4.345;
-            let correctedWeeks = chronWeeks - missingWeeks;
-            if (correctedWeeks < 0) correctedWeeks = 0;
+            const fn = document.getElementById('fechaNacimiento').value;
+            if (fn) {
+                // Exact calculation to the day (40 weeks = 280 days is term)
+                // TimeZone shift fix
+                const [y, mm, d] = fn.split('-');
+                const birthDate = new Date(y, mm - 1, d);
+                const now = new Date();
 
-            const correctedMonths = (correctedWeeks / 4.345).toFixed(1);
-            html += makeBadge('Edad Corregida', null, `${correctedMonths} m`, '#2980b9');
+                // Chronological age in days
+                const diffTime = now.getTime() - birthDate.getTime();
+                const chronDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+
+                // Gestational age at birth in days
+                const gestDays = (sem * 7) + dias;
+                // Missing days to reach 40 weeks term (280 days)
+                const missingDays = 280 - gestDays;
+
+                // Corrected Age in days
+                let correctedDays = chronDays - missingDays;
+                if (correctedDays < 0) correctedDays = 0;
+
+                let corrString = '';
+                if (correctedDays < 30) {
+                    const cWeeks = Math.floor(correctedDays / 7);
+                    const cDays = correctedDays % 7;
+                    corrString = `${cWeeks} sem, ${cDays} d`;
+                } else {
+                    const cMonths = Math.floor(correctedDays / 30.4375);
+                    const cDays = Math.floor(correctedDays % 30.4375);
+                    corrString = `${cMonths}m, ${cDays}d`;
+                }
+
+                html += makeBadge('Edad Correg.', null, corrString, '#2980b9');
+            } else {
+                html += makeBadge('Edad Correg.', null, 'Falta Fecha', '#95a5a6');
+            }
         } else if (sem >= 37) {
             html += makeBadge('Condición', null, 'Término', '#2980b9');
         }
