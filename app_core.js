@@ -1297,10 +1297,51 @@ function renderPediatricZScores() {
     if (p.type === 'neonate') {
         const sem = parseInt(document.getElementById('egSemanas').value) || 0;
         const dias = parseInt(document.getElementById('egDias').value) || 0;
-        const clasD = document.getElementById('neoClasificacion').value;
-
-        const clasColor = clasD === 'AEG' ? '#27ae60' : (clasD === 'PEG' ? '#e67e22' : '#8e44ad');
-        html += makeBadge('Clasific. Nacer', null, clasD, clasColor);
+        const wGrams = p.peso * 1000;
+        const cm = p.estatura > 3 ? p.estatura : p.estatura * 100;
+        
+        let clasD = 'Sin Datos';
+        let clasColor = '#95a5a6';
+        let ipDiag = null;
+        let isPeg = false;
+        
+        if (sem >= 24 && sem <= 42 && window.PITTALUGA_DATA) {
+            if (p.peso > 0) {
+                const wRefs = window.PITTALUGA_DATA.peso[sem];
+                if (wGrams < wRefs.p3) {
+                    clasD = 'PEG Severo'; clasColor = '#c0392b'; isPeg = true;
+                } else if (wGrams >= wRefs.p3 && wGrams < wRefs.p10) {
+                    clasD = 'PEG Leve'; clasColor = '#e67e22'; isPeg = true;
+                } else if (wGrams >= wRefs.p10 && wGrams <= wRefs.p90) {
+                    clasD = 'AEG'; clasColor = '#27ae60';
+                } else {
+                    clasD = 'GEG'; clasColor = '#2980b9';
+                }
+            } else {
+                clasD = 'Falta Peso';
+            }
+            
+            // Simetría (Índice Ponderal)
+            if (isPeg && p.peso > 0 && cm > 0) {
+                const ipRefs = window.PITTALUGA_DATA.indicePonderal[sem];
+                const ipVal = (wGrams / Math.pow(cm, 3)) * 100;
+                if (ipVal >= ipRefs.p10 && ipVal <= ipRefs.p90) {
+                    ipDiag = 'Simétrico';
+                } else {
+                    ipDiag = 'Asimétrico';
+                }
+            } else if (isPeg) {
+                ipDiag = 'Falta Talla';
+            }
+        } else if (sem > 0) {
+            clasD = '< 24 sem';
+        }
+        
+        let printClas = clasD;
+        if (ipDiag === 'Simétrico' || ipDiag === 'Asimétrico') {
+            printClas = `${clasD}<div style="font-size:0.6rem; color:#555; margin-top:2px;">(${ipDiag})</div>`;
+        }
+        html += makeBadge('Nutricional (Nacer)', null, printClas, clasColor);
 
         if (sem > 0 && sem < 37) {
             const fn = document.getElementById('fechaNacimiento').value;
