@@ -1252,24 +1252,79 @@ window.calculatePediatricAge = () => {
 };
 
 function getZScore(indicator, keyVal, sexo, obs) {
-    if (!obs || !window.MINSAL_DATA || !window.MINSAL_DATA[indicator]) return null;
+    if (!obs) return null;
+    const specCond = document.getElementById('specialCondition')?.value || 'none';
     const sexKey = sexo === 'm' ? 'boys' : 'girls';
-    const table = window.MINSAL_DATA[indicator][sexKey];
-    if (!table || table.length === 0) return null;
 
-    let closest = table[0];
-    let minDiff = 9999;
-    for (let r of table) {
-        const diff = Math.abs(r.k - keyVal);
-        if (diff < minDiff) {
-            minDiff = diff;
-            closest = r;
+    let table = null;
+    let isInterpolated = false;
+
+    if (specCond === 'down' && window.ZEMEL_DATA && window.ZEMEL_DATA[indicator]) {
+        table = window.ZEMEL_DATA[indicator][sexKey];
+        isInterpolated = true;
+    } else if (specCond.startsWith('cp_') && window.BROOKS_DATA) {
+        let cpGroup = 'gmfcs_1_2';
+        if (specCond === 'cp_iii_iv') cpGroup = 'gmfcs_3_4';
+        else if (specCond === 'cp_v') cpGroup = 'gmfcs_5';
+
+        if (window.BROOKS_DATA[cpGroup] && window.BROOKS_DATA[cpGroup][indicator]) {
+            table = window.BROOKS_DATA[cpGroup][indicator][sexKey];
+            isInterpolated = true;
         }
     }
 
-    const L = closest.L;
-    const M = closest.M;
-    const S = closest.S;
+    // Fallback a MINSAL si no hay tabla (Ej. pidiendo Talla en Brooks si no la configuramos)
+    if (!table) {
+        if (!window.MINSAL_DATA || !window.MINSAL_DATA[indicator]) return null;
+        table = window.MINSAL_DATA[indicator][sexKey];
+        isInterpolated = false; // MINSAL usa {k, L, M, S} estructurado por mes
+    }
+
+    if (!table || table.length === 0) return null;
+
+    let L, M, S;
+
+    if (isInterpolated) {
+        // Interpolación Algebraica para bases de datos dispersas (Hitos)
+        let lower = table[0];
+        let upper = table[table.length - 1];
+
+        if (keyVal <= lower[0]) {
+            [_, L, M, S] = lower;
+        } else if (keyVal >= upper[0]) {
+            [_, L, M, S] = upper;
+        } else {
+            for (let i = 0; i < table.length - 1; i++) {
+                if (keyVal >= table[i][0] && keyVal <= table[i+1][0]) {
+                    lower = table[i];
+                    upper = table[i+1];
+                    break;
+                }
+            }
+            if (lower[0] === upper[0]) {
+                [_, L, M, S] = lower;
+            } else {
+                const ratio = (keyVal - lower[0]) / (upper[0] - lower[0]);
+                L = lower[1] + ratio * (upper[1] - lower[1]);
+                M = lower[2] + ratio * (upper[2] - lower[2]);
+                S = lower[3] + ratio * (upper[3] - lower[3]);
+            }
+        }
+    } else {
+        // Búsqueda de hito más cercano para MINSAL (base densa)
+        let closest = table[0];
+        let minDiff = 9999;
+        for (let r of table) {
+            const diff = Math.abs(r.k - keyVal);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = r;
+            }
+        }
+        L = closest.L;
+        M = closest.M;
+        S = closest.S;
+    }
 
     if (L === 0) return Math.log(obs / M) / S;
     return (Math.pow(obs / M, L) - 1) / (L * S);
@@ -1296,9 +1351,9 @@ function renderPediatricZScores() {
 
     const specCond = document.getElementById('specialCondition')?.value || 'none';
     if (specCond === 'down') {
-        html += `<div style="grid-column:1/-1; background:rgba(211,84,0,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#d35400; font-size:0.65rem; text-align:center;"><b>Zemel (S. Down):</b> Motor listo, requiere inyección de LMS para trazar Curva Z final. Evaluando aproxs.</div>`;
+        html += `<div style="grid-column:1/-1; background:rgba(211,84,0,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#d35400; font-size:0.65rem; text-align:center;">📊 <b>Zemel (S. Down):</b> Evaluando curvas LMS vía Interpolación Geométrica (Hitos).</div>`;
     } else if (specCond.startsWith('cp_')) {
-        html += `<div style="grid-column:1/-1; background:rgba(142,68,173,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#8e44ad; font-size:0.65rem; text-align:center;"><b>Brooks (Parálisis Cerebral):</b> Requiere inyección de Percentiles P.C. Evaluando aproxs.</div>`;
+        html += `<div style="grid-column:1/-1; background:rgba(142,68,173,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#8e44ad; font-size:0.65rem; text-align:center;">📊 <b>Brooks (Parálisis Cerebral):</b> Evaluando curvas GMFCS vía Interpolación Geométrica.</div>`;
     }
 
     const makeBadge = (title, z, textOverride = null, colorOverride = null) => {
