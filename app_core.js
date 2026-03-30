@@ -953,7 +953,7 @@ function renderEvolutionChart(history) {
 // Ensure initProtocolModal exists
 function initProtocolModal() {
     const modal = document.getElementById('protocolModal');
-    const btnOpen = document.getElementById('btnProtocolOpen');
+    const btnOpen = document.getElementById('btnOpenPurpose'); // FIXED BUTTON REF
     const btnClose = document.getElementById('btnProtocolClose');
 
     if (btnOpen && modal) {
@@ -1859,7 +1859,8 @@ function initInfusionLogic() {
         // We listen to the main prescribed volume! 
         const totalVolPrescrito = parseFloat(document.getElementById('volume').value) || 0;
         const rate = parseFloat(document.getElementById('infusionRate').value) || 0;
-        const startTimeStr = document.getElementById('infusionStart').value;
+        const cycleStartStr = document.getElementById('infusionCycleStart')?.value;
+        const sachetStartStr = document.getElementById('infusionStart').value;
         const selectedRthId = document.getElementById('infusionRTHSelect')?.value;
 
         const resBox = document.getElementById('infusionResultBox');
@@ -1872,58 +1873,87 @@ function initInfusionLogic() {
             return;
         }
 
-        // --- 1. Terminate Timing Calculation ---
-        if (rate > 0 && startTimeStr) {
+        // --- 1. Sachet Terminate Calculation ---
+        let sachetEndStrDisplay = '--:--';
+        let sachetDurDisplay = '';
+        let sachetEndDate = null;
+        let rthObj = null;
+
+        if (selectedRthId) {
+            rthObj = LOCAL_FORMULAS.find(f => f.id === selectedRthId);
+        }
+
+        if (rate > 0 && sachetStartStr) {
             resBox.style.display = 'flex';
             
-            // Re-calculate the exact volume for a SINGLE bag if RTH is selected to tell when THAT bag finishes
             let volToPass = totalVolPrescrito;
-            let rthObj = null;
-            if (selectedRthId) {
-                rthObj = LOCAL_FORMULAS.find(f => f.id === selectedRthId);
-                // The duration of 1 product bag
-                volToPass = rthObj?.volBase || 1000;
-            }
+            if (rthObj) volToPass = rthObj.volBase || 1000;
 
             const durationHrs = volToPass / rate;
-            const [startH, startM] = startTimeStr.split(':').map(Number);
+            const [startH, startM] = sachetStartStr.split(':').map(Number);
             const now = new Date();
             now.setHours(startH, startM, 0, 0);
 
             const endTimestamp = now.getTime() + (durationHrs * 3600 * 1000);
-            const endDate = new Date(endTimestamp);
+            sachetEndDate = new Date(endTimestamp);
 
-            const endH = endDate.getHours().toString().padStart(2, '0');
-            const endM = endDate.getMinutes().toString().padStart(2, '0');
+            const endH = sachetEndDate.getHours().toString().padStart(2, '0');
+            const endM = sachetEndDate.getMinutes().toString().padStart(2, '0');
 
-            const dayDiff = endDate.getDate() - now.getDate();
+            const dayDiff = sachetEndDate.getDate() - now.getDate();
             const dayLabel = dayDiff > 0 ? " (+1 día)" : "";
 
-            valEnd.innerText = `${endH}:${endM}${dayLabel}`;
+            sachetEndStrDisplay = `${endH}:${endM}${dayLabel}`;
             const hrs = Math.floor(durationHrs);
             const mins = Math.round((durationHrs - hrs) * 60);
-            valDur.innerText = `(${hrs}h ${mins}m)`;
-            
-            // --- 2. SEDILE CEFE Logistics Recommendation ---
-            if (rthObj && totalVolPrescrito > 0) {
-                const envasesNedded = Math.ceil(totalVolPrescrito / rthObj.volBase);
-                logBox.style.display = 'block';
-                logBox.innerHTML = `⚠️ <b>Pauta diaria: ${totalVolPrescrito} ml.</b><br>Solicitar a SEDILE-CEFE: <b>${envasesNedded} envase(s)</b> de ${rthObj.name}.<br><i>* Cuadrar descargas en repartos de 14:00 y 18:00 hrs para garantizar la continuidad nocturna.</i>`;
-            } else {
-                logBox.style.display = 'none';
-            }
+            sachetDurDisplay = `(${hrs}h ${mins}m)`;
+        } else if (rthObj && totalVolPrescrito > 0) {
+            resBox.style.display = 'flex'; 
         } else {
-            // Hide the timing UI but show the recommendation if an RTH is chosen despite no timings!
             resBox.style.display = 'none';
-            if (selectedRthId && totalVolPrescrito > 0) {
-                resBox.style.display = 'flex';
-                valEnd.innerText = `--:--`;
-                valDur.innerText = ``;
-                const rthObj = LOCAL_FORMULAS.find(f => f.id === selectedRthId);
-                const envasesNedded = Math.ceil(totalVolPrescrito / (rthObj.volBase || 1000));
-                logBox.style.display = 'block';
-                logBox.innerHTML = `⚠️ <b>Pauta diaria: ${totalVolPrescrito} ml.</b><br>Solicitar a SEDILE-CEFE: <b>${envasesNedded} envase(s)</b> de ${rthObj.name}.<br><i>* Cuadrar descargas en repartos de 14:00 y 18:00 hrs para garantizar la continuidad nocturna.</i>`;
+        }
+
+        valEnd.innerText = sachetEndStrDisplay;
+        valDur.innerText = sachetDurDisplay;
+        
+        // --- 2. SEDILE CEFE Logistics Recommendation ---
+        if (rthObj && totalVolPrescrito > 0) {
+            const envasesNedded = Math.ceil(totalVolPrescrito / (rthObj.volBase || 1000));
+            
+            let recommendationStr = `<i>* Cuadrar descargas regulares en repartos de 14:00 y 18:00 hrs.</i>`;
+            
+            if (sachetEndDate) {
+                const hourEnds = sachetEndDate.getHours();
+                if (hourEnds >= 18 || hourEnds < 8) {
+                    recommendationStr = `<b style="color:#c0392b;">⚠️ Riesgo Nocturno:</b> El sachet actual termina a las ${sachetEndDate.getHours().toString().padStart(2,'0')}:${sachetEndDate.getMinutes().toString().padStart(2,'0')}. Pide el cambio <b>antes o en el reparto de las 18:00 hrs</b> de hoy para evitar quiebre de stock en la noche.`;
+                } else if (hourEnds >= 8 && hourEnds < 14) {
+                    recommendationStr = `💡 El sachet abarca la mañana. Solicita stock en el <b>reparto normal de las 14:00 hrs</b> si el ciclo nutricional clínico sigue después de almuerzo.`;
+                } else {
+                    recommendationStr = `💡 El sachet abarca la tarde. Prográmalo para pedir el reemplazo en el <b>reparto de las 18:00 hrs</b>.`;
+                }
             }
+            
+            let cycleStr = '';
+            if (cycleStartStr && rate > 0) {
+                const [cH, cM] = cycleStartStr.split(':').map(Number);
+                const cycleDurHrs = totalVolPrescrito / rate;
+                if (!isNaN(cycleDurHrs) && isFinite(cycleDurHrs)) {
+                    const cNow = new Date();
+                    cNow.setHours(cH, cM, 0, 0);
+                    const cEndDate = new Date(cNow.getTime() + (cycleDurHrs * 3600 * 1000));
+                    cycleStr = ` | Fin Ciclo 24H estimado: <b style="color:var(--primary);">${cEndDate.getHours().toString().padStart(2,'0')}:${cEndDate.getMinutes().toString().padStart(2,'0')}</b>`;
+                }
+            }
+
+            logBox.style.display = 'block';
+            logBox.innerHTML = `
+                <div style="font-size:0.8rem; margin-bottom:4px; color:#555;">📊 Pauta 24hrs: <b>${totalVolPrescrito} ml</b> ${cycleStr}</div>
+                <div style="border-top:1px dashed #f1c40f; margin:5px 0;"></div>
+                📦 Solicitar a SEDILE: <b>${envasesNedded} envase(s)</b> de ${rthObj.name}.<br>
+                ${recommendationStr}
+            `;
+        } else {
+            logBox.style.display = 'none';
         }
     };
     

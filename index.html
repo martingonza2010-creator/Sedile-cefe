@@ -476,12 +476,16 @@
                                 </select>
                             </div>
                             <div class="mini-input">
-                                <label>Velocidad (ml/hr)</label>
-                                <input type="number" id="infusionRate" placeholder="Ej. 60" oninput="window.calcInfusion()">
+                                <label>Inicio Alimentación</label>
+                                <input type="time" title="Hora en que inició la primera toma del día (Ciclo 24 hrs)" id="infusionCycleStart" onchange="window.calcInfusion()">
                             </div>
                             <div class="mini-input">
-                                <label>Hora Inicio Real</label>
-                                <input type="time" id="infusionStart" onchange="window.calcInfusion()">
+                                <label>Instal. Sachet Actual</label>
+                                <input type="time" title="Hora en que se colgó el envase actual" id="infusionStart" onchange="window.calcInfusion()">
+                            </div>
+                            <div class="mini-input" style="grid-column: span 2;">
+                                <label>Velocidad de Pasaje (ml/hr)</label>
+                                <input type="number" id="infusionRate" placeholder="Ej. 60" oninput="window.calcInfusion()">
                             </div>
                         </div>
                         <div class="infusion-result" id="infusionResultBox" style="display:none; flex-direction:column; gap:5px;">
