@@ -1918,39 +1918,66 @@ function initInfusionLogic() {
         
         // --- 2. SEDILE CEFE Logistics Recommendation ---
         if (rthObj && totalVolPrescrito > 0) {
-            const envasesNedded = Math.ceil(totalVolPrescrito / (rthObj.volBase || 1000));
+            const bottleVol = rthObj.volBase || 1000;
+            const envasesNedded = Math.ceil(totalVolPrescrito / bottleVol);
             
-            let recommendationStr = `<i>* Cuadrar descargas regulares en repartos de 14:00 y 18:00 hrs.</i>`;
-            
+            let currentSachetWarningStr = '';
             if (sachetEndDate) {
                 const hourEnds = sachetEndDate.getHours();
                 if (hourEnds >= 18 || hourEnds < 8) {
-                    recommendationStr = `<b style="color:#c0392b;">⚠️ Riesgo Nocturno:</b> El sachet actual termina a las ${sachetEndDate.getHours().toString().padStart(2,'0')}:${sachetEndDate.getMinutes().toString().padStart(2,'0')}. Pide el cambio <b>antes o en el reparto de las 18:00 hrs</b> de hoy para evitar quiebre de stock en la noche.`;
-                } else if (hourEnds >= 8 && hourEnds < 14) {
-                    recommendationStr = `💡 El sachet abarca la mañana. Solicita stock en el <b>reparto normal de las 14:00 hrs</b> si el ciclo nutricional clínico sigue después de almuerzo.`;
-                } else {
-                    recommendationStr = `💡 El sachet abarca la tarde. Prográmalo para pedir el reemplazo en el <b>reparto de las 18:00 hrs</b>.`;
+                    currentSachetWarningStr = `<div style="margin-top:6px; color:#c0392b;">⚠️ <b>Riesgo Quiebre Nocturno:</b> El RTH actual acaba a las ${sachetEndDate.getHours().toString().padStart(2,'0')}:${sachetEndDate.getMinutes().toString().padStart(2,'0')}. Analiza garantizar el stock de reemplazo hoy a las 18:00.</div>`;
                 }
             }
             
             let cycleStr = '';
+            let planesText = `<span style="opacity:0.8; font-style:italic;">(Ingresa el 'Inicio Alimentación' para calcular partición teórica de 14 y 18 hrs)</span>`;
+
             if (cycleStartStr && rate > 0) {
                 const [cH, cM] = cycleStartStr.split(':').map(Number);
                 const cycleDurHrs = totalVolPrescrito / rate;
+                
                 if (!isNaN(cycleDurHrs) && isFinite(cycleDurHrs)) {
                     const cNow = new Date();
                     cNow.setHours(cH, cM, 0, 0);
                     const cEndDate = new Date(cNow.getTime() + (cycleDurHrs * 3600 * 1000));
-                    cycleStr = ` | Fin Ciclo 24H estimado: <b style="color:var(--primary);">${cEndDate.getHours().toString().padStart(2,'0')}:${cEndDate.getMinutes().toString().padStart(2,'0')}</b>`;
+                    cycleStr = ` | Fin Ciclo 24H: <b style="color:var(--primary);">${cEndDate.getHours().toString().padStart(2,'0')}:${cEndDate.getMinutes().toString().padStart(2,'0')}</b>`;
                 }
+
+                // SECRETO LOGISTICO SEDILE: Calcular splits 14h / 18h
+                let count14 = 0;
+                let count18 = 0;
+                
+                const cycleStartDecimal = cH + (cM / 60);
+                const bottleDuration = bottleVol / rate;
+                
+                for(let i = 0; i < envasesNedded; i++) {
+                    const connectTime = (cycleStartDecimal + (i * bottleDuration)) % 24;
+                    // SEDILE Safe Window (margen orgánico prep.): 
+                    // Si se instala tarde (15:00 a 18:59) -> cabe para pedir a las 14:00 (hoy)
+                    // Si se instala cualquier otro horario (nocturno, madrugada, o almuerzo 14:00) -> pedir a las 18:00
+                    if (connectTime >= 15 && connectTime < 19) {
+                        count14++;
+                    } else {
+                        count18++;
+                    }
+                }
+                
+                planesText = `
+                    <div style="margin-top:5px; background:rgba(255,255,255,0.7); padding:4px 8px; border-radius:5px; border-left:3px solid #27ae60;">
+                        <b style="color:#27ae60; font-size:0.75rem;">📋 Plan de Repartos SEDILE:</b><br>
+                        • Solicitar a las 14:00 hrs: <b>${count14}</b> producto(s).<br>
+                        • Solicitar a las 18:00 hrs: <b>${count18}</b> producto(s).
+                    </div>
+                `;
             }
 
             logBox.style.display = 'block';
             logBox.innerHTML = `
                 <div style="font-size:0.8rem; margin-bottom:4px; color:#555;">📊 Pauta 24hrs: <b>${totalVolPrescrito} ml</b> ${cycleStr}</div>
                 <div style="border-top:1px dashed #f1c40f; margin:5px 0;"></div>
-                📦 Solicitar a SEDILE: <b>${envasesNedded} envase(s)</b> de ${rthObj.name}.<br>
-                ${recommendationStr}
+                📦 Necesitas <b>${envasesNedded} producto(s) RTH diarios</b> de ${rthObj.name}.<br>
+                ${planesText}
+                ${currentSachetWarningStr}
             `;
         } else {
             logBox.style.display = 'none';
