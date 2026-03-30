@@ -1031,6 +1031,19 @@ window.loadPatient = async (id) => {
     }
 };
 
+// NEW V3.90: Phase 10 Amputee Engine
+window.calcAmputations = () => {
+    let factor = 0;
+    const checks = document.querySelectorAll('.amp-check');
+    if (!checks) return 0;
+    checks.forEach(c => {
+        if (c.checked) factor += parseFloat(c.value);
+    });
+    const el = document.getElementById('ampTotalVal');
+    if (el) el.innerText = factor.toFixed(1);
+    return factor;
+};
+
 function calculateRequirements() {
     const p = AppState.patient;
     const nombreEl = document.getElementById('nombre');
@@ -1055,11 +1068,23 @@ function calculateRequirements() {
     // Pediatric Z-Score Execution Engine
     renderPediatricZScores();
 
-    // NEW V3.19: Ideal Weight & IPT (Real-time)
+    // NEW V3.19/V3.90: Ideal Weight & IPT (Real-time) + Amputee Correction
     if (p.estatura > 0 && p.edad > 0) {
         const factorIdx = p.edad >= 65 ? 25.5 : 21.7;
-        const pesoIdeal = factorIdx * (p.estatura * p.estatura);
-        document.getElementById('valIdealWeight').innerText = pesoIdeal.toFixed(1) + ' kg';
+        let pesoIdeal = factorIdx * (p.estatura * p.estatura);
+        
+        // --- AMPUTEE OSTERKAMP CORRECTION ---
+        const ampFactor = window.calcAmputations();
+        if (ampFactor > 0) {
+            pesoIdeal = pesoIdeal * ((100 - ampFactor) / 100);
+            
+            const pIdealValDisplay = document.getElementById('valIdealWeight');
+            if (pIdealValDisplay) {
+                pIdealValDisplay.innerHTML = `<span style="text-decoration:line-through; font-size:0.6rem; color:#95a5a6;">${(factorIdx * (p.estatura * p.estatura)).toFixed(1)}kg</span><br>${pesoIdeal.toFixed(1)} kg`;
+            }
+        } else {
+            document.getElementById('valIdealWeight').innerText = pesoIdeal.toFixed(1) + ' kg';
+        }
 
         if (p.peso > 0) {
             const ipt = (p.peso / pesoIdeal) * 100;
@@ -1194,6 +1219,10 @@ window.togglePatientMode = () => {
     document.getElementById('colEdad').style.display = mode === 'adult' ? 'block' : 'none';
     document.getElementById('rowPediatric').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'flex' : 'none';
     document.getElementById('rowNeonate').style.display = mode === 'neonate' ? 'flex' : 'none';
+    
+    const rowSpec = document.getElementById('rowSpecialPopulations');
+    if (rowSpec) rowSpec.style.display = mode === 'pediatric' ? 'flex' : 'none';
+    
     document.getElementById('pediatricAssessmentResults').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
 
     const iwRow = document.getElementById('valIdealWeight')?.parentElement?.parentElement;
@@ -1265,6 +1294,13 @@ function renderPediatricZScores() {
 
     let html = '';
 
+    const specCond = document.getElementById('specialCondition')?.value || 'none';
+    if (specCond === 'down') {
+        html += `<div style="grid-column:1/-1; background:rgba(211,84,0,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#d35400; font-size:0.65rem; text-align:center;"><b>Zemel (S. Down):</b> Motor listo, requiere inyección de LMS para trazar Curva Z final. Evaluando aproxs.</div>`;
+    } else if (specCond.startsWith('cp_')) {
+        html += `<div style="grid-column:1/-1; background:rgba(142,68,173,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#8e44ad; font-size:0.65rem; text-align:center;"><b>Brooks (Parálisis Cerebral):</b> Requiere inyección de Percentiles P.C. Evaluando aproxs.</div>`;
+    }
+
     const makeBadge = (title, z, textOverride = null, colorOverride = null) => {
         let color = colorOverride || '#27ae60';
         let diag = 'N';
@@ -1322,25 +1358,32 @@ function renderPediatricZScores() {
                 clasD = 'Falta Peso';
             }
             
-            // Simetría (Índice Ponderal)
+            // Phase 10: Simetría Neonatal (Índice Ponderal de Rohrer)
+            // IP = Peso(g) * 100 / Talla(cm)^3
+            // Punto de corte clínico estándar para neonatos: IP < 2.2 asimétrico, < 2.0 asimétrico severo.
             if (isPeg && p.peso > 0 && cm > 0) {
-                const ipRefs = window.PITTALUGA_DATA.indicePonderal[sem];
                 const ipVal = (wGrams / Math.pow(cm, 3)) * 100;
-                if (ipVal >= ipRefs.p10 && ipVal <= ipRefs.p90) {
-                    ipDiag = 'Simétrico';
+                
+                if (ipVal >= 2.2) {
+                    ipDiag = `Simétrico (IP: ${ipVal.toFixed(2)})`;
+                    clasColor = '#f39c12'; // Alerta moderada (crecimiento frenado)
+                } else if (ipVal >= 2.0) {
+                    ipDiag = `Asimétrico Leve (IP: ${ipVal.toFixed(2)})`;
+                    clasColor = '#d35400';
                 } else {
-                    ipDiag = 'Asimétrico';
+                    ipDiag = `Asimétrico Severo (IP: ${ipVal.toFixed(2)}) ⚠️ Riesgo Hipoglicemia`;
+                    clasColor = '#c0392b'; // Alerta severa (reservas glucógeno)
                 }
             } else if (isPeg) {
-                ipDiag = 'Falta Talla';
+                ipDiag = 'Falta Talla para IP';
             }
         } else if (sem > 0) {
             clasD = '< 24 sem';
         }
         
         let printClas = clasD;
-        if (ipDiag === 'Simétrico' || ipDiag === 'Asimétrico') {
-            printClas = `${clasD}<div style="font-size:0.6rem; color:#555; margin-top:2px;">(${ipDiag})</div>`;
+        if (ipDiag !== null) {
+            printClas = `<div style="line-height:1.2;"><b>${clasD}</b><br><span style="font-size:0.6rem; color:#fff; background:rgba(0,0,0,0.2); padding:2px 4px; border-radius:4px;">${ipDiag}</span></div>`;
         }
         html += makeBadge('Nutricional (Nacer)', null, printClas, clasColor);
 
@@ -2890,6 +2933,39 @@ function calcTMB_OMS() {
     if (age <= 0 || weight <= 0) return;
 
     let tmb = 0;
+    let overrideGET = false;
+    
+    // Phase 10: Poblaciones Especiales overrides
+    const specCond = document.getElementById('specialCondition')?.value || 'none';
+    const isPediatric = (p.type === 'pediatric' || document.getElementById('ptPediatric')?.checked);
+
+    if (isPediatric && specCond.startsWith('cp_')) {
+        let factor = 10; // GMFCS V
+        if (specCond === 'cp_i_ii') factor = 14.0;
+        else if (specCond === 'cp_iii_iv') factor = 11.1;
+
+        const cm = height > 3 ? height : height * 100;
+        tmb = factor * cm;
+
+        p.tmb = tmb;
+        const resBadge = document.getElementById('resTMB');
+        if (resBadge) {
+            resBadge.innerText = `${Math.round(tmb)} kcal (PC: ${factor} kcal/cm)`;
+            resBadge.style.background = '#8e44ad';
+            resBadge.style.color = '#fff';
+        }
+        
+        // This is total GET, so update GET explicitly
+        const getVal = document.getElementById('valGET');
+        if (getVal) getVal.innerHTML = `${Math.round(tmb)} kcal <span style="font-size:0.6rem;">(Krick)</span>`;
+        return;
+    } else {
+        const resBadge = document.getElementById('resTMB');
+        if (resBadge) {
+            resBadge.style.background = '#e3f2fd';
+            resBadge.style.color = '#1565c0';
+        }
+    }
 
     if (method === 'oms') {
         if (sexo === 'm') {

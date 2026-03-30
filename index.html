@@ -178,6 +178,38 @@
                             </div>
                         </div>
 
+                        <!-- NEW V3.90: Poblaciones Especiales -->
+                        <div id="rowSpecialPopulations" style="display:none; gap:10px; margin-top:10px; background:#f4ebf9; padding:8px; border-radius:8px;">
+                            <div class="mini-input" style="flex:1;">
+                                <label style="color:#8e44ad;">Condición Especial (Pediatría)</label>
+                                <select id="specialCondition" onchange="calculatePediatricAge(); calculateRequirements();" style="border-color:#d2b4de;">
+                                    <option value="none">Ninguna / Sano</option>
+                                    <option value="down">Síndrome de Down (Tablas Zemel)</option>
+                                    <option value="cp_i_ii">Parálisis Cerebral (GMFCS I-II)</option>
+                                    <option value="cp_iii_iv">Parálisis Cerebral (GMFCS III-IV)</option>
+                                    <option value="cp_v">Parálisis Cerebral (GMFCS V)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- NEW V3.90: Amputaciones Panel (Osterkamp) -->
+                        <div style="margin-top:10px; background:#fbfcfe; border: 1px solid #d5dbdb; padding:8px; border-radius:8px;">
+                            <label style="font-size:0.75rem; font-weight:700; color:#5d6d7e; margin-bottom:0px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="const p = document.getElementById('amputeePanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'">
+                                🦿 Ajuste P.I por Amputaciones (Osterkamp) <span style="font-size:0.6rem; background:#ebedef; padding:2px 6px; border-radius:4px;">Desplegar ▼</span>
+                            </label>
+                            <div id="amputeePanel" style="display:none; font-size:0.75rem; margin-top:8px; border-top:1px dashed #d5dbdb; padding-top:8px;">
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+                                    <label><input type="checkbox" class="amp-check" value="0.7" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Mano (0.7%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="2.3" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Antebrazo+Mano (2.3%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="5.0" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Brazo Entero (5.0%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="1.5" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Pie (1.5%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="5.9" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Pierna+Pie (5.9%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="10.1" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Muslo (10.1%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="16.0" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Pierna Entera (16.0%)</label>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- NEW V3.80: Pediatric Z-Score Results -->
                         <div id="pediatricAssessmentResults"
                             style="display:none; margin-top:12px; padding:12px; background:rgba(46, 204, 113, 0.1); border:1px solid rgba(46, 204, 113, 0.3); border-radius:8px;">
