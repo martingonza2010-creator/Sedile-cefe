@@ -1859,8 +1859,7 @@ function initInfusionLogic() {
         // We listen to the main prescribed volume! 
         const totalVolPrescrito = parseFloat(document.getElementById('volume').value) || 0;
         const rate = parseFloat(document.getElementById('infusionRate').value) || 0;
-        const cycleStartStr = document.getElementById('infusionCycleStart')?.value;
-        const sachetStartStr = document.getElementById('infusionStart').value;
+        const sachetStartStr = document.getElementById('infusionStart')?.value;
         const selectedRthId = document.getElementById('infusionRTHSelect')?.value;
 
         const resBox = document.getElementById('infusionResultBox');
@@ -1930,10 +1929,10 @@ function initInfusionLogic() {
             }
             
             let cycleStr = '';
-            let planesText = `<span style="opacity:0.8; font-style:italic;">(Ingresa el 'Inicio Alimentación' para calcular partición teórica de 14 y 18 hrs)</span>`;
+            let planesText = `<span style="opacity:0.8; font-style:italic;">(Ingresa una 'Hora de Instalación' y una 'Velocidad' para calcular la logística SEDILE de 24 hrs)</span>`;
 
-            if (cycleStartStr && rate > 0) {
-                const [cH, cM] = cycleStartStr.split(':').map(Number);
+            if (sachetStartStr && rate > 0) {
+                const [cH, cM] = sachetStartStr.split(':').map(Number);
                 const cycleDurHrs = totalVolPrescrito / rate;
                 
                 if (!isNaN(cycleDurHrs) && isFinite(cycleDurHrs)) {
@@ -1954,7 +1953,7 @@ function initInfusionLogic() {
                     const connectTime = (cycleStartDecimal + (i * bottleDuration)) % 24;
                     // SEDILE Safe Window (margen orgánico prep.): 
                     // Si se instala tarde (15:00 a 18:59) -> cabe para pedir a las 14:00 (hoy)
-                    // Si se instala cualquier otro horario (nocturno, madrugada, o almuerzo 14:00) -> pedir a las 18:00
+                    // Si se instala en cualquier otro horario -> pedir a las 18:00
                     if (connectTime >= 15 && connectTime < 19) {
                         count14++;
                     } else {
@@ -1964,9 +1963,9 @@ function initInfusionLogic() {
                 
                 planesText = `
                     <div style="margin-top:5px; background:rgba(255,255,255,0.7); padding:4px 8px; border-radius:5px; border-left:3px solid #27ae60;">
-                        <b style="color:#27ae60; font-size:0.75rem;">📋 Plan de Repartos SEDILE:</b><br>
-                        • Solicitar a las 14:00 hrs: <b>${count14}</b> producto(s).<br>
-                        • Solicitar a las 18:00 hrs: <b>${count18}</b> producto(s).
+                        <b style="color:#27ae60; font-size:0.75rem;">📋 Plan de Repartos SEDILE (${envasesNedded} en total):</b><br>
+                        • En el reparto de las 14:00 hrs: Pedir <b>${count14}</b> producto(s).<br>
+                        • En el reparto de las 18:00 hrs: Pedir <b>${count18}</b> producto(s).
                     </div>
                 `;
             }
@@ -1975,7 +1974,6 @@ function initInfusionLogic() {
             logBox.innerHTML = `
                 <div style="font-size:0.8rem; margin-bottom:4px; color:#555;">📊 Pauta 24hrs: <b>${totalVolPrescrito} ml</b> ${cycleStr}</div>
                 <div style="border-top:1px dashed #f1c40f; margin:5px 0;"></div>
-                📦 Necesitas <b>${envasesNedded} producto(s) RTH diarios</b> de ${rthObj.name}.<br>
                 ${planesText}
                 ${currentSachetWarningStr}
             `;
