@@ -73,13 +73,14 @@ const LOCAL_FORMULAS = [
     { cat: "Leches HRA", id: "glutapak", name: "Glutapak-R", type: "l", k: 60.0, p: 10.0, c: 5.0, f: 0.0 },
     { cat: "Leches HRA", id: "fortificador", name: "Fortificador", type: "l", k: 17.4, p: 1.4, c: 1.3, f: 0.7 },
     { cat: "Leches HRA", id: "g4", name: "G4", type: "l", k: 176.1, p: 6.9, c: 18.3, f: 3.5 },
-    { cat: "Fórmulas RTH", id: "osmolite", name: "Osmolite", type: "l", k: 100.0, p: 4.0, c: 13.6, f: 3.4 },
-    { cat: "Fórmulas RTH", id: "glucerna_15", name: "Glucerna 1.5", type: "l", k: 150.0, p: 7.5, c: 12.76, f: 7.5 },
-    { cat: "Fórmulas RTH", id: "diben_15", name: "Diben 1.5 Kcal", type: "l", k: 150.0, p: 7.5, c: 13.1, f: 7.0 },
-    { cat: "Fórmulas RTH", id: "fresubin_fibre", name: "Fresubin Original Fibre", type: "l", k: 100.0, p: 3.8, c: 13.0, f: 3.4 },
-    { cat: "Fórmulas RTH", id: "fresubin_intensive", name: "Fresubin Intensive", type: "l", k: 122.0, p: 10.0, c: 12.9, f: 3.2 },
-    { cat: "Fórmulas RTH", id: "fresubin_2kcal", name: "Fresubin 2 Kcal HP", type: "l", k: 200.0, p: 10.0, c: 17.5, f: 10.0 },
-    { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", k: 149.2, p: 8.0, c: 18.0, f: 4.8 },
+    { cat: "Fórmulas RTH", id: "osmolite", name: "Osmolite", type: "l", volBase: 1000, k: 100.0, p: 4.0, c: 13.6, f: 3.4 },
+    { cat: "Fórmulas RTH", id: "glucerna_15", name: "Glucerna 1.5", type: "l", volBase: 1000, k: 150.0, p: 7.5, c: 12.76, f: 7.5 },
+    { cat: "Fórmulas RTH", id: "diben_15", name: "Diben 1.5 Kcal", type: "l", volBase: 1000, k: 150.0, p: 7.5, c: 13.1, f: 7.0 },
+    { cat: "Fórmulas RTH", id: "jevity_1", name: "Jevity 1.0 (1000ml)", type: "l", volBase: 1000, k: 106.0, p: 4.4, c: 15.1, f: 3.4 },
+    { cat: "Fórmulas RTH", id: "fresubin_fibre", name: "Fresubin Original Fibre", type: "l", volBase: 500, k: 100.0, p: 3.8, c: 13.0, f: 3.4 },
+    { cat: "Fórmulas RTH", id: "fresubin_intensive", name: "Fresubin Intensive", type: "l", volBase: 500, k: 122.0, p: 10.0, c: 12.9, f: 3.2 },
+    { cat: "Fórmulas RTH", id: "fresubin_2kcal", name: "Fresubin 2 Kcal HP", type: "l", volBase: 500, k: 200.0, p: 10.0, c: 17.5, f: 10.0 },
+    { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", volBase: 1000, k: 149.2, p: 8.0, c: 18.0, f: 4.8 },
     { cat: "Fórmulas en Polvo", id: "nan_optipro", name: "Nan Optipro", type: "p", k: 522.0, p: 9.6, c: 58.0, f: 28.0 },
     { cat: "Fórmulas en Polvo", id: "nido_3", name: "Nido Etapa 3+", type: "p", k: 458.0, p: 17.0, c: 52.0, f: 20.2 },
     { cat: "Fórmulas en Polvo", id: "purita_pro2", name: "Purita + Pro2", type: "p", k: 439.0, p: 29.9, c: 45.7, f: 15.2 }
@@ -1122,12 +1123,12 @@ function calculateRequirements() {
                 else bmr = (10.5 * p.peso) + 596;
             }
         }
-        // Harris-Benedict (Original 1919 or Revised 1984 - typical clinical use is Roza/Shizgal 1984)
+        // Harris-Benedict (Original 1919 Clásica)
         else if (method === 'hb') {
             if (sexo === 'm') {
-                bmr = 88.362 + (13.397 * p.peso) + (4.799 * cm) - (5.677 * p.edad);
+                bmr = 66.47 + (13.75 * p.peso) + (5.0 * cm) - (6.75 * p.edad);
             } else {
-                bmr = 447.593 + (9.247 * p.peso) + (3.098 * cm) - (4.330 * p.edad);
+                bmr = 655.09 + (9.56 * p.peso) + (1.84 * cm) - (4.67 * p.edad);
             }
         }
         // Schofield (1985)
@@ -1369,11 +1370,25 @@ function renderPediatricZScores() {
                 if (correctedDays < 30) {
                     const cWeeks = Math.floor(correctedDays / 7);
                     const cDays = correctedDays % 7;
-                    corrString = `${cWeeks} sem, ${cDays} d`;
-                } else {
+                    corrString = `${cWeeks} sem, ${cDays}d`;
+                } else if (correctedDays < 349.8) {
                     const cMonths = Math.floor(correctedDays / 30.4375);
                     const cDays = Math.floor(correctedDays % 30.4375);
                     corrString = `${cMonths}m, ${cDays}d`;
+                } else {
+                    let d = correctedDays;
+                    if (d >= 349.8 && d < 365.25) d = 365.25; // >= 11m 15d -> force 1 year milestone
+                    
+                    const cYears = Math.floor(d / 365.25);
+                    const r = d % 365.25;
+                    const cMonths = Math.floor(r / 30.4375);
+                    const finalDays = Math.floor(r % 30.4375);
+                    
+                    if (cMonths === 0) {
+                        corrString = `${cYears} Año${finalDays > 0 ? `, ${finalDays}d` : ''}`;
+                    } else {
+                        corrString = `${cYears} Año, ${cMonths}m, ${finalDays}d`;
+                    }
                 }
 
                 html += makeBadge('Edad Correg.', null, corrString, '#2980b9');
@@ -1829,58 +1844,93 @@ function runSimulation() {
 
 // --- 10. INFUSION CALCULATOR LOGIC (NEW) ---
 function initInfusionLogic() {
-    const rateInput = document.getElementById('infusionRate');
-    const timeInput = document.getElementById('infusionStart');
+    // Populate RTH Selector
+    const rthSel = document.getElementById('infusionRTHSelect');
+    if (rthSel) {
+        let html = '<option value="">-- No usar fórmula RTH --</option>';
+        LOCAL_FORMULAS.filter(f => f.cat === "Fórmulas RTH").forEach(f => {
+            html += `<option value="${f.id}">${f.name}</option>`;
+        });
+        rthSel.innerHTML = html;
+    }
 
-    if (rateInput) rateInput.oninput = calcInfusion;
-    if (timeInput) timeInput.oninput = calcInfusion;
-}
+    // Bind inputs to global scope since we referenced it inline
+    window.calcInfusion = function() {
+        // We listen to the main prescribed volume! 
+        const totalVolPrescrito = parseFloat(document.getElementById('volume').value) || 0;
+        const rate = parseFloat(document.getElementById('infusionRate').value) || 0;
+        const startTimeStr = document.getElementById('infusionStart').value;
+        const selectedRthId = document.getElementById('infusionRTHSelect')?.value;
 
-function calcInfusion() {
-    // Inputs
-    const vol = parseFloat(document.getElementById('volume').value) || 0;
-    const rate = parseFloat(document.getElementById('infusionRate').value) || 0;
-    const startTimeStr = document.getElementById('infusionStart').value;
+        const resBox = document.getElementById('infusionResultBox');
+        const logBox = document.getElementById('valLogisticsBox');
+        const valEnd = document.getElementById('valEndTime');
+        const valDur = document.getElementById('valDuration');
 
-    const resBox = document.getElementById('infusionResultBox');
-    const valEnd = document.getElementById('valEndTime');
-    const valDur = document.getElementById('valDuration');
+        if (totalVolPrescrito <= 0 && rate <= 0) {
+            resBox.style.display = 'none';
+            return;
+        }
 
-    if (vol > 0 && rate > 0 && startTimeStr) {
-        resBox.style.display = 'block';
+        // --- 1. Terminate Timing Calculation ---
+        if (rate > 0 && startTimeStr) {
+            resBox.style.display = 'flex';
+            
+            // Re-calculate the exact volume for a SINGLE bag if RTH is selected to tell when THAT bag finishes
+            let volToPass = totalVolPrescrito;
+            let rthObj = null;
+            if (selectedRthId) {
+                rthObj = LOCAL_FORMULAS.find(f => f.id === selectedRthId);
+                // The duration of 1 product bag
+                volToPass = rthObj?.volBase || 1000;
+            }
 
-        // 1. Calculate Duration in Hours
-        const durationHrs = vol / rate;
+            const durationHrs = volToPass / rate;
+            const [startH, startM] = startTimeStr.split(':').map(Number);
+            const now = new Date();
+            now.setHours(startH, startM, 0, 0);
 
-        // 2. Parse Start Time
-        const [startH, startM] = startTimeStr.split(':').map(Number);
+            const endTimestamp = now.getTime() + (durationHrs * 3600 * 1000);
+            const endDate = new Date(endTimestamp);
 
-        // 3. Add Duration to Start Date object
-        const now = new Date();
-        now.setHours(startH, startM, 0, 0);
+            const endH = endDate.getHours().toString().padStart(2, '0');
+            const endM = endDate.getMinutes().toString().padStart(2, '0');
 
-        // Add milliseconds (hours * 3600 * 1000)
-        const endTimestamp = now.getTime() + (durationHrs * 3600 * 1000);
-        const endDate = new Date(endTimestamp);
+            const dayDiff = endDate.getDate() - now.getDate();
+            const dayLabel = dayDiff > 0 ? " (+1 día)" : "";
 
-        // 4. Format Output
-        const endH = endDate.getHours().toString().padStart(2, '0');
-        const endM = endDate.getMinutes().toString().padStart(2, '0');
-
-        // Check if next day
-        const dayDiff = endDate.getDate() - now.getDate();
-        let dayLabel = "";
-        if (dayDiff > 0) dayLabel = " (+1 día)";
-
-        valEnd.innerText = `${endH}:${endM}${dayLabel}`;
-
-        // Format duration for display (e.g. 20.5 hrs -> 20h 30m)
-        const hrs = Math.floor(durationHrs);
-        const mins = Math.round((durationHrs - hrs) * 60);
-        valDur.innerText = `(${hrs}h ${mins}m)`;
-
-    } else {
-        resBox.style.display = 'none';
+            valEnd.innerText = `${endH}:${endM}${dayLabel}`;
+            const hrs = Math.floor(durationHrs);
+            const mins = Math.round((durationHrs - hrs) * 60);
+            valDur.innerText = `(${hrs}h ${mins}m)`;
+            
+            // --- 2. SEDILE CEFE Logistics Recommendation ---
+            if (rthObj && totalVolPrescrito > 0) {
+                const envasesNedded = Math.ceil(totalVolPrescrito / rthObj.volBase);
+                logBox.style.display = 'block';
+                logBox.innerHTML = `⚠️ <b>Pauta diaria: ${totalVolPrescrito} ml.</b><br>Solicitar a SEDILE-CEFE: <b>${envasesNedded} envase(s)</b> de ${rthObj.name}.<br><i>* Cuadrar descargas en repartos de 14:00 y 18:00 hrs para garantizar la continuidad nocturna.</i>`;
+            } else {
+                logBox.style.display = 'none';
+            }
+        } else {
+            // Hide the timing UI but show the recommendation if an RTH is chosen despite no timings!
+            resBox.style.display = 'none';
+            if (selectedRthId && totalVolPrescrito > 0) {
+                resBox.style.display = 'flex';
+                valEnd.innerText = `--:--`;
+                valDur.innerText = ``;
+                const rthObj = LOCAL_FORMULAS.find(f => f.id === selectedRthId);
+                const envasesNedded = Math.ceil(totalVolPrescrito / (rthObj.volBase || 1000));
+                logBox.style.display = 'block';
+                logBox.innerHTML = `⚠️ <b>Pauta diaria: ${totalVolPrescrito} ml.</b><br>Solicitar a SEDILE-CEFE: <b>${envasesNedded} envase(s)</b> de ${rthObj.name}.<br><i>* Cuadrar descargas en repartos de 14:00 y 18:00 hrs para garantizar la continuidad nocturna.</i>`;
+            }
+        }
+    };
+    
+    // Add volume listener so it triggers the calculator dynamically
+    const volInput = document.getElementById('volume');
+    if (volInput) {
+        volInput.addEventListener('input', () => { if (typeof window.calcInfusion === 'function') window.calcInfusion(); });
     }
 }
 
