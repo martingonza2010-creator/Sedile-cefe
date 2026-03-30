@@ -1071,19 +1071,22 @@ function calculateRequirements() {
     // NEW V3.19/V3.90: Ideal Weight & IPT (Real-time) + Amputee Correction
     if (p.estatura > 0 && p.edad > 0) {
         const factorIdx = p.edad >= 65 ? 25.5 : 21.7;
-        let pesoIdeal = factorIdx * (p.estatura * p.estatura);
+        let rawPesoIdeal = factorIdx * (p.estatura * p.estatura);
+        let pesoIdeal = rawPesoIdeal;
+        
+        document.getElementById('valIdealWeight').innerText = rawPesoIdeal.toFixed(1) + ' kg';
         
         // --- AMPUTEE OSTERKAMP CORRECTION ---
-        const ampFactor = window.calcAmputations();
+        const ampFactor = window.calcAmputations ? window.calcAmputations() : 0;
+        const ampContainer = document.getElementById('ampWeightAdjContainer');
+        const ampValDisplay = document.getElementById('ampWeightAdj');
+
         if (ampFactor > 0) {
-            pesoIdeal = pesoIdeal * ((100 - ampFactor) / 100);
-            
-            const pIdealValDisplay = document.getElementById('valIdealWeight');
-            if (pIdealValDisplay) {
-                pIdealValDisplay.innerHTML = `<span style="text-decoration:line-through; font-size:0.6rem; color:#95a5a6;">${(factorIdx * (p.estatura * p.estatura)).toFixed(1)}kg</span><br>${pesoIdeal.toFixed(1)} kg`;
-            }
+            pesoIdeal = rawPesoIdeal * ((100 - ampFactor) / 100);
+            if (ampContainer) ampContainer.style.display = 'block';
+            if (ampValDisplay) ampValDisplay.innerText = pesoIdeal.toFixed(1) + ' kg';
         } else {
-            document.getElementById('valIdealWeight').innerText = pesoIdeal.toFixed(1) + ' kg';
+            if (ampContainer) ampContainer.style.display = 'none';
         }
 
         if (p.peso > 0) {
