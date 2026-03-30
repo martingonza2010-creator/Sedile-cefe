@@ -199,13 +199,13 @@
                             </label>
                             <div id="amputeePanel" style="display:none; font-size:0.75rem; margin-top:8px; border-top:1px dashed #d5dbdb; padding-top:8px;">
                                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
-                                    <label><input type="checkbox" class="amp-check" value="0.7" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Mano (0.7%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="2.3" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Antebrazo+Mano (2.3%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="5.0" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Brazo Entero (5.0%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="1.5" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Pie (1.5%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="5.9" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Pierna+Pie (5.9%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="10.1" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Muslo (10.1%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="16.0" onchange="if(typeof window.calcRequirements==='function'){window.calcRequirements()}"> Pierna Entera (16.0%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="0.7" onchange="calculateRequirements()"> Mano (0.7%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="2.3" onchange="calculateRequirements()"> Antebrazo+Mano (2.3%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="5.0" onchange="calculateRequirements()"> Brazo Entero (5.0%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="1.5" onchange="calculateRequirements()"> Pie (1.5%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="5.9" onchange="calculateRequirements()"> Pierna+Pie (5.9%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="10.1" onchange="calculateRequirements()"> Muslo (10.1%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="16.0" onchange="calculateRequirements()"> Pierna Entera (16.0%)</label>
                                 </div>
                             </div>
                         </div>
