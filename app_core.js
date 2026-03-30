@@ -1916,9 +1916,11 @@ function initInfusionLogic() {
         valDur.innerText = sachetDurDisplay;
         
         // --- 2. SEDILE CEFE Logistics Recommendation ---
-        if (rthObj && totalVolPrescrito > 0) {
-            const bottleVol = rthObj.volBase || 1000;
-            const envasesNedded = Math.ceil(totalVolPrescrito / bottleVol);
+        const calcTotalVol = totalVolPrescrito > 0 ? totalVolPrescrito : (rate * 24);
+        
+        if (calcTotalVol > 0 && rate > 0) {
+            const bottleVol = rthObj?.volBase || 1000;
+            const envasesNedded = Math.ceil(calcTotalVol / bottleVol);
             
             let currentSachetWarningStr = '';
             if (sachetEndDate) {
@@ -1970,10 +1972,12 @@ function initInfusionLogic() {
                 `;
             }
 
+            const fallbackName = rthObj ? rthObj.name : "Fórmula ("+bottleVol+"ml)";
             logBox.style.display = 'block';
             logBox.innerHTML = `
-                <div style="font-size:0.8rem; margin-bottom:4px; color:#555;">📊 Pauta 24hrs: <b>${totalVolPrescrito} ml</b> ${cycleStr}</div>
+                <div style="font-size:0.8rem; margin-bottom:4px; color:#555;">📊 Pauta 24hrs: <b>${calcTotalVol} ml</b> ${cycleStr}</div>
                 <div style="border-top:1px dashed #f1c40f; margin:5px 0;"></div>
+                📦 Necesitas <b>${envasesNedded} producto(s) RTH diarios</b> de ${fallbackName}.<br>
                 ${planesText}
                 ${currentSachetWarningStr}
             `;
