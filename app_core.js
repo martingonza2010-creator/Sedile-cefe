@@ -761,7 +761,12 @@ window.deletePatient = async (id) => {
 window.hardDeletePatient = async (id) => {
     if (!confirm("🚨 ADVERTENCIA PÚBLICA: ¿Quieres eliminar PERMANENTEMENTE a este paciente de la base de datos de inmediato?")) return;
     const { error } = await supabaseClient.from('pacientes').delete().eq('id', id);
-    if (!error) window.loadHistoryList(true);
+    if (!error) {
+        window.loadHistoryList(false); // Reload normal history instead of jumping to Trash
+        if (typeof loadWardKanban === 'function') loadWardKanban();
+    } else {
+        alert("Error de Supabase al Eliminar (probablemente te falta la Política RLS de DELETE): " + error.message);
+    }
 };
 
 window.restorePatient = async (id) => {
