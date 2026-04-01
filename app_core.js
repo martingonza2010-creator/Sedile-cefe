@@ -1243,20 +1243,38 @@ window.togglePatientMode = () => {
 window.calculatePediatricAge = () => {
     const fn = document.getElementById('fechaNacimiento').value;
     if (!fn) return;
-    const birth = new Date(fn);
+    
+    // Fix TimeZone offset issues by parsing the date string directly
+    const [y, mm, d] = fn.split('-');
+    const birth = new Date(y, mm - 1, d);
     const now = new Date();
 
-    let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-    if (now.getDate() < birth.getDate()) months--;
+    let years = now.getFullYear() - birth.getFullYear();
+    let months = now.getMonth() - birth.getMonth();
+    let days = now.getDate() - birth.getDate();
 
-    let ageInYears = months / 12;
+    if (days < 0) {
+        months--;
+        const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        days += prevMonth.getDate();
+    }
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+
+    const totalMonths = (years * 12) + months;
+    let ageInYears = (totalMonths + (days / 30.4375)) / 12;
     document.getElementById('edad').value = ageInYears.toFixed(2);
 
-    const years = Math.floor(months / 12);
-    const remMonths = Math.max(0, months % 12);
-    document.getElementById('lblExactAge').innerText = `${years} años, ${remMonths} meses`;
+    let ageStr = "";
+    if (years > 0) ageStr += `${years} año${years > 1 ? 's' : ''}, `;
+    if (months > 0 || years > 0) ageStr += `${months} mes${months !== 1 ? 'es' : ''}, `;
+    ageStr += `${days} día${days !== 1 ? 's' : ''}`;
 
-    AppState.patient.exactMonths = months;
+    document.getElementById('lblExactAge').innerText = ageStr;
+
+    AppState.patient.exactMonths = totalMonths;
     calculateRequirements();
 };
 
