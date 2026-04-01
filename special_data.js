@@ -121,3 +121,30 @@ window.BROOKS_DATA = {
         }
     }
 };
+
+window.NEURO_HC_DATA = {
+    // Curvas Perímetro Cefálico (OMS 2006 Hitos Intermedios)
+    // Permite calcular daño neurológico (Microcefalia/Macrocefalia)
+    hc: {
+        boys: [
+            [0,  1, 34.5, 0.038], // Nacimiento
+            [3,  1, 40.5, 0.033], // 3 meses
+            [6,  1, 43.3, 0.031], // 6 meses
+            [12, 1, 46.1, 0.030], // 12 meses
+            [24, 1, 48.3, 0.029], // 24 meses
+            [36, 1, 49.5, 0.029], // 36 meses
+            [48, 1, 50.4, 0.028], // 4 años
+            [60, 1, 51.0, 0.028]  // 5 años
+        ],
+        girls: [
+            [0,  1, 33.9, 0.038],
+            [3,  1, 39.5, 0.034],
+            [6,  1, 42.2, 0.032],
+            [12, 1, 44.9, 0.030],
+            [24, 1, 47.1, 0.029],
+            [36, 1, 48.4, 0.029],
+            [48, 1, 49.4, 0.028],
+            [60, 1, 50.1, 0.028]
+        ]
+    }
+};

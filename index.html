@@ -167,14 +167,23 @@
                         </div>
 
                         <div id="rowNeonate"
-                            style="display:none; gap:10px; margin-top:10px; background:#f9ebea; padding:8px; border-radius:8px;">
-                            <div class="mini-input" style="flex:1;">
+                            style="display:none; gap:10px; margin-top:10px; background:#f9ebea; padding:8px; border-radius:8px; flex-wrap:wrap;">
+                            <div class="mini-input" style="flex:1; min-width: 110px;">
                                 <label>Edad Gestacional (Semanas)</label>
                                 <input type="number" id="egSemanas" placeholder="Sem" oninput="calculateRequirements()">
                             </div>
-                            <div class="mini-input" style="flex:1;">
+                            <div class="mini-input" style="flex:1; min-width: 90px;">
                                 <label>Días extras (+)</label>
                                 <input type="number" id="egDias" placeholder="Días" oninput="calculateRequirements()">
+                            </div>
+                            <!-- NEW V3.95: Growth Velocity Inputs -->
+                            <div class="mini-input" style="flex:1; min-width: 110px;">
+                                <label style="color:#27ae60;">Peso Anterior (kg)</label>
+                                <input type="number" step="0.001" id="pesoAnterior" placeholder="kg" oninput="calculateRequirements()">
+                            </div>
+                            <div class="mini-input" style="flex:1; min-width: 90px;">
+                                <label style="color:#27ae60;">Días Medición</label>
+                                <input type="number" id="diasMedicion" placeholder="Días" oninput="calculateRequirements()">
                             </div>
                         </div>
 
@@ -504,6 +513,9 @@
                         </div>
                     </div>
 
+                    <!-- NEW V3.95: Escáner Proteico (Neonato) -->
+                    <div id="proteinTrackerResult"></div>
+
                     <!-- NEW: Infusion Calculator & Logistics -->
                     <div class="infusion-box">
                         <div class="infusion-title" style="display:flex; align-items:center; gap:8px;">
@@ -580,6 +592,21 @@
                             <div id="recipeInputsContainer"
                                 style="display:none; grid-column: span 2; gap: 10px; margin-top: 5px; padding: 10px; background: rgba(52, 152, 219, 0.05); border: 1px dashed rgba(52, 152, 219, 0.3); border-radius: 8px;">
                                 <!-- Injected by JS -->
+                            </div>
+                        </div>
+
+                        <!-- NEW V3.95: Fortificante Neonatal (FM85) -->
+                        <div id="fortifierNeonatePanel" style="display:none; margin-top:15px; padding:10px; background:rgba(46, 204, 113, 0.05); border:1px solid rgba(46, 204, 113, 0.2); border-radius:8px;">
+                            <label style="color:#27ae60; font-weight:700; display:block; margin-bottom:5px;">🧬 Fortificante (PreNAN FM85)</label>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                                <div class="mini-input">
+                                    <label>Concentración (%)</label>
+                                    <input type="number" step="0.5" id="fortifierPercent" placeholder="Ej. 5" oninput="runSimulation()">
+                                </div>
+                                <div class="mini-input">
+                                    <label>Total Gramos (Neto)</label>
+                                    <input type="number" step="0.1" id="fortifierGrams" placeholder="Automático" disabled style="background:#f4f6f7; cursor:not-allowed;">
+                                </div>
                             </div>
                         </div>
 

@@ -1229,6 +1229,9 @@ window.togglePatientMode = () => {
     document.getElementById('rowPediatric').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'flex' : 'none';
     document.getElementById('rowNeonate').style.display = mode === 'neonate' ? 'flex' : 'none';
     
+    const fortPanel = document.getElementById('fortifierNeonatePanel');
+    if (fortPanel) fortPanel.style.display = mode === 'neonate' ? 'block' : 'none';
+    
     const rowSpec = document.getElementById('rowSpecialPopulations');
     if (rowSpec) rowSpec.style.display = mode === 'pediatric' ? 'flex' : 'none';
     
@@ -1298,6 +1301,12 @@ function getZScore(indicator, keyVal, sexo, obs) {
             table = window.BROOKS_DATA[cpGroup][indicator][sexKey];
             isInterpolated = true;
         }
+    }
+
+    // NEW V3.95: Special fallback for Head Circumference (HC) WHO Data
+    if (!table && indicator === 'hc' && window.NEURO_HC_DATA && window.NEURO_HC_DATA.hc) {
+        table = window.NEURO_HC_DATA.hc[sexKey];
+        isInterpolated = true;
     }
 
     // Fallback a MINSAL si no hay tabla (Ej. pidiendo Talla en Brooks si no la configuramos)
@@ -1534,6 +1543,34 @@ function renderPediatricZScores() {
             }
         }
         if (m > 60) html += makeBadge('IMC/E', zBMI);
+    }
+
+    // NEW V3.95: Growth Velocity (g/kg/day) - Patel Formula
+    const pesoAnterior = parseFloat(document.getElementById('pesoAnterior')?.value) || 0;
+    const diasMedicion = parseFloat(document.getElementById('diasMedicion')?.value) || 0;
+    if (p.peso > 0 && pesoAnterior > 0 && diasMedicion > 0) {
+        const velGrowth = (1000 * Math.log(p.peso / pesoAnterior)) / diasMedicion;
+        let vColor = '#27ae60';
+        if (velGrowth < 0) vColor = '#c0392b';
+        else if (velGrowth < 15) vColor = '#f39c12';
+        else if (velGrowth > 20) vColor = '#2980b9'; // Normal preterms 15-20
+        html += makeBadge('Vel. Crecimiento', null, `${velGrowth.toFixed(1)} g/kg/d`, vColor);
+    }
+
+    // NEW V3.95: Neuro Classifier (Head Circumference)
+    const pcInput = parseFloat(document.getElementById('perimetroCraneal')?.value) || 0;
+    if (pcInput > 0) {
+        const zHC = getZScore('hc', m, p.sexo, pcInput);
+        if (zHC !== null && !isNaN(zHC)) {
+            let diag = '';
+            let color = '#27ae60';
+            if (zHC <= -2.0) { diag = '<br><span style="font-size:0.6rem">⚠️ Microcefalia</span>'; color = '#c0392b'; }
+            else if (zHC <= -1.0) { diag = '<br><span style="font-size:0.6rem">Riesgo Micro</span>'; color = '#e67e22'; }
+            else if (zHC >= +2.0) { diag = '<br><span style="font-size:0.6rem">⚠️ Macrocefalia</span>'; color = '#c0392b'; }
+            html += makeBadge('Perím. Cefálico', null, `Z: ${zHC > 0 ? '+' : ''}${zHC.toFixed(2)}${diag}`, color);
+        } else {
+             html += makeBadge('Perím. Cefálico', null, `${pcInput} cm (Sin Ref)`, '#95a5a6');
+        }
     }
 
     if (!html) html = '<div style="grid-column:span 2; text-align:center; font-size:0.8rem; color:#888;">Ingresa Fecha de Nacimiento, Peso y Talla</div>';
@@ -1813,6 +1850,31 @@ function runSimulation() {
     if (elSubC) elSubC.innerText = c.toFixed(1);
     if (elSubL) elSubL.innerText = l.toFixed(1);
 
+    // NEW V3.95: PreNAN FM85 Fortifier (Neonates only)
+    if (AppState.patient.type === 'neonate') {
+        const fortPct = parseFloat(document.getElementById('fortifierPercent')?.value) || 0;
+        if (fortPct > 0) {
+            let baseVolForFM85 = 0;
+            if (AppState.calcMode === 'vol') {
+                baseVolForFM85 = v1;
+            } else {
+                const dil = v2 || formula.stdDil || 15;
+                baseVolForFM85 = (v1 / dil) * 100;
+            }
+            const fortGrams = baseVolForFM85 * (fortPct / 100);
+            const fgInput = document.getElementById('fortifierGrams');
+            if (fgInput) fgInput.value = fortGrams.toFixed(1);
+            
+            // FM85 Macros per 100g: 348 kcal, 20g Prot, 66.4g CHO
+            k += (fortGrams * 348 / 100);
+            p += (fortGrams * 20 / 100);
+            c += (fortGrams * 66.4 / 100);
+        } else {
+            const fgInput = document.getElementById('fortifierGrams');
+            if (fgInput) fgInput.value = '';
+        }
+    }
+
     // Factor in Modules V3.50/V3.61
     let modK = 0, modP = 0, modC = 0, modL = 0;
     const mNess = parseFloat(document.getElementById('modNessucar').value) || 0;
@@ -1964,6 +2026,35 @@ function runSimulation() {
 
         AppState.chart.data.datasets[0].data = [pCal, cCal, lCal];
         AppState.chart.update();
+    }
+
+    // NEW V3.95: Escáner Proteico (Neonate g/kg/d)
+    const proTracker = document.getElementById('proteinTrackerResult');
+    if (proTracker) {
+        if (AppState.patient.peso > 0 && AppState.patient.type === 'neonate') {
+            const pt = p / AppState.patient.peso; // Prot divided by Total Weight in kg
+            let ptColor = '#27ae60';
+            let ptL = 'Ideal';
+            // Neonatal protein brackets
+            if (pt < 2.5) { ptColor = '#c0392b'; ptL = '⚠️ Peligro: Déficit Grave'; }
+            else if (pt < 3.2) { ptColor = '#f39c12'; ptL = 'Subóptimo'; }
+            else if (pt >= 3.2 && pt <= 4.2) { ptColor = '#27ae60'; ptL = 'Rango Crítico (UCIN)'; }
+            else if (pt > 4.5) { ptColor = '#c0392b'; ptL = '⚠️ Sobrecarga Renal'; }
+            else { ptColor = '#2980b9'; ptL = 'Límite Superior'; }
+            
+            proTracker.innerHTML = `
+                <div style="margin-top:10px; margin-bottom:10px; background:${ptColor}10; border:2px dashed ${ptColor}; padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-weight:700; color:${ptColor}; font-size:1rem;">
+                        🩸 Proteína Diaria: <span style="font-size:1.2rem; font-weight:800;">${pt.toFixed(2)}</span> <span style="font-size:0.8rem;">g/kg/d</span>
+                    </div>
+                    <div style="background:${ptColor}; color:#fff; font-size:0.7rem; padding:4px 8px; border-radius:6px; font-weight:800;">
+                        ${ptL}
+                    </div>
+                </div>`;
+            proTracker.style.display = 'block';
+        } else {
+            proTracker.style.display = 'none';
+        }
     }
 }
 
