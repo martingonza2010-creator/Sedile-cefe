@@ -737,6 +737,12 @@ window.deletePatient = async (id) => {
     }).eq('id', id);
 
     if (error) {
+        if (error.message && error.message.includes('estado_sala')) {
+            if (confirm("⚠️ Tu base de datos no tiene activada la 'Papelera' (te falta correr el SQL de actualización). \n\n¿Deseas ELIMINAR DEFINITIVAMENTE a este paciente ahora mismo? (Esta acción no se puede deshacer)")) {
+                window.hardDeletePatient(id);
+            }
+            return;
+        }
         console.error("Error moviendo paciente a papelera:", error);
         alert("Error al eliminar: " + error.message);
     } else {
