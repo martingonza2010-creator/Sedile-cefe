@@ -637,8 +637,8 @@ async function loadWardKanban() {
     // For safety, we keep only the latest row per 'nombre' if they create duplicates without discharging.
     const activeMap = new Map();
     data.forEach(p => {
-        // Enforce exclusion of discharged patients here since we fetched all
-        if (p.estado_sala === 'de_alta') return;
+        // Enforce exclusion of discharged or deleted patients
+        if (p.estado_sala === 'de_alta' || p.estado_sala === 'eliminado') return;
 
         if (!activeMap.has(p.nombre) || new Date(p.created_at) > new Date(activeMap.get(p.nombre).created_at)) {
             activeMap.set(p.nombre, p);
@@ -726,15 +726,18 @@ window.dischargePatient = async (id) => {
 window.deletePatient = async (id) => {
     if (!confirm("¿Mover este paciente a la papelera?")) return;
 
-    // Set state to 'eliminado' and inject deleted_at metadata
-    const { data: p } = await supabaseClient.from('pacientes').select('metadata').eq('id', id).single();
-    let meta = p?.metadata || {};
+    // Fetch the patient name to delete ALL their history snapshots
+    const { data: p } = await supabaseClient.from('pacientes').select('nombre, metadata').eq('id', id).single();
+    if (!p) return;
+
+    let meta = p.metadata || {};
     meta.deleted_at = new Date().toISOString();
 
     const { error } = await supabaseClient.from('pacientes').update({
         estado_sala: 'eliminado',
         metadata: meta
-    }).eq('id', id);
+    }).eq('nombre', p.nombre).eq('user_id', AppState.user.id);
+
 
     if (error) {
         // Optimized error handling for missing column
@@ -763,7 +766,12 @@ window.deletePatient = async (id) => {
 
 window.hardDeletePatient = async (id, skipConfirm = false) => {
     if (!skipConfirm && !confirm("¿Eliminar PERMANENTEMENTE a este paciente de la base de datos?")) return;
-    const { error } = await supabaseClient.from('pacientes').delete().eq('id', id);
+    
+    // Fetch the patient name to delete all grouped rows
+    const { data: p } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
+    if (!p) return;
+
+    const { error } = await supabaseClient.from('pacientes').delete().eq('nombre', p.nombre).eq('user_id', AppState.user.id);
     if (!error) {
         window.loadHistoryList(false); // Reload normal history instead of jumping to Trash
         if (typeof loadWardKanban === 'function') loadWardKanban();
@@ -773,8 +781,11 @@ window.hardDeletePatient = async (id, skipConfirm = false) => {
 };
 
 window.restorePatient = async (id) => {
-    // Return to generic 'activo' state
-    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'activo' }).eq('id', id);
+    // Return to generic 'activo' state for all history rows tied to this name
+    const { data: p } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
+    if (!p) return;
+
+    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'activo' }).eq('nombre', p.nombre).eq('user_id', AppState.user.id);
     if (!error) window.loadHistoryList(true);
     if (typeof loadWardKanban === 'function') loadWardKanban();
 };
@@ -849,9 +860,11 @@ async function generateShiftHandoff() {
         return;
     }
 
-    // Filter unique latest per patient
+    // Filter unique latest per patient handling deleted/discharged patients
     const activeMap = new Map();
     patients.forEach(p => {
+        if (p.estado_sala === 'de_alta' || p.estado_sala === 'eliminado') return;
+        
         if (!activeMap.has(p.nombre) || new Date(p.created_at) > new Date(activeMap.get(p.nombre).created_at)) {
             activeMap.set(p.nombre, p);
         }
