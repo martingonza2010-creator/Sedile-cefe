@@ -724,7 +724,7 @@ window.dischargePatient = async (id) => {
 };
 
 window.deletePatient = async (id) => {
-    if (!confirm("El paciente se moverá a la papelera (permanecerá ahí 30 días antes de su eliminación automática). ¿Continuar?")) return;
+    if (!confirm("¿Mover este paciente a la papelera?")) return;
 
     // Set state to 'eliminado' and inject deleted_at metadata
     const { data: p } = await supabaseClient.from('pacientes').select('metadata').eq('id', id).single();
@@ -737,29 +737,32 @@ window.deletePatient = async (id) => {
     }).eq('id', id);
 
     if (error) {
-        if (error.message && error.message.includes('estado_sala')) {
-            if (confirm("⚠️ Tu base de datos no tiene activada la 'Papelera' (te falta correr el SQL de actualización). \n\n¿Deseas ELIMINAR DEFINITIVAMENTE a este paciente ahora mismo? (Esta acción no se puede deshacer)")) {
-                window.hardDeletePatient(id);
+        // Optimized error handling for missing column
+        if (error.message && (error.message.includes('estado_sala') || error.message.includes('column'))) {
+            if (confirm("⚠️ Tu base de datos no tiene habilitada la 'Papelera'.\n\n¿Deseas ELIMINAR DEFINITIVAMENTE a este paciente?")) {
+                window.hardDeletePatient(id, true);
             }
             return;
         }
         console.error("Error moviendo paciente a papelera:", error);
         alert("Error al eliminar: " + error.message);
     } else {
+        showToast("🗑️ Paciente movido a la papelera");
         if (typeof window.loadHistoryList === 'function') window.loadHistoryList(false);
         if (typeof loadWardKanban === 'function') loadWardKanban();
-        // Clear inputs if currently loaded
+        
+        // Deseleccionar paciente si era el actual
         if (AppState.patient && AppState.patient.id === id) {
-            AppState.patient.id = null;
-            document.getElementById('nombre').value = "";
-            document.getElementById('simGoal').innerText = "--";
-            document.getElementById('valGET').innerText = "0 kcal";
+             AppState.patient.id = null;
+             document.getElementById('nombre').value = "";
+             // Reset UI labels
+             document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
         }
     }
 };
 
-window.hardDeletePatient = async (id) => {
-    if (!confirm("🚨 ADVERTENCIA PÚBLICA: ¿Quieres eliminar PERMANENTEMENTE a este paciente de la base de datos de inmediato?")) return;
+window.hardDeletePatient = async (id, skipConfirm = false) => {
+    if (!skipConfirm && !confirm("¿Eliminar PERMANENTEMENTE a este paciente de la base de datos?")) return;
     const { error } = await supabaseClient.from('pacientes').delete().eq('id', id);
     if (!error) {
         window.loadHistoryList(false); // Reload normal history instead of jumping to Trash
@@ -1080,12 +1083,49 @@ function calculateRequirements() {
     renderPediatricZScores();
 
     // NEW V3.19/V3.90: Ideal Weight & IPT (Real-time) + Amputee Correction
-    if (p.estatura > 0 && p.edad > 0) {
-        const factorIdx = p.edad >= 65 ? 25.5 : 21.7;
-        let rawPesoIdeal = factorIdx * (p.estatura * p.estatura);
-        let pesoIdeal = rawPesoIdeal;
+    let rawPesoIdeal = 0;
+
+    if (p.type === 'pediatric' || p.type === 'neonate') {
+        const y = (p.evalParts || p.ageParts || {}).y || 0;
+        let m = p.exactMonths || 0;
+        const d = (p.evalParts || p.ageParts || {}).d || 0;
+        const cm = p.estatura > 3 ? p.estatura : p.estatura * 100;
         
+        const isUnderOne = (y === 0 && (m < 11 || (m === 11 && d <= 14)));
+        let zWFH = null;
+        if (cm > 0 && p.peso > 0) {
+            zWFH = getZScore('wfh', cm, p.sexo, p.peso);
+        }
+
+        if (y > 5 || (y === 5 && m >= 1)) {
+            // Niños mayores > 5 años y Adolescentes: Mediana del IMC/E
+            const medianBMI = getLMSMedian('bmi', m, p.sexo);
+            if (medianBMI && p.estatura > 0) {
+                rawPesoIdeal = medianBMI * (p.estatura * p.estatura);
+            }
+        } else if (!isUnderOne || (isUnderOne && zWFH !== null && zWFH >= 1.0)) {
+            // Excepción P/T: Preescolares (1-5) o lactantes con Sobrepeso/Obesidad (P/T >= 1)
+            if (cm > 0) rawPesoIdeal = getLMSMedian('wfh', cm, p.sexo);
+        } else {
+            // Lactantes regulares (< 1 año)
+            rawPesoIdeal = getLMSMedian('wfa', m, p.sexo);
+        }
+        
+        if (rawPesoIdeal) {
+            document.getElementById('valIdealWeight').innerText = rawPesoIdeal.toFixed(1) + ' kg*';
+        } else {
+            document.getElementById('valIdealWeight').innerText = '--';
+        }
+
+    } else if (p.estatura > 0 && p.edad > 0) {
+        // Adult Logic
+        const factorIdx = p.edad >= 65 ? 25.5 : 21.7;
+        rawPesoIdeal = factorIdx * (p.estatura * p.estatura);
         document.getElementById('valIdealWeight').innerText = rawPesoIdeal.toFixed(1) + ' kg';
+    }
+
+    if (rawPesoIdeal > 0) {
+        let pesoIdeal = rawPesoIdeal;
         
         // --- AMPUTEE OSTERKAMP CORRECTION ---
         const ampFactor = window.calcAmputations ? window.calcAmputations() : 0;
@@ -1137,6 +1177,9 @@ function calculateRequirements() {
         p.bmi = p.peso / (p.estatura * p.estatura);
         document.getElementById('valBMI').innerText = p.bmi.toFixed(1);
     }
+
+    // Call waist evaluation for all patient types
+    if (window.evaluateWaist) window.evaluateWaist();
 
     if (p.peso > 0 && p.edad > 0) {
         // --- TMB (OMS/WHO) AUTOMATIC ---
@@ -1282,9 +1325,99 @@ window.calculatePediatricAge = () => {
 
     document.getElementById('lblExactAge').innerText = ageStr;
 
-    AppState.patient.exactMonths = totalMonths;
+    let evalMonths = totalMonths;
+    let evalY = years;
+    let evalM = months;
+    if (days >= 15) {
+        evalMonths += 1;
+        evalM += 1;
+        if (evalM >= 12) {
+            evalY += 1;
+            evalM -= 12;
+        }
+    }
+
+    AppState.patient.exactMonths = evalMonths;
+    AppState.patient.ageParts = { y: years, m: months, d: days };
+    AppState.patient.evalParts = { y: evalY, m: evalM, d: days };
+    
     calculateRequirements();
 };
+
+function getLMSMedian(indicator, keyVal, sexo) {
+    const specCond = document.getElementById('specialCondition')?.value || 'none';
+    const sexKey = sexo === 'm' ? 'boys' : 'girls';
+
+    let table = null;
+    let isInterpolated = false;
+
+    if (specCond === 'down' && window.ZEMEL_DATA && window.ZEMEL_DATA[indicator]) {
+        table = window.ZEMEL_DATA[indicator][sexKey];
+        isInterpolated = true;
+    } else if (specCond.startsWith('cp_') && window.BROOKS_DATA) {
+        let cpGroup = 'gmfcs_1_2';
+        if (specCond === 'cp_iii_iv') cpGroup = 'gmfcs_3_4';
+        else if (specCond === 'cp_v') cpGroup = 'gmfcs_5';
+
+        if (window.BROOKS_DATA[cpGroup] && window.BROOKS_DATA[cpGroup][indicator]) {
+            table = window.BROOKS_DATA[cpGroup][indicator][sexKey];
+            isInterpolated = true;
+        }
+    }
+
+    if (!table && indicator === 'hc' && window.NEURO_HC_DATA && window.NEURO_HC_DATA.hc) {
+        table = window.NEURO_HC_DATA.hc[sexKey];
+        isInterpolated = true;
+    }
+
+    if (!table) {
+        if (!window.MINSAL_DATA || !window.MINSAL_DATA[indicator]) return null;
+        table = window.MINSAL_DATA[indicator][sexKey];
+        isInterpolated = false;
+    }
+
+    if (!table || table.length === 0) return null;
+
+    let L, M, S;
+
+    if (isInterpolated) {
+        let lower = table[0];
+        let upper = table[table.length - 1];
+
+        if (keyVal <= lower[0]) {
+            [_, L, M, S] = lower;
+        } else if (keyVal >= upper[0]) {
+            [_, L, M, S] = upper;
+        } else {
+            for (let i = 0; i < table.length - 1; i++) {
+                if (keyVal >= table[i][0] && keyVal <= table[i+1][0]) {
+                    lower = table[i];
+                    upper = table[i+1];
+                    break;
+                }
+            }
+            if (lower[0] === upper[0]) {
+                [_, L, M, S] = lower;
+            } else {
+                const ratio = (keyVal - lower[0]) / (upper[0] - lower[0]);
+                M = lower[2] + ratio * (upper[2] - lower[2]);
+            }
+        }
+    } else {
+        let closest = table[0];
+        let minDiff = 9999;
+        for (let r of table) {
+            const diff = Math.abs(r.k - keyVal);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = r;
+            }
+        }
+        M = closest.M;
+    }
+
+    return M;
+}
 
 function getZScore(indicator, keyVal, sexo, obs) {
     if (!obs) return null;
@@ -1408,10 +1541,10 @@ function renderPediatricZScores() {
             // Adjusting to match printed MINSAL tables rounding
             const absZ = Math.round(z * 100) / 100;
             
-            if (absZ >= 1.99) { color = '#e74c3c'; diag = '≥+2DE'; }
-            else if (absZ >= 0.99) { color = '#f39c12'; diag = '≥+1DE'; }
-            else if (absZ <= -1.99) { color = '#c0392b'; diag = '≤-2DE'; }
-            else if (absZ <= -0.99) { color = '#e67e22'; diag = '≤-1DE'; }
+            if (absZ >= 1.99) { color = '#e74c3c'; diag = '+2 DE'; }
+            else if (absZ >= 0.99) { color = '#f39c12'; diag = '+1 DE'; }
+            else if (absZ <= -1.99) { color = '#c0392b'; diag = '-2 DE'; }
+            else if (absZ <= -0.99) { color = '#e67e22'; diag = '-1 DE'; }
             
             displayVal = `${z > 0 ? '+' : ''}${z.toFixed(2)}`;
         } else {
@@ -1420,12 +1553,14 @@ function renderPediatricZScores() {
 
         return `<div style="background:#fff; border:1px solid ${color}; padding:5px; border-radius:6px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
             <div style="font-size:0.55rem; color:#666; font-weight:600; line-height:1.1;">${title}</div>
-            <div style="font-size:0.9rem; font-weight:800; color:${color}; display:flex; justify-content:center; align-items:baseline; gap:4px; margin-top:2px;">
+            <div style="font-size:0.85rem; font-weight:800; color:${color}; display:flex; justify-content:center; align-items:baseline; gap:4px; margin-top:2px;">
                 ${displayVal}
                 <span style="font-size:0.55rem; padding:2px 3px; background:${color}20; border-radius:4px; font-weight:700;">${diag}</span>
             </div>
         </div>`;
     };
+
+    let ccBadge = window.evaluateWaist ? window.evaluateWaist(makeBadge) : '';
 
     if (p.type === 'neonate') {
         const sem = parseInt(document.getElementById('egSemanas').value) || 0;
@@ -1454,21 +1589,18 @@ function renderPediatricZScores() {
                 clasD = 'Falta Peso';
             }
             
-            // Phase 10: Simetría Neonatal (Índice Ponderal de Rohrer)
-            // IP = Peso(g) * 100 / Talla(cm)^3
-            // Punto de corte clínico estándar para neonatos: IP < 2.2 asimétrico, < 2.0 asimétrico severo.
             if (isPeg && p.peso > 0 && cm > 0) {
                 const ipVal = (wGrams / Math.pow(cm, 3)) * 100;
                 
                 if (ipVal >= 2.2) {
                     ipDiag = `Simétrico (IP: ${ipVal.toFixed(2)})`;
-                    clasColor = '#f39c12'; // Alerta moderada (crecimiento frenado)
+                    clasColor = '#f39c12';
                 } else if (ipVal >= 2.0) {
                     ipDiag = `Asimétrico Leve (IP: ${ipVal.toFixed(2)})`;
                     clasColor = '#d35400';
                 } else {
                     ipDiag = `Asimétrico Severo (IP: ${ipVal.toFixed(2)}) ⚠️ Riesgo Hipoglicemia`;
-                    clasColor = '#c0392b'; // Alerta severa (reservas glucógeno)
+                    clasColor = '#c0392b';
                 }
             } else if (isPeg) {
                 ipDiag = 'Falta Talla para IP';
@@ -1486,22 +1618,16 @@ function renderPediatricZScores() {
         if (sem > 0 && sem < 37) {
             const fn = document.getElementById('fechaNacimiento').value;
             if (fn) {
-                // Exact calculation to the day (40 weeks = 280 days is term)
-                // TimeZone shift fix
                 const [y, mm, d] = fn.split('-');
                 const birthDate = new Date(y, mm - 1, d);
                 const now = new Date();
 
-                // Chronological age in days
                 const diffTime = now.getTime() - birthDate.getTime();
                 const chronDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
 
-                // Gestational age at birth in days
                 const gestDays = (sem * 7) + dias;
-                // Missing days to reach 40 weeks term (280 days)
                 const missingDays = 280 - gestDays;
 
-                // Corrected Age in days
                 let correctedDays = chronDays - missingDays;
                 if (correctedDays < 0) correctedDays = 0;
 
@@ -1516,7 +1642,7 @@ function renderPediatricZScores() {
                     corrString = `${cMonths}m, ${cDays}d`;
                 } else {
                     let d = correctedDays;
-                    if (d >= 349.8 && d < 365.25) d = 365.25; // >= 11m 15d -> force 1 year milestone
+                    if (d >= 349.8 && d < 365.25) d = 365.25;
                     
                     const cYears = Math.floor(d / 365.25);
                     const r = d % 365.25;
@@ -1538,16 +1664,101 @@ function renderPediatricZScores() {
             html += makeBadge('Condición', null, 'Término', '#2980b9');
         }
     } else {
+        const parts = AppState.patient.ageParts || { y: 0, m: 0, d: 0 };
+        const y = parts.y;
+        const mt = parts.m;
+        const d = parts.d;
+
+        const isUnderOne = (y === 0 && (mt < 11 || (mt === 11 && d <= 14)));
+        const isOneToFive = !isUnderOne && (y < 5 || (y === 5 && mt === 0 && d <= 29));
+
+        let diagWeight = '';
+        let diagWColor = '#888';
+        
+        let evaluatedBy = '';
+        if (isUnderOne) {
+            const zPT = (zWFH !== null && !isNaN(zWFH)) ? zWFH : null;
+            if (zPT !== null && zPT >= 1.0) {
+                evaluatedBy = ' [Evaluado por P/T]';
+                if (zPT >= +2) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
+                else { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
+            } else {
+                evaluatedBy = ' [Evaluado por P/E]';
+                if (zWFA <= -2) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
+                else if (zWFA <= -1) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
+                else { diagWeight = 'Normal o Eutrófico'; diagWColor = '#27ae60'; }
+            }
+        } else if (isOneToFive) {
+            evaluatedBy = ' [Evaluado por P/T]';
+            if (zWFH <= -2) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
+            else if (zWFH <= -1) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
+            else if (zWFH >= +2) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
+            else if (zWFH >= +1) { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
+            else { diagWeight = 'Normal o Eutrófico'; diagWColor = '#27ae60'; }
+        } else {
+            evaluatedBy = ' [Evaluado por IMC/E]';
+            if (zBMI <= -2) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
+            else if (zBMI <= -1) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
+            else if (zBMI >= +3) { diagWeight = 'Obesidad Severa'; diagWColor = '#8e44ad'; }
+            else if (zBMI >= +2) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
+            else if (zBMI >= +1) { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
+            else { diagWeight = 'Normal o Eutrófico'; diagWColor = '#27ae60'; }
+        }
+
+        let diagHeight = '';
+        let diagHColor = '#888';
+        if (zHFA !== null && !isNaN(zHFA)) {
+            if (zHFA <= -2) { diagHeight = 'Talla Baja'; diagHColor = '#c0392b'; }
+            else if (zHFA <= -1) { diagHeight = 'Talla Normal Baja'; diagHColor = '#f39c12'; }
+            else if (zHFA >= +2) { diagHeight = 'Talla Alta'; diagHColor = '#3498db'; }
+            else if (zHFA >= +1) { diagHeight = 'Talla Normal Alta'; diagHColor = '#2980b9'; }
+            else { diagHeight = 'Normal'; diagHColor = '#27ae60'; }
+        }
+
         html += makeBadge('P/E (Peso/Edad)', zWFA);
         html += makeBadge('T/E (Talla/Edad)', zHFA);
-        if (m <= 60) {
-            if (zWFH !== null && !isNaN(zWFH)) {
-                html += makeBadge('P/T (Peso/Talla)', zWFH);
-            } else {
-                html += makeBadge('P/T (Peso/Talla)', null, 'Falta Talla', '#95a5a6');
+        if (m <= 60 && zWFH !== null && !isNaN(zWFH)) html += makeBadge('P/T (Peso/Talla)', zWFH);
+        if (m > 60 && zBMI !== null && !isNaN(zBMI)) html += makeBadge('IMC/E', zBMI);
+        html += ccBadge;
+        
+        if (diagWeight || diagHeight) {
+            html += `<div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:6px; margin-top:8px;">`;
+            if (diagWeight) {
+                html += `<div style="background:${diagWColor}15; border-left:4px solid ${diagWColor}; padding:8px; border-radius:4px; font-weight:700; color:${diagWColor}; font-size:0.85rem; display:flex; flex-direction:column; gap:2px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>⚖️ Estado Nutricional (MINSAL)</span>
+                                <span style="font-size:0.9rem;">${diagWeight}</span>
+                            </div>
+                            <div style="font-size:0.65rem; opacity:0.8; text-align:right;">${evaluatedBy}</div>
+                         </div>`;
             }
+            if (diagHeight) {
+                html += `<div style="background:${diagHColor}15; border-left:4px solid ${diagHColor}; padding:8px; border-radius:4px; font-weight:700; color:${diagHColor}; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
+                            <span>📏 Calificación Estatural</span>
+                            <span style="font-size:0.9rem;">${diagHeight}</span>
+                         </div>`;
+            }
+            
+            // 3. Cintura Diagnosis
+            const cInp = parseFloat(document.getElementById('ccintura')?.value) || 0;
+            if (cInp > 0 && y >= 5 && y <= 19) {
+                const table = window.WAIST_PERCENTILES?.[p.sexo];
+                const refAge = (y >= 19) ? 19 : y;
+                const ageData = table?.[refAge];
+                if (ageData) {
+                    let diagWaist = 'Normal (< p75)';
+                    let waColor = '#27ae60';
+                    if (cInp >= ageData.p90) { diagWaist = 'Obesidad Abdominal (≥ p90)'; waColor = '#c0392b'; }
+                    else if (cInp >= ageData.p75) { diagWaist = 'Riesgo Obesidad Adb. (≥ p75)'; waColor = '#f39c12'; }
+                    
+                    html += `<div style="background:${waColor}15; border-left:4px solid ${waColor}; padding:8px; border-radius:4px; font-weight:700; color:${waColor}; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
+                                <span>⭕ Perímetro Cintura</span>
+                                <span style="font-size:0.9rem;">${diagWaist}</span>
+                             </div>`;
+                }
+            }
+            html += `</div>`;
         }
-        if (m > 60) html += makeBadge('IMC/E', zBMI);
     }
 
     // NEW V3.95: Growth Velocity (g/kg/day) - Patel Formula
@@ -3682,3 +3893,77 @@ function updateMacroGoals() {
     // Auto-update adequacy
     runSimulation();
 }
+
+// --- HELPER: TOAST NOTIFICATIONS ---
+function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.background = 'rgba(44, 62, 80, 0.9)';
+    toast.style.color = 'white';
+    toast.style.padding = '10px 20px';
+    toast.style.borderRadius = '30px';
+    toast.style.zIndex = '10000';
+    toast.style.fontSize = '0.85rem';
+    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+    toast.innerHTML = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+}
+
+// --- WAIST EVALUATION ENGINE (CC) ---
+window.evaluateWaist = (makeBadgeFn = null) => {
+    const p = AppState.patient;
+    const cc = parseFloat(document.getElementById('ccintura')?.value) || 0;
+    const resEl = document.getElementById('valWaistClass');
+    
+    if (cc <= 0) {
+        if (resEl) resEl.innerText = "";
+        return "";
+    }
+
+    let status = "Normal";
+    let color = "#27ae60";
+
+    if (p.type === 'pediatric' || p.type === 'neonate') {
+        const y = Math.floor(p.edad);
+        if (y >= 5 && y <= 19 && window.WAIST_PERCENTILES) {
+            const table = window.WAIST_PERCENTILES[p.sexo];
+            const ref = table[y] || (y > 18 ? table[18] : null);
+            if (ref) {
+                if (cc > ref.p90) {
+                    status = "Obesidad Abdominal";
+                    color = "#e74c3c";
+                } else if (cc > ref.p75) {
+                    status = "Riesgo Obesidad Abdominal";
+                    color = "#f39c12";
+                }
+            }
+        }
+    } else {
+        // Adult Logic (MINSAL)
+        if (p.sexo === 'm') {
+            if (cc >= 102) { status = "Obesidad Abdominal"; color = "#c0392b"; }
+            else if (cc >= 94) { status = "Riesgo Cardiovascular"; color = "#f39c12"; }
+        } else {
+            if (cc >= 88) { status = "Obesidad Abdominal"; color = "#c0392b"; }
+            else if (cc >= 80) { status = "Riesgo Cardiovascular"; color = "#f39c12"; }
+        }
+    }
+
+    if (resEl) {
+        resEl.innerText = status;
+        resEl.style.color = color;
+    }
+    
+    if (makeBadgeFn) {
+        return makeBadgeFn('Cintura (CC)', 0, status, color);
+    }
+    return "";
+};

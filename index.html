@@ -129,7 +129,7 @@
                                 Neonato</label>
                         </div>
 
-                        <div class="grid-col-4" id="rowAdultBase">
+                        <div class="grid-col-4" id="rowAdultBase" style="grid-template-columns: repeat(5, minmax(0, 1fr));">
                             <div class="mini-input" id="colEdad">
                                 <label>Edad</label>
                                 <input type="number" id="edad" placeholder="0">
@@ -148,6 +148,11 @@
                             <div class="mini-input">
                                 <label>Talla (m o cm)</label>
                                 <input type="number" step="0.01" id="estatura" placeholder="0">
+                            </div>
+                            <div class="mini-input" id="colCintura">
+                                <label>Cintura (cm)</label>
+                                <input type="number" step="0.1" id="ccintura" placeholder="0" oninput="calculateRequirements()">
+                                <div id="valWaistClass" style="font-size:0.6rem; font-weight:700; margin-top:2px;"></div>
                             </div>
                         </div>
 
@@ -432,12 +437,12 @@
                 <!-- NEW: Hydration Card -->
                 <section class="card hydration-card" style="border-left: 5px solid #3498db;">
                     <div class="card-header" style="margin-bottom:10px;">
-                        <h3>💧 Balance Hídrico</h3>
+                        <h3>💦 Terapia Hídrica</h3>
                         <div style="display:flex; gap:10px; font-size:0.8rem;">
                             <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
                                 <input type="radio" name="hydMethod" value="holiday" checked
                                     onchange="toggleHydMethod()">
-                                Holiday
+                                Holliday-Segar
                             </label>
                             <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
                                 <input type="radio" name="hydMethod" value="mlkg" onchange="toggleHydMethod()"> ml/kg
@@ -836,11 +841,7 @@
                     <div class="module-head">
                         <h3>📏 Antropometría Avanzada</h3>
                     </div>
-                    <div class="grid-col-3">
-                        <div class="mini-input">
-                            <label>C. Cintura (cm)</label>
-                            <input type="number" id="ccintura">
-                        </div>
+                    <div class="grid-col-2" style="grid-template-columns: 1fr 1fr;">
                         <div class="mini-input">
                             <label>C. Braquial (cm)</label>
                             <input type="number" id="cbraquial" class="input-watch" placeholder="cm">
