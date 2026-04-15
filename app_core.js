@@ -751,12 +751,16 @@ window.deletePatient = async (id) => {
         if (typeof window.loadHistoryList === 'function') window.loadHistoryList(false);
         if (typeof loadWardKanban === 'function') loadWardKanban();
         
-        // Deseleccionar paciente si era el actual
-        if (AppState.patient && AppState.patient.id === id) {
+        // Deseleccionar paciente de la calculadora activa si coincide el nombre
+        const currentName = document.getElementById('nombre')?.value || "";
+        if (currentName.trim() === p.nombre.trim()) {
              AppState.patient.id = null;
              document.getElementById('nombre').value = "";
-             // Reset UI labels
              document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
+             const avatar = document.getElementById('currentPatientAvatar');
+             if (avatar) avatar.innerText = "P";
+             const bmi = document.getElementById('valBMI');
+             if (bmi) bmi.innerText = "--";
         }
     }
 };
@@ -775,6 +779,16 @@ window.hardDeletePatient = async (id, skipConfirm = false) => {
     if (!error) {
         window.loadHistoryList(false); // Reload normal history instead of jumping to Trash
         if (typeof loadWardKanban === 'function') loadWardKanban();
+        
+        // Limpiar visor activo
+        const currentName = document.getElementById('nombre')?.value || "";
+        if (currentName.trim() === p.nombre.trim()) {
+             AppState.patient.id = null;
+             document.getElementById('nombre').value = "";
+             document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
+             if (document.getElementById('currentPatientAvatar')) document.getElementById('currentPatientAvatar').innerText = "P";
+             if (document.getElementById('valBMI')) document.getElementById('valBMI').innerText = "--";
+        }
     } else {
         alert("Error de Supabase al Eliminar (probablemente te falta la Política RLS de DELETE): " + error.message);
     }
