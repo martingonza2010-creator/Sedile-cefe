@@ -476,12 +476,14 @@ window.loadHistoryList = async (showPapelera = false) => {
 
     const { data: records, error } = await supabaseClient
         .from('pacientes')
-        .select('*, metadata, estado_sala') 
+        .select('*, metadata') 
         .eq('user_id', AppState.user.id)
         .order('created_at', { ascending: false });
 
     if (error) {
-        list.innerHTML = '<p>Error cargando historial.</p>';
+        let msg = error.message || "Error desconocido";
+        if (msg.includes("estado_sala")) msg = "Columna estado_sala inexistente. ¡Corre el SQL!";
+        list.innerHTML = `<p style="text-align:center; color:#e74c3c;"><b>Error al cargar:</b> ${msg}</p>`;
         return;
     }
 
@@ -566,6 +568,16 @@ window.loadHistoryList = async (showPapelera = false) => {
     const uniqueDisplay = Array.from(mapUniques.values());
 
     let html = '';
+    
+    // EXTREME DEBUG MODE FOR MARTIN
+    html += `<div style="padding:10px; background:#222; color:#0f0; font-family:monospace; font-size:10px; overflow:auto; max-height:200px; margin-bottom:15px; border-radius:5px;">
+        DEBUG VER: 4.0<br>
+        SHOWING: ${showPapelera ? 'TRASH' : 'ACTIVE'}<br>
+        RECORDS FETCHED: ${records ? records.length : 0}<br>
+        FIRST 3 RECORDS RAW DATA:<br>
+        ${(records || []).slice(0, 3).map(r => JSON.stringify({id: r.id, nom: r.nombre, est: r.estado_sala})).join('<br>')}
+    </div>`;
+
     uniqueDisplay.forEach(r => {
         const dateStr = new Date(r.created_at).toLocaleDateString('es-CL');
         if (showPapelera) {
