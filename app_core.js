@@ -733,24 +733,20 @@ window.deletePatient = async (id) => {
         return;
     }
 
-    let meta = p.metadata || {};
-    meta.deleted_at = new Date().toISOString();
-
-    const { error } = await supabaseClient.from('pacientes').update({
-        estado_sala: 'eliminado',
-        metadata: meta
+    const { error, status, statusText } = await supabaseClient.from('pacientes').update({
+        estado_sala: 'eliminado'
     }).eq('nombre', p.nombre).eq('user_id', AppState.user.id);
 
     if (error) {
-        // Optimized error handling for missing column
-        if (error.message && (error.message.includes('estado_sala') || error.message.includes('column'))) {
-            if (confirm("⚠️ Tu base de datos no tiene habilitada la 'Papelera'.\n\n¿Deseas ELIMINAR DEFINITIVAMENTE a este paciente?")) {
+        // If HTTP 400 triggers, it usually means 'estado_sala' column is completely missing from the DB
+        if (error.code === "PGRST204" || (error.message && error.message.includes('estado_sala')) || status === 400) {
+            if (confirm("⚠️ Tu base de datos no tiene la columna 'estado_sala' para la papelera.\nDebes correr el código SQL que te pasé.\n\n¿Deseas ELIMINAR al paciente de todas formas (definitivo)?")) {
                 window.hardDeletePatient(id, true);
             }
             return;
         }
-        console.error("Error moviendo paciente a papelera:", error);
-        alert("Error al eliminar: " + error.message);
+        console.error("Error API:", error);
+        alert("Falla de conexión o base de datos (" + status + "). " + (error.message || JSON.stringify(error)));
     } else {
         showToast("🗑️ Paciente movido a la papelera");
         if (typeof window.loadHistoryList === 'function') window.loadHistoryList(false);
@@ -3317,7 +3313,9 @@ function initGlobalEvents() {
 
     // Module Input Watcher
     document.querySelectorAll('.input-module').forEach(inp => {
-        inp.oninput = updateSimulator;
+        inp.oninput = () => {
+            if (typeof window.runSimulation === 'function') window.runSimulation();
+        };
     });
 
 }
