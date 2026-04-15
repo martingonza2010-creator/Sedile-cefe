@@ -476,7 +476,7 @@ window.loadHistoryList = async (showPapelera = false) => {
 
     const { data: records, error } = await supabaseClient
         .from('pacientes')
-        .select('*, metadata') // Select everything to maintain chart support and metadata for deletion
+        .select('*, metadata, estado_sala') 
         .eq('user_id', AppState.user.id)
         .order('created_at', { ascending: false });
 
@@ -549,7 +549,12 @@ window.loadHistoryList = async (showPapelera = false) => {
     }
 
     if (showRecords.length === 0) {
-        list.innerHTML = `<p style="text-align:center; opacity:0.6;">${showPapelera ? 'La papelera está vacía.' : 'Ningún registro guardado aún.'}</p>`;
+        let debugText = ``;
+        if (showPapelera) {
+            const trashCount = validRecords.filter(r => r.estado_sala === 'eliminado').length;
+            debugText = `<br><small style="font-size:0.7rem; color:#ccc;">Debug: Registros totales=${records.length}, Eliminados encontrados=${trashCount}</small>`;
+        }
+        list.innerHTML = `<p style="text-align:center; opacity:0.6;">${showPapelera ? 'La papelera está vacía.' : 'Ningún registro guardado aún.'}${debugText}</p>`;
         return;
     }
 
