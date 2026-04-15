@@ -727,8 +727,11 @@ window.deletePatient = async (id) => {
     if (!confirm("¿Mover este paciente a la papelera?")) return;
 
     // Fetch the patient name to delete ALL their history snapshots
-    const { data: p } = await supabaseClient.from('pacientes').select('nombre, metadata').eq('id', id).single();
-    if (!p) return;
+    const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre, metadata').eq('id', id).single();
+    if (fetchErr || !p) {
+        alert("Error de lectura al buscar paciente: " + (fetchErr?.message || "No encontrado"));
+        return;
+    }
 
     let meta = p.metadata || {};
     meta.deleted_at = new Date().toISOString();
@@ -737,7 +740,6 @@ window.deletePatient = async (id) => {
         estado_sala: 'eliminado',
         metadata: meta
     }).eq('nombre', p.nombre).eq('user_id', AppState.user.id);
-
 
     if (error) {
         // Optimized error handling for missing column
@@ -768,8 +770,11 @@ window.hardDeletePatient = async (id, skipConfirm = false) => {
     if (!skipConfirm && !confirm("¿Eliminar PERMANENTEMENTE a este paciente de la base de datos?")) return;
     
     // Fetch the patient name to delete all grouped rows
-    const { data: p } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
-    if (!p) return;
+    const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
+    if (fetchErr || !p) {
+        alert("Error buscando el registro para borrado permanente: " + (fetchErr?.message || ""));
+        return;
+    }
 
     const { error } = await supabaseClient.from('pacientes').delete().eq('nombre', p.nombre).eq('user_id', AppState.user.id);
     if (!error) {
@@ -782,12 +787,19 @@ window.hardDeletePatient = async (id, skipConfirm = false) => {
 
 window.restorePatient = async (id) => {
     // Return to generic 'activo' state for all history rows tied to this name
-    const { data: p } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
-    if (!p) return;
+    const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
+    if (fetchErr || !p) {
+        alert("No se pudo restaurar (error de lectura): " + (fetchErr?.message || ""));
+        return;
+    }
 
     const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'activo' }).eq('nombre', p.nombre).eq('user_id', AppState.user.id);
-    if (!error) window.loadHistoryList(true);
-    if (typeof loadWardKanban === 'function') loadWardKanban();
+    if (!error) {
+        window.loadHistoryList(true);
+        if (typeof loadWardKanban === 'function') loadWardKanban();
+    } else {
+        alert("Error restaurando paciente: " + error.message);
+    }
 };
 
 window.openQuickView = async (id) => {
