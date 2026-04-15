@@ -332,9 +332,21 @@ function initHistoryModal() {
     const btnClose = document.getElementById('btnHistoryClose');
     if (btnOpen) btnOpen.onclick = () => {
         modal.classList.add('active');
-        loadHistoryList(); // Changed from loadHistory to loadHistoryList
+        window.loadHistoryList(false); // Changed from loadHistory to loadHistoryList
     };
     if (btnClose) btnClose.onclick = () => modal.classList.remove('active');
+    
+    // EXPLICIT UI FIX: attach directly to tabs to avoid iOS onclick bugs
+    const tabActivos = document.getElementById('tabHistActivos');
+    const tabPapelera = document.getElementById('tabHistPapelera');
+    if (tabActivos) tabActivos.addEventListener('click', (e) => { 
+        e.preventDefault(); 
+        window.loadHistoryList(false);
+    });
+    if (tabPapelera) tabPapelera.addEventListener('click', (e) => { 
+        e.preventDefault(); 
+        window.loadHistoryList(true);
+    });
 }
 
 // --- 7. PATIENT & HISTORY LOGIC ---
@@ -463,11 +475,17 @@ function initGoalLogic() {
 }
 
 window.loadHistoryList = async (showPapelera = false) => {
-    // Update tabs
+    // Update tabs robustly
     const tabActivos = document.getElementById('tabHistActivos');
     const tabPapelera = document.getElementById('tabHistPapelera');
-    if (tabActivos) tabActivos.classList.toggle('active', !showPapelera);
-    if (tabPapelera) tabPapelera.classList.toggle('active', showPapelera);
+    if (tabActivos) {
+        if (showPapelera) tabActivos.classList.remove('active');
+        else tabActivos.classList.add('active');
+    }
+    if (tabPapelera) {
+        if (showPapelera) tabPapelera.classList.add('active');
+        else tabPapelera.classList.remove('active');
+    }
 
     const list = document.getElementById('patientListContainer');
     if (!list) return;
