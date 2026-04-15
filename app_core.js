@@ -508,10 +508,9 @@ window.loadHistoryList = async (showPapelera = false) => {
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 daysLeft = 30 - diffDays;
             } else {
-                // Fallback simulating from created date if no deleted_at metadata
-                const diffTime = Math.abs(now - new Date(r.created_at));
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                daysLeft = 30 - diffDays;
+                // Si no hay fecha de borrado en la metadata, asumimos que se acaba de borrar
+                // (Para evitar que pacientes muy antiguos desaparezcan instantáneamente)
+                daysLeft = 30;
             }
 
             if (daysLeft <= 0) {
