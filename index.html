@@ -158,6 +158,16 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- NEW V4.12: Peso de Cálculo Metabólico -->
+                        <div style="margin-top:8px; padding:8px; background:#fffcf5; border:1px solid #fae5d3; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <label style="font-size:0.75rem; color:#d35400; font-weight:700;">⚖️ Peso para cálculo nutricional:</label>
+                            <select id="pesoCalculoSelect" style="padding:4px; font-size:0.75rem; border-radius:6px; border:1px solid #e59866; background:#fdf2e9; color:#b9770e; outline:none;" onchange="calculateRequirements()">
+                                <option value="real">Peso real</option>
+                                <option value="ideal">Peso ideal</option>
+                                <option value="ajustado">Peso ajustado</option>
+                            </select>
+                        </div>
 
                         <!-- V3.80: Pediatric & Neonatal Specific Rows -->
                         <div id="rowPediatric"
@@ -285,6 +295,17 @@
                                 <div id="valIPTClass"
                                     style="font-size:0.65rem; color:#c0392b; margin-top:2px; font-weight:600;"></div>
                             </div>
+
+                            <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+                                <div style="background:rgba(243, 156, 18, 0.05); padding:6px; border-radius:6px; border:1px solid rgba(243, 156, 18, 0.1);">
+                                    <span style="font-size:0.55rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">Peso Ajust. (Obeso)</span>
+                                    <strong style="font-size:0.9rem; color:#f39c12;" id="valPesoAjustado">-- kg</strong>
+                                </div>
+                                <div style="background:rgba(39, 174, 96, 0.05); padding:6px; border-radius:6px; border:1px solid rgba(39, 174, 96, 0.1);">
+                                    <span style="font-size:0.55rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">Superficie Corp.</span>
+                                    <strong style="font-size:0.9rem; color:#27ae60;" id="valSCT">-- m²</strong>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid-col-2" style="margin-top:10px;">
@@ -313,9 +334,9 @@
 
                         <!-- NEW: Gran Quemado Calc -->
                         <div id="rowBurned" style="margin-top:10px; background:#fdf7f2; border:1px solid #fadbd8; padding:8px; border-radius:8px;">
-                            <label style="font-size:0.75rem; font-weight:700; color:#c0392b; margin-bottom:0px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="document.getElementById('chkQuemado').click()">
+                            <label style="font-size:0.75rem; font-weight:700; color:#c0392b; margin-bottom:0px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
                                 <span>🔥 Cálculos de Gran Quemado</span>
-                                <input type="checkbox" id="chkQuemado" onchange="window.toggleQuemado()" style="pointer-events:none;">
+                                <input type="checkbox" id="chkQuemado" onchange="window.toggleQuemado()">
                             </label>
                             <div id="quemadoPanel" style="display:none; font-size:0.75rem; margin-top:8px; border-top:1px dashed #fadbd8; padding-top:8px;">
                                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
@@ -340,6 +361,7 @@
                                     GET Base 🎯</span>
                             </label>
 
+
                             <div
                                 style="display:flex; gap:5px; align-items:center; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #eee;">
                                 <input type="radio" name="getBaseline" id="radioTMB" value="tmb" checked
@@ -349,8 +371,12 @@
                                     onchange="calcTMB_OMS()">
                                     <option value="oms">OMS / FAO / UNU</option>
                                     <option value="hb">Harris-Benedict</option>
+                                    <option value="valencia">Valencia (Am. Latina)</option>
+                                    <option value="rozashizgal">Roza y Shizgal</option>
+                                    <option value="owen">Owen</option>
                                     <option value="schofield">Schofield</option>
                                     <option value="msj">Mifflin-St Jeor</option>
+                                    <option value="holliday">Holliday-Segar (Pediátrico)</option>
                                 </select>
                                 <div class="result-badge" id="resTMB">-- kcal</div>
                             </div>
@@ -1442,13 +1468,13 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V3.6
+            // EMERGENCY CACHE PURGE V4.13
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        if (!localStorage.getItem('sw_purged_3.7')) {
+                        if (!localStorage.getItem('sw_purged_4.13')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.06', 'true');
+                            localStorage.setItem('sw_purged_4.13', 'true');
                             window.location.reload();
                         }
                     }
@@ -1459,7 +1485,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.06"></script>
+        <script src="app_core.js?v=4.13"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

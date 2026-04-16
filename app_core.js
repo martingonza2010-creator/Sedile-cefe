@@ -1227,6 +1227,7 @@ function calculateRequirements() {
 
     if (rawPesoIdeal > 0) {
         let pesoIdeal = rawPesoIdeal;
+        p.peso_ideal = pesoIdeal;
 
         // --- AMPUTEE OSTERKAMP CORRECTION ---
         const ampFactor = window.calcAmputations ? window.calcAmputations() : 0;
@@ -1245,6 +1246,32 @@ function calculateRequirements() {
             const ipt = (p.peso / pesoIdeal) * 100;
             const iptVal = ipt.toFixed(1);
             document.getElementById('valIPT').innerText = iptVal + '%';
+            
+            // NEW: Peso Ajustado para Obesos (IPT > 120%) -> Ahora permanente para Adultos
+            const elPesoAjustado = document.getElementById('valPesoAjustado');
+            if (elPesoAjustado) {
+                if (p.type === 'adult') {
+                    const adjW = pesoIdeal + 0.25 * (p.peso - pesoIdeal);
+                    elPesoAjustado.innerText = adjW.toFixed(1) + ' kg';
+                    
+                    if (ipt > 120) {
+                        elPesoAjustado.style.color = '#c0392b'; // Warning rojo
+                    } else {
+                        elPesoAjustado.style.color = '#f39c12'; // Naranja normal
+                    }
+                    p.peso_ajustado = adjW;
+                } else {
+                    elPesoAjustado.innerText = "No aplica";
+                    elPesoAjustado.style.color = '#888';
+                }
+            }
+            
+            // NEW: Superficie Corporal (Mosteller)
+            const elSCT = document.getElementById('valSCT');
+            if (elSCT && p.estatura > 0) {
+                const sctVal = Math.sqrt((p.peso * (p.estatura * 100)) / 3600);
+                elSCT.innerText = sctVal.toFixed(2) + ' m²';
+            }
 
             // IPT Classification Logic V3.22
             const iptClassEl = document.getElementById('valIPTClass');
@@ -1283,6 +1310,16 @@ function calculateRequirements() {
     if (window.evaluateWaist) window.evaluateWaist();
 
     if (p.peso > 0 && p.edad > 0) {
+        // --- Peso de Cálculo Metabólico ---
+        let w = p.peso;
+        const selCalculo = document.getElementById('pesoCalculoSelect')?.value;
+        if (selCalculo === 'ideal' && p.peso_ideal > 0) {
+            w = p.peso_ideal;
+        } else if (selCalculo === 'ajustado' && p.peso_ajustado > 0) {
+            w = p.peso_ajustado;
+        }
+        p.peso_calculo = w; // Store to use in macronutrient goals globally
+
         // --- TMB (OMS/WHO) AUTOMATIC ---
         let bmr = 0;
         let method = document.getElementById('tmbMethod').value;
@@ -1291,61 +1328,97 @@ function calculateRequirements() {
         // FAO/OMS
         if (method === 'oms') {
             if (sexo === 'm') {
-                if (p.edad < 3) bmr = (60.9 * p.peso) - 54;
-                else if (p.edad < 10) bmr = (22.7 * p.peso) + 495;
-                else if (p.edad < 18) bmr = (17.5 * p.peso) + 651;
-                else if (p.edad < 30) bmr = (15.3 * p.peso) + 679;
-                else if (p.edad < 60) bmr = (11.6 * p.peso) + 879;
-                else bmr = (13.5 * p.peso) + 487;
+                if (p.edad < 3) bmr = (60.9 * w) - 54;
+                else if (p.edad < 10) bmr = (22.7 * w) + 495;
+                else if (p.edad < 18) bmr = (17.5 * w) + 651;
+                else if (p.edad < 30) bmr = (15.3 * w) + 679;
+                else if (p.edad < 60) bmr = (11.6 * w) + 879;
+                else bmr = (13.5 * w) + 487;
             } else {
-                if (p.edad < 3) bmr = (61.0 * p.peso) - 51;
-                else if (p.edad < 10) bmr = (22.5 * p.peso) + 499;
-                else if (p.edad < 18) bmr = (12.2 * p.peso) + 746;
-                else if (p.edad < 30) bmr = (14.7 * p.peso) + 496;
-                else if (p.edad < 60) bmr = (8.7 * p.peso) + 829;
-                else bmr = (10.5 * p.peso) + 596;
+                if (p.edad < 3) bmr = (61.0 * w) - 51;
+                else if (p.edad < 10) bmr = (22.5 * w) + 499;
+                else if (p.edad < 18) bmr = (12.2 * w) + 746;
+                else if (p.edad < 30) bmr = (14.7 * w) + 496;
+                else if (p.edad < 60) bmr = (8.7 * w) + 829;
+                else bmr = (10.5 * w) + 596;
             }
         }
         // Harris-Benedict (Original 1919 Clásica)
         else if (method === 'hb') {
             if (sexo === 'm') {
-                bmr = 66.47 + (13.75 * p.peso) + (5.0 * cm) - (6.75 * p.edad);
+                bmr = 66.47 + (13.75 * w) + (5.0 * cm) - (6.75 * p.edad);
             } else {
-                bmr = 655.09 + (9.56 * p.peso) + (1.84 * cm) - (4.67 * p.edad);
+                bmr = 655.09 + (9.56 * w) + (1.84 * cm) - (4.67 * p.edad);
             }
         }
         // Schofield (1985)
         else if (method === 'schofield') {
             if (sexo === 'm') {
-                if (p.edad < 3) bmr = (0.167 * p.peso) + (15.174 * p.estatura) - 0.6176;
-                else if (p.edad < 10) bmr = (19.59 * p.peso) + (130.3 * p.estatura) + 414.9;
-                else if (p.edad < 18) bmr = (16.25 * p.peso) + (137.2 * p.estatura) + 515.5;
-                else if (p.edad < 30) bmr = (15.057 * p.peso) + (692.6 * p.estatura) + 655.8; // Changed slightly due to units, standard is W+H
-                else if (p.edad < 60) bmr = (11.472 * p.peso) + (873.1 * p.estatura) + 864; // Approximation
-                else bmr = (11.711 * p.peso) + (587.7 * p.estatura) + 597;
+                if (p.edad < 3) bmr = (0.167 * w) + (15.174 * p.estatura) - 0.6176;
+                else if (p.edad < 10) bmr = (19.59 * w) + (130.3 * p.estatura) + 414.9;
+                else if (p.edad < 18) bmr = (16.25 * w) + (137.2 * p.estatura) + 515.5;
+                else if (p.edad < 30) bmr = (15.057 * w) + (692.6 * p.estatura) + 655.8;
+                else if (p.edad < 60) bmr = (11.472 * w) + (873.1 * p.estatura) + 864;
+                else bmr = (11.711 * w) + (587.7 * p.estatura) + 597;
             } else {
-                // Females roughly
-                if (p.edad < 3) bmr = (16.25 * p.peso) + (1023.2 * p.estatura) - 413.5;
-                else if (p.edad < 10) bmr = (16.969 * p.peso) + (161.8 * p.estatura) + 371.2;
-                else if (p.edad < 18) bmr = (8.365 * p.peso) + (465 * p.estatura) + 200;
-                else if (p.edad < 30) bmr = (13.623 * p.peso) + (283 * p.estatura) + 98;
-                else if (p.edad < 60) bmr = (10.996 * p.peso) + (207.4 * p.estatura) + 795;
-                else bmr = (9.082 * p.peso) + (305.6 * p.estatura) + 746;
+                if (p.edad < 3) bmr = (16.25 * w) + (1023.2 * p.estatura) - 413.5;
+                else if (p.edad < 10) bmr = (16.969 * w) + (161.8 * p.estatura) + 371.2;
+                else if (p.edad < 18) bmr = (8.365 * w) + (465 * p.estatura) + 200;
+                else if (p.edad < 30) bmr = (13.623 * w) + (283 * p.estatura) + 98;
+                else if (p.edad < 60) bmr = (10.996 * w) + (207.4 * p.estatura) + 795;
+                else bmr = (9.082 * w) + (305.6 * p.estatura) + 746;
             }
+        }
+        // Valencia (América Latina)
+        else if (method === 'valencia') {
+            if (sexo === 'm') {
+                if (p.edad < 30) bmr = (13.37 * w) + 747;
+                else if (p.edad < 60) bmr = (11.02 * w) + 679;
+                else bmr = (10.92 * w) + 510;
+            } else {
+                if (p.edad < 30) bmr = (11.02 * w) + 679;
+                else if (p.edad < 60) bmr = (10.92 * w) + 510;
+                else bmr = (10.98 * w) + 520;
+            }
+        }
+        // Roza y Shizgal (Harris-Benedict Revisada 1984)
+        else if (method === 'rozashizgal') {
+            if (sexo === 'm') {
+                bmr = 88.362 + (13.397 * w) + (4.799 * cm) - (5.677 * p.edad);
+            } else {
+                bmr = 447.593 + (9.247 * w) + (3.098 * cm) - (4.330 * p.edad);
+            }
+        }
+        // Owen (1986)
+        else if (method === 'owen') {
+            if (sexo === 'm') {
+                bmr = 879 + (10.2 * w);
+            } else {
+                bmr = 795 + (7.18 * w);
+            }
+        }
+        // Holliday-Segar (Pediatría Hídrica/Metabólica)
+        else if (method === 'holliday') {
+            if (w <= 10) bmr = 100 * w;
+            else if (w <= 20) bmr = 1000 + (50 * (w - 10));
+            else bmr = 1500 + (20 * (w - 20));
         }
         // Mifflin-St Jeor
         else if (method === 'msj') {
             if (sexo === 'm') {
-                bmr = (10 * p.peso) + (6.25 * cm) - (5 * p.edad) + 5;
+                bmr = (10 * w) + (6.25 * cm) - (5 * p.edad) + 5;
             } else {
-                bmr = (10 * p.peso) + (6.25 * cm) - (5 * p.edad) - 161;
+                bmr = (10 * w) + (6.25 * cm) - (5 * p.edad) - 161;
             }
         }
 
         const isQuemado = document.getElementById('chkQuemado')?.checked && p.peso > 0;
         const scqPercent = parseFloat(document.getElementById('scqPercent')?.value) || 0;
         let finalTMT = bmr * p.actividad * p.estres;
-        let eqName = "(TMB × FA × FE)";
+        let eqName = "(TMB";
+        if (p.actividad !== 1.0) eqName += " × FA";
+        if (p.estres !== 1.0) eqName += " × FE";
+        eqName += ")";
 
         if (isQuemado && scqPercent > 0) {
             if (p.type === 'pediatric' || p.type === 'neonate') {
@@ -3961,7 +4034,7 @@ function initGoalMacroChart() {
 }
 
 function updateMacroGoals() {
-    const peso = AppState.patient.peso || 0;
+    const peso = AppState.patient.peso_calculo || AppState.patient.peso || 0;
     const getTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
 
     const valP = parseFloat(document.getElementById('goalProtKg')?.value) || 0;
