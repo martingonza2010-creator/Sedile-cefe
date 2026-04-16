@@ -464,11 +464,11 @@
                         <h3 style="font-size:0.9rem;">📈 Evolución Clínica</h3>
                     </div>
                     <div
-                        style="padding: 8px; background: white; border-radius: 12px;">
-                        <div style="position: relative; height: 160px; width: 100%;">
+                        style="padding: 5px 8px; background: white; border-radius: 12px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);">
+                        <div style="position: relative; height: 110px; width: 100%;">
                             <canvas id="evolutionChart"></canvas>
                         </div>
-                        <p style="text-align:center; font-size:0.7rem; color:#888; font-style:italic; margin-top:5px; margin-bottom:0;">
+                        <p style="text-align:center; font-size:0.65rem; color:#888; font-style:italic; margin-top:2px; margin-bottom:0;">
                             Peso (últimos 5 reg) de <strong id="lblChartPatientName">--</strong>
                         </p>
                     </div>
@@ -1417,7 +1417,7 @@
                     for (let registration of registrations) {
                         if (!localStorage.getItem('sw_purged_3.7')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.03', 'true');
+                            localStorage.setItem('sw_purged_4.04', 'true');
                             window.location.reload();
                         }
                     }
@@ -1428,7 +1428,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.03"></script>
+        <script src="app_core.js?v=4.04"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
