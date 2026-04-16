@@ -146,18 +146,22 @@ let goalChartInstance = null; // Global chart instance
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("🚀 SEDILE HRA: DOMContentLoaded initialized");
 
-    // --- AUTH LISTENER V4.29 (Robust Login) ---
-    supabaseClient.auth.onAuthStateChange((event, session) => {
+    // --- AUTH REFACTOR V4.30 (Centralized) ---
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
         console.log("🔑 Auth Event:", event);
         if (session) {
             AppState.user = session.user;
-            showApp();
-        } else if (event === 'SIGNED_OUT') {
-            showLogin();
+            await showApp();
+        } else if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
+            const { data } = await supabaseClient.auth.getSession();
+            if (data.session) {
+                AppState.user = data.session.user;
+                await showApp();
+            } else {
+                showLogin();
+            }
         }
     });
-
-    checkUser();
 
     const btnLogin = document.getElementById('btnLoginGoogle');
     if (btnLogin) btnLogin.onclick = login;
@@ -296,11 +300,24 @@ async function logout() {
 }
 
 function showApp() {
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('main-app').style.display = 'block';
-    const name = AppState.user.user_metadata.full_name || 'Usuario';
-    const shortName = name.split(' ')[0]; // Take first name only for cleaner look
-    document.getElementById('userNameDisplay').innerHTML = `Nutricionista <b>${name}</b>`;
+    try {
+        const authScreen = document.getElementById('auth-screen');
+        const mainApp = document.getElementById('main-app');
+        if (!authScreen || !mainApp) return;
+
+        authScreen.style.display = 'none';
+        mainApp.style.display = 'block';
+
+        if (AppState.user && AppState.user.user_metadata) {
+            const name = AppState.user.user_metadata.full_name || AppState.user.email || 'Usuario';
+            const displayEl = document.getElementById('userNameDisplay');
+            if (displayEl) {
+                displayEl.innerHTML = `Nutricionista <b>${name}</b>`;
+            }
+        }
+    } catch (err) {
+        console.error("🔴 Error displaying App:", err);
+    }
 }
 
 function showLogin() {
