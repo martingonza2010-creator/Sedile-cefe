@@ -1253,7 +1253,7 @@ function calculateRequirements() {
             const elPesoAjustado = document.getElementById('valPesoAjustado');
             if (elPesoAjustado) {
                 if (p.type === 'adult') {
-                    const adjW = pesoIdeal + 0.25 * (p.peso - pesoIdeal);
+                    const adjW = pesoIdeal + 0.40 * (p.peso - pesoIdeal);
                     elPesoAjustado.innerText = adjW.toFixed(1) + ' kg';
                     
                     if (ipt > 120) {
