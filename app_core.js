@@ -450,7 +450,12 @@ function initPatientLogic() {
 
                 if (!error) {
                     showToast("✅ Ficha completa guardada en historial");
-                    loadHistoryList(); // Changed from loadHistory to loadHistoryList
+                    window.loadHistoryList(false); // Changed from loadHistory to loadHistoryList
+                    
+                    if (typeof updatePatientEvolutionChart === 'function') {
+                        updatePatientEvolutionChart(nombre);
+                    }
+
                     btn.innerHTML = `<span>✔</span> ¡Guardado!`;
                     setTimeout(() => {
                         btn.disabled = false;
@@ -550,22 +555,8 @@ window.loadHistoryList = async (showPapelera = false) => {
         await supabaseClient.from('pacientes').delete().eq('id', id);
     });
 
-    // Draw Chart for the most recent active patient name
-    const chartContainerE = document.getElementById('chartContainer');
-    if (!showPapelera && showRecords.length > 0) {
-        const topPatient = showRecords[0];
-        const history = records.filter(p => p.nombre === topPatient.nombre && p.estado_sala !== 'eliminado').slice(0, 5).reverse();
-
-        if (chartContainerE) {
-            if (history.length > 1) {
-                chartContainerE.style.display = 'block';
-                renderEvolutionChart(history);
-            } else {
-                chartContainerE.style.display = 'none';
-            }
-        }
-    } else if (chartContainerE) {
-        chartContainerE.style.display = 'none';
+    if (chartContainerE) {
+        chartContainerE.style.display = 'none'; // Ensure it's hidden from history view if it was left there
     }
 
     if (showRecords.length === 0) {
@@ -586,17 +577,9 @@ window.loadHistoryList = async (showPapelera = false) => {
     const uniqueDisplay = Array.from(mapUniques.values());
 
     let html = '';
-    
-    // EXTREME DEBUG MODE FOR MARTIN
-    html += `<div style="padding:10px; background:#222; color:#0f0; font-family:monospace; font-size:10px; overflow:auto; max-height:200px; margin-bottom:15px; border-radius:5px;">
-        DEBUG VER: 4.0<br>
-        SHOWING: ${showPapelera ? 'TRASH' : 'ACTIVE'}<br>
-        RECORDS FETCHED: ${records ? records.length : 0}<br>
-        FIRST 3 RECORDS RAW DATA:<br>
-        ${(records || []).slice(0, 3).map(r => JSON.stringify({id: r.id, nom: r.nombre, est: r.estado_sala})).join('<br>')}
-    </div>`;
 
     uniqueDisplay.forEach(r => {
+
         const dateStr = new Date(r.created_at).toLocaleDateString('es-CL');
         if (showPapelera) {
             html += `
@@ -1111,6 +1094,35 @@ window.loadPatient = async (id) => {
         }
 
         document.getElementById('historyModal').classList.remove('active');
+        
+        // --- NEW: Update Evolution Chart for loaded patient
+        if (typeof window.updatePatientEvolutionChart === 'function') {
+            window.updatePatientEvolutionChart(data.nombre);
+        }
+    }
+};
+
+window.updatePatientEvolutionChart = async (nombre) => {
+    if (!nombre || nombre.trim() === "") return;
+    const chartContainerE = document.getElementById('chartContainer');
+    if (!chartContainerE) return;
+
+    const { data: records, error } = await supabaseClient
+        .from('pacientes')
+        .select('*, metadata')
+        .eq('user_id', AppState.user.id)
+        .eq('nombre', nombre)
+        .neq('estado_sala', 'eliminado')
+        .order('created_at', { ascending: false });
+
+    if (!error && records && records.length > 1) {
+        const history = records.slice(0, 5).reverse();
+        chartContainerE.style.display = 'block';
+        const lbl = document.getElementById('lblChartPatientName');
+        if (lbl) lbl.innerText = nombre;
+        if (typeof renderEvolutionChart === 'function') renderEvolutionChart(history);
+    } else {
+        chartContainerE.style.display = 'none';
     }
 };
 

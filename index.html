@@ -434,6 +434,20 @@
                     </form>
                 </section>
 
+                <!-- NEW V4.02: Evolución Clínica (Moved from History) -->
+                <section class="card module-card" id="chartContainer"
+                    style="display:none; border-left-color: #f39c12; margin-bottom:15px;">
+                    <div class="module-head">
+                        <h3>📈 Evolución Clínica</h3>
+                    </div>
+                    <div style="padding: 10px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <canvas id="evolutionChart" width="400" height="200"></canvas>
+                        <p style="text-align:center; font-size:0.75rem; color:#888; font-style:italic; margin-top:8px;">
+                            Progreso de peso (Últimos 5 registros) de <strong id="lblChartPatientName">--</strong>
+                        </p>
+                    </div>
+                </section>
+
                 <!-- NEW: Hydration Card -->
                 <section class="card hydration-card" style="border-left: 5px solid #3498db;">
                     <div class="card-header" style="margin-bottom:10px;">
@@ -1241,12 +1255,6 @@
                         días)</button>
                 </div>
                 <div class="history-list" id="historyContainer">
-                    <div id="chartContainer"
-                        style="display:none; margin-bottom: 20px; padding: 10px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                        <canvas id="evolutionChart" width="400" height="200"></canvas>
-                        <p style="text-align:center; font-size:0.7rem; color:#888; margin-top:5px;">Evolución de Peso
-                            (Últimos 5 registros)</p>
-                    </div>
                     <div id="patientListContainer">
                         <p style="text-align:center; opacity:0.6;">Cargando tus registros...</p>
                     </div>
@@ -1373,7 +1381,7 @@
                     for (let registration of registrations) {
                         if (!localStorage.getItem('sw_purged_3.7')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.01', 'true');
+                            localStorage.setItem('sw_purged_4.02', 'true');
                             window.location.reload();
                         }
                     }
@@ -1384,7 +1392,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.01"></script>
+        <script src="app_core.js?v=4.02"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
