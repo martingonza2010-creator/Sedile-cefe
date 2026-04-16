@@ -4330,7 +4330,10 @@ function initGoalMacroChart() {
 
 function updateMacroGoals() {
     const p = AppState.patient || {};
-    const peso = p.peso_calculo || p.peso || 0;
+    // Robust weight detection
+    const inputPeso = document.getElementById('peso');
+    const peso = parseFloat(inputPeso ? inputPeso.value : 0) || p.peso_calculo || p.peso || 0;
+    
     const getTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
 
     const valP = parseFloat(document.getElementById('goalProtKg')?.value) || 0;
@@ -4340,7 +4343,8 @@ function updateMacroGoals() {
     let gProt = 0, gCHO = 0, gLip = 0;
     let pctP = 0, pctC = 0, pctL = 0;
 
-    const effectiveGoal = getTotal || p.tmt_calculated || 0;
+    // Use Goal Total or calculated GET as fallback for % calculation
+    const effectiveGoal = getTotal || p.tmt_calculated || parseFloat(document.getElementById('valGET')?.innerText) || 2000;
 
     if (macroGoalMode === 'gkg') {
         gProt = valP * peso;
