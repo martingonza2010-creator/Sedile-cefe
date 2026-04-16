@@ -335,16 +335,16 @@ function initHistoryModal() {
         window.loadHistoryList(false); // Changed from loadHistory to loadHistoryList
     };
     if (btnClose) btnClose.onclick = () => modal.classList.remove('active');
-    
+
     // EXPLICIT UI FIX: attach directly to tabs to avoid iOS onclick bugs
     const tabActivos = document.getElementById('tabHistActivos');
     const tabPapelera = document.getElementById('tabHistPapelera');
-    if (tabActivos) tabActivos.addEventListener('click', (e) => { 
-        e.preventDefault(); 
+    if (tabActivos) tabActivos.addEventListener('click', (e) => {
+        e.preventDefault();
         window.loadHistoryList(false);
     });
-    if (tabPapelera) tabPapelera.addEventListener('click', (e) => { 
-        e.preventDefault(); 
+    if (tabPapelera) tabPapelera.addEventListener('click', (e) => {
+        e.preventDefault();
         window.loadHistoryList(true);
     });
 }
@@ -450,7 +450,7 @@ function initPatientLogic() {
 
                 if (!error) {
                     showToast("✅ Ficha completa guardada en historial");
-                    window.loadHistoryList(false); // Changed from loadHistory to loadHistoryList
+                    window.loadHistoryList(false);
                     
                     if (typeof updatePatientEvolutionChart === 'function') {
                         updatePatientEvolutionChart(nombre);
@@ -499,7 +499,7 @@ window.loadHistoryList = async (showPapelera = false) => {
 
     const { data: records, error } = await supabaseClient
         .from('pacientes')
-        .select('*, metadata') 
+        .select('*, metadata')
         .eq('user_id', AppState.user.id)
         .order('created_at', { ascending: false });
 
@@ -555,8 +555,10 @@ window.loadHistoryList = async (showPapelera = false) => {
         await supabaseClient.from('pacientes').delete().eq('id', id);
     });
 
-    if (chartContainerE) {
-        chartContainerE.style.display = 'none'; // Ensure it's hidden from history view if it was left there
+    const chartContainerE = document.getElementById('chartContainer');
+    if (chartContainerE && window.getComputedStyle(chartContainerE.parentElement).display === 'flex') {
+        // Only hide it if it's somehow left in the old flex container, 
+        // though it shouldn't be since we moved it.
     }
 
     if (showRecords.length === 0) {
@@ -768,24 +770,24 @@ window.deletePatient = async (id) => {
         showToast("🗑️ Paciente movido a la papelera");
         if (typeof window.loadHistoryList === 'function') window.loadHistoryList(false);
         if (typeof loadWardKanban === 'function') loadWardKanban();
-        
+
         // Deseleccionar paciente de la calculadora activa si coincide el nombre
         const currentName = document.getElementById('nombre')?.value || "";
         if (currentName.trim() === p.nombre.trim()) {
-             AppState.patient.id = null;
-             document.getElementById('nombre').value = "";
-             document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
-             const avatar = document.getElementById('currentPatientAvatar');
-             if (avatar) avatar.innerText = "P";
-             const bmi = document.getElementById('valBMI');
-             if (bmi) bmi.innerText = "--";
+            AppState.patient.id = null;
+            document.getElementById('nombre').value = "";
+            document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
+            const avatar = document.getElementById('currentPatientAvatar');
+            if (avatar) avatar.innerText = "P";
+            const bmi = document.getElementById('valBMI');
+            if (bmi) bmi.innerText = "--";
         }
     }
 };
 
 window.hardDeletePatient = async (id, skipConfirm = false) => {
     if (!skipConfirm && !confirm("¿Eliminar PERMANENTEMENTE a este paciente de la base de datos?")) return;
-    
+
     // Fetch the patient name to delete all grouped rows
     const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
     if (fetchErr || !p) {
@@ -797,15 +799,15 @@ window.hardDeletePatient = async (id, skipConfirm = false) => {
     if (!error) {
         window.loadHistoryList(false); // Reload normal history instead of jumping to Trash
         if (typeof loadWardKanban === 'function') loadWardKanban();
-        
+
         // Limpiar visor activo
         const currentName = document.getElementById('nombre')?.value || "";
         if (currentName.trim() === p.nombre.trim()) {
-             AppState.patient.id = null;
-             document.getElementById('nombre').value = "";
-             document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
-             if (document.getElementById('currentPatientAvatar')) document.getElementById('currentPatientAvatar').innerText = "P";
-             if (document.getElementById('valBMI')) document.getElementById('valBMI').innerText = "--";
+            AppState.patient.id = null;
+            document.getElementById('nombre').value = "";
+            document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
+            if (document.getElementById('currentPatientAvatar')) document.getElementById('currentPatientAvatar').innerText = "P";
+            if (document.getElementById('valBMI')) document.getElementById('valBMI').innerText = "--";
         }
     } else {
         alert("Error de Supabase al Eliminar (probablemente te falta la Política RLS de DELETE): " + error.message);
@@ -903,7 +905,7 @@ async function generateShiftHandoff() {
     const activeMap = new Map();
     patients.forEach(p => {
         if (p.estado_sala === 'de_alta' || p.estado_sala === 'eliminado') return;
-        
+
         if (!activeMap.has(p.nombre) || new Date(p.created_at) > new Date(activeMap.get(p.nombre).created_at)) {
             activeMap.set(p.nombre, p);
         }
@@ -1095,17 +1097,17 @@ window.loadPatient = async (id) => {
 
         document.getElementById('historyModal').classList.remove('active');
         
-        // --- NEW: Update Evolution Chart for loaded patient
-        if (typeof window.updatePatientEvolutionChart === 'function') {
-            window.updatePatientEvolutionChart(data.nombre);
+        // Update Chart for loaded patient (nuevo panel en cálculo)
+        if (typeof updatePatientEvolutionChart === 'function') {
+            updatePatientEvolutionChart(data.nombre);
         }
     }
 };
 
 window.updatePatientEvolutionChart = async (nombre) => {
-    if (!nombre || nombre.trim() === "") return;
-    const chartContainerE = document.getElementById('chartContainer');
-    if (!chartContainerE) return;
+    if (!nombre) return;
+    const chartSection = document.getElementById('chartContainer');
+    if (!chartSection) return;
 
     const { data: records, error } = await supabaseClient
         .from('pacientes')
@@ -1117,12 +1119,12 @@ window.updatePatientEvolutionChart = async (nombre) => {
 
     if (!error && records && records.length > 1) {
         const history = records.slice(0, 5).reverse();
-        chartContainerE.style.display = 'block';
+        chartSection.style.display = 'block';
         const lbl = document.getElementById('lblChartPatientName');
         if (lbl) lbl.innerText = nombre;
         if (typeof renderEvolutionChart === 'function') renderEvolutionChart(history);
     } else {
-        chartContainerE.style.display = 'none';
+        chartSection.style.display = 'none';
     }
 };
 
@@ -1171,7 +1173,7 @@ function calculateRequirements() {
         let m = p.exactMonths || 0;
         const d = (p.evalParts || p.ageParts || {}).d || 0;
         const cm = p.estatura > 3 ? p.estatura : p.estatura * 100;
-        
+
         const isUnderOne = (y === 0 && (m < 11 || (m === 11 && d <= 14)));
         let zWFH = null;
         if (cm > 0 && p.peso > 0) {
@@ -1191,7 +1193,7 @@ function calculateRequirements() {
             // Lactantes regulares (< 1 año)
             rawPesoIdeal = getLMSMedian('wfa', m, p.sexo);
         }
-        
+
         if (rawPesoIdeal) {
             document.getElementById('valIdealWeight').innerText = rawPesoIdeal.toFixed(1) + ' kg*';
         } else {
@@ -1207,7 +1209,7 @@ function calculateRequirements() {
 
     if (rawPesoIdeal > 0) {
         let pesoIdeal = rawPesoIdeal;
-        
+
         // --- AMPUTEE OSTERKAMP CORRECTION ---
         const ampFactor = window.calcAmputations ? window.calcAmputations() : 0;
         const ampContainer = document.getElementById('ampWeightAdjContainer');
@@ -1357,13 +1359,13 @@ window.togglePatientMode = () => {
     document.getElementById('colEdad').style.display = mode === 'adult' ? 'block' : 'none';
     document.getElementById('rowPediatric').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'flex' : 'none';
     document.getElementById('rowNeonate').style.display = mode === 'neonate' ? 'flex' : 'none';
-    
+
     const fortPanel = document.getElementById('fortifierNeonatePanel');
     if (fortPanel) fortPanel.style.display = mode === 'neonate' ? 'block' : 'none';
-    
+
     const rowSpec = document.getElementById('rowSpecialPopulations');
     if (rowSpec) rowSpec.style.display = mode === 'pediatric' ? 'flex' : 'none';
-    
+
     document.getElementById('pediatricAssessmentResults').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
 
     const iwRow = document.getElementById('valIdealWeight')?.parentElement?.parentElement;
@@ -1375,7 +1377,7 @@ window.togglePatientMode = () => {
 window.calculatePediatricAge = () => {
     const fn = document.getElementById('fechaNacimiento').value;
     if (!fn) return;
-    
+
     // Fix TimeZone offset issues by parsing the date string directly
     const [y, mm, d] = fn.split('-');
     const birth = new Date(y, mm - 1, d);
@@ -1421,7 +1423,7 @@ window.calculatePediatricAge = () => {
     AppState.patient.exactMonths = evalMonths;
     AppState.patient.ageParts = { y: years, m: months, d: days };
     AppState.patient.evalParts = { y: evalY, m: evalM, d: days };
-    
+
     calculateRequirements();
 };
 
@@ -1471,9 +1473,9 @@ function getLMSMedian(indicator, keyVal, sexo) {
             [_, L, M, S] = upper;
         } else {
             for (let i = 0; i < table.length - 1; i++) {
-                if (keyVal >= table[i][0] && keyVal <= table[i+1][0]) {
+                if (keyVal >= table[i][0] && keyVal <= table[i + 1][0]) {
                     lower = table[i];
-                    upper = table[i+1];
+                    upper = table[i + 1];
                     break;
                 }
             }
@@ -1550,9 +1552,9 @@ function getZScore(indicator, keyVal, sexo, obs) {
             [_, L, M, S] = upper;
         } else {
             for (let i = 0; i < table.length - 1; i++) {
-                if (keyVal >= table[i][0] && keyVal <= table[i+1][0]) {
+                if (keyVal >= table[i][0] && keyVal <= table[i + 1][0]) {
                     lower = table[i];
-                    upper = table[i+1];
+                    upper = table[i + 1];
                     break;
                 }
             }
@@ -1618,15 +1620,15 @@ function renderPediatricZScores() {
 
         if (textOverride === null) {
             if (z === null || isNaN(z)) return '';
-            
+
             // Adjusting to match printed MINSAL tables rounding
             const absZ = Math.round(z * 100) / 100;
-            
+
             if (absZ >= 1.99) { color = '#e74c3c'; diag = '+2 DE'; }
             else if (absZ >= 0.99) { color = '#f39c12'; diag = '+1 DE'; }
             else if (absZ <= -1.99) { color = '#c0392b'; diag = '-2 DE'; }
             else if (absZ <= -0.99) { color = '#e67e22'; diag = '-1 DE'; }
-            
+
             displayVal = `${z > 0 ? '+' : ''}${z.toFixed(2)}`;
         } else {
             diag = '★'; // Special star for string-based badges
@@ -1648,12 +1650,12 @@ function renderPediatricZScores() {
         const dias = parseInt(document.getElementById('egDias').value) || 0;
         const wGrams = p.peso * 1000;
         const cm = p.estatura > 3 ? p.estatura : p.estatura * 100;
-        
+
         let clasD = 'Sin Datos';
         let clasColor = '#95a5a6';
         let ipDiag = null;
         let isPeg = false;
-        
+
         if (sem >= 24 && sem <= 42 && window.PITTALUGA_DATA) {
             if (p.peso > 0) {
                 const wRefs = window.PITTALUGA_DATA.peso[sem];
@@ -1669,10 +1671,10 @@ function renderPediatricZScores() {
             } else {
                 clasD = 'Falta Peso';
             }
-            
+
             if (isPeg && p.peso > 0 && cm > 0) {
                 const ipVal = (wGrams / Math.pow(cm, 3)) * 100;
-                
+
                 if (ipVal >= 2.2) {
                     ipDiag = `Simétrico (IP: ${ipVal.toFixed(2)})`;
                     clasColor = '#f39c12';
@@ -1689,7 +1691,7 @@ function renderPediatricZScores() {
         } else if (sem > 0) {
             clasD = '< 24 sem';
         }
-        
+
         let printClas = clasD;
         if (ipDiag !== null) {
             printClas = `<div style="line-height:1.2;"><b>${clasD}</b><br><span style="font-size:0.6rem; color:#fff; background:rgba(0,0,0,0.2); padding:2px 4px; border-radius:4px;">${ipDiag}</span></div>`;
@@ -1724,12 +1726,12 @@ function renderPediatricZScores() {
                 } else {
                     let d = correctedDays;
                     if (d >= 349.8 && d < 365.25) d = 365.25;
-                    
+
                     const cYears = Math.floor(d / 365.25);
                     const r = d % 365.25;
                     const cMonths = Math.floor(r / 30.4375);
                     const finalDays = Math.floor(r % 30.4375);
-                    
+
                     if (cMonths === 0) {
                         corrString = `${cYears} Año${finalDays > 0 ? `, ${finalDays}d` : ''}`;
                     } else {
@@ -1755,7 +1757,7 @@ function renderPediatricZScores() {
 
         let diagWeight = '';
         let diagWColor = '#888';
-        
+
         let evaluatedBy = '';
         if (isUnderOne) {
             const zPT = (zWFH !== null && !isNaN(zWFH)) ? zWFH : null;
@@ -1801,7 +1803,7 @@ function renderPediatricZScores() {
         if (m <= 60 && zWFH !== null && !isNaN(zWFH)) html += makeBadge('P/T (Peso/Talla)', zWFH);
         if (m > 60 && zBMI !== null && !isNaN(zBMI)) html += makeBadge('IMC/E', zBMI);
         html += ccBadge;
-        
+
         if (diagWeight || diagHeight) {
             html += `<div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:6px; margin-top:8px;">`;
             if (diagWeight) {
@@ -1819,7 +1821,7 @@ function renderPediatricZScores() {
                             <span style="font-size:0.9rem;">${diagHeight}</span>
                          </div>`;
             }
-            
+
             // 3. Cintura Diagnosis
             const cInp = parseFloat(document.getElementById('ccintura')?.value) || 0;
             if (cInp > 0 && y >= 5 && y <= 19) {
@@ -1831,7 +1833,7 @@ function renderPediatricZScores() {
                     let waColor = '#27ae60';
                     if (cInp >= ageData.p90) { diagWaist = 'Obesidad Abdominal (≥ p90)'; waColor = '#c0392b'; }
                     else if (cInp >= ageData.p75) { diagWaist = 'Riesgo Obesidad Adb. (≥ p75)'; waColor = '#f39c12'; }
-                    
+
                     html += `<div style="background:${waColor}15; border-left:4px solid ${waColor}; padding:8px; border-radius:4px; font-weight:700; color:${waColor}; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
                                 <span>⭕ Perímetro Cintura</span>
                                 <span style="font-size:0.9rem;">${diagWaist}</span>
@@ -1866,7 +1868,7 @@ function renderPediatricZScores() {
             else if (zHC >= +2.0) { diag = '<br><span style="font-size:0.6rem">⚠️ Macrocefalia</span>'; color = '#c0392b'; }
             html += makeBadge('Perím. Cefálico', null, `Z: ${zHC > 0 ? '+' : ''}${zHC.toFixed(2)}${diag}`, color);
         } else {
-             html += makeBadge('Perím. Cefálico', null, `${pcInput} cm (Sin Ref)`, '#95a5a6');
+            html += makeBadge('Perím. Cefálico', null, `${pcInput} cm (Sin Ref)`, '#95a5a6');
         }
     }
 
@@ -2161,7 +2163,7 @@ function runSimulation() {
             const fortGrams = baseVolForFM85 * (fortPct / 100);
             const fgInput = document.getElementById('fortifierGrams');
             if (fgInput) fgInput.value = fortGrams.toFixed(1);
-            
+
             // FM85 Macros per 100g: 348 kcal, 20g Prot, 66.4g CHO
             k += (fortGrams * 348 / 100);
             p += (fortGrams * 20 / 100);
@@ -2338,7 +2340,7 @@ function runSimulation() {
             else if (pt >= 3.2 && pt <= 4.2) { ptColor = '#27ae60'; ptL = 'Rango Crítico (UCIN)'; }
             else if (pt > 4.5) { ptColor = '#c0392b'; ptL = '⚠️ Sobrecarga Renal'; }
             else { ptColor = '#2980b9'; ptL = 'Límite Superior'; }
-            
+
             proTracker.innerHTML = `
                 <div style="margin-top:10px; margin-bottom:10px; background:${ptColor}10; border:2px dashed ${ptColor}; padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                     <div style="font-weight:700; color:${ptColor}; font-size:1rem;">
@@ -2368,7 +2370,7 @@ function initInfusionLogic() {
     }
 
     // Bind inputs to global scope since we referenced it inline
-    window.calcInfusion = function() {
+    window.calcInfusion = function () {
         // We listen to the main prescribed volume! 
         const totalVolPrescrito = parseFloat(document.getElementById('volume').value) || 0;
         const rate = parseFloat(document.getElementById('infusionRate').value) || 0;
@@ -2397,7 +2399,7 @@ function initInfusionLogic() {
 
         if (rate > 0 && sachetStartStr) {
             resBox.style.display = 'flex';
-            
+
             let volToPass = totalVolPrescrito;
             if (rthObj) volToPass = rthObj.volBase || 1000;
 
@@ -2420,51 +2422,51 @@ function initInfusionLogic() {
             const mins = Math.round((durationHrs - hrs) * 60);
             sachetDurDisplay = `(${hrs}h ${mins}m)`;
         } else if (rthObj && totalVolPrescrito > 0) {
-            resBox.style.display = 'flex'; 
+            resBox.style.display = 'flex';
         } else {
             resBox.style.display = 'none';
         }
 
         valEnd.innerText = sachetEndStrDisplay;
         valDur.innerText = sachetDurDisplay;
-        
+
         // --- 2. SEDILE CEFE Logistics Recommendation ---
         const calcTotalVol = totalVolPrescrito > 0 ? totalVolPrescrito : (rate * 24);
-        
+
         if (calcTotalVol > 0 && rate > 0) {
             const bottleVol = rthObj?.volBase || 1000;
             const envasesNedded = Math.ceil(calcTotalVol / bottleVol);
-            
+
             let currentSachetWarningStr = '';
             if (sachetEndDate) {
                 const hourEnds = sachetEndDate.getHours();
                 if (hourEnds >= 18 || hourEnds < 8) {
-                    currentSachetWarningStr = `<div style="margin-top:6px; color:#c0392b;">⚠️ <b>Riesgo Quiebre Nocturno:</b> El RTH actual acaba a las ${sachetEndDate.getHours().toString().padStart(2,'0')}:${sachetEndDate.getMinutes().toString().padStart(2,'0')}. Analiza garantizar el stock de reemplazo hoy a las 18:00.</div>`;
+                    currentSachetWarningStr = `<div style="margin-top:6px; color:#c0392b;">⚠️ <b>Riesgo Quiebre Nocturno:</b> El RTH actual acaba a las ${sachetEndDate.getHours().toString().padStart(2, '0')}:${sachetEndDate.getMinutes().toString().padStart(2, '0')}. Analiza garantizar el stock de reemplazo hoy a las 18:00.</div>`;
                 }
             }
-            
+
             let cycleStr = '';
             let planesText = `<span style="opacity:0.8; font-style:italic;">(Ingresa una 'Hora de Instalación' y una 'Velocidad' para calcular la logística SEDILE de 24 hrs)</span>`;
 
             if (sachetStartStr && rate > 0) {
                 const [cH, cM] = sachetStartStr.split(':').map(Number);
                 const cycleDurHrs = totalVolPrescrito / rate;
-                
+
                 if (!isNaN(cycleDurHrs) && isFinite(cycleDurHrs)) {
                     const cNow = new Date();
                     cNow.setHours(cH, cM, 0, 0);
                     const cEndDate = new Date(cNow.getTime() + (cycleDurHrs * 3600 * 1000));
-                    cycleStr = ` | Fin Ciclo 24H: <b style="color:var(--primary);">${cEndDate.getHours().toString().padStart(2,'0')}:${cEndDate.getMinutes().toString().padStart(2,'0')}</b>`;
+                    cycleStr = ` | Fin Ciclo 24H: <b style="color:var(--primary);">${cEndDate.getHours().toString().padStart(2, '0')}:${cEndDate.getMinutes().toString().padStart(2, '0')}</b>`;
                 }
 
                 // SECRETO LOGISTICO SEDILE: Calcular splits 14h / 18h
                 let count14 = 0;
                 let count18 = 0;
-                
+
                 const cycleStartDecimal = cH + (cM / 60);
                 const bottleDuration = bottleVol / rate;
-                
-                for(let i = 0; i < envasesNedded; i++) {
+
+                for (let i = 0; i < envasesNedded; i++) {
                     const connectTime = (cycleStartDecimal + (i * bottleDuration)) % 24;
                     // SEDILE Safe Window (margen orgánico prep.): 
                     // Si se instala tarde (15:00 a 18:59) -> cabe para pedir a las 14:00 (hoy)
@@ -2475,7 +2477,7 @@ function initInfusionLogic() {
                         count18++;
                     }
                 }
-                
+
                 planesText = `
                     <div style="margin-top:5px; background:rgba(255,255,255,0.7); padding:4px 8px; border-radius:5px; border-left:3px solid #27ae60;">
                         <b style="color:#27ae60; font-size:0.75rem;">📋 Plan de Repartos SEDILE (${envasesNedded} en total):</b><br>
@@ -2485,7 +2487,7 @@ function initInfusionLogic() {
                 `;
             }
 
-            const fallbackName = rthObj ? rthObj.name : "Fórmula ("+bottleVol+"ml)";
+            const fallbackName = rthObj ? rthObj.name : "Fórmula (" + bottleVol + "ml)";
             logBox.style.display = 'block';
             logBox.innerHTML = `
                 <div style="font-size:0.8rem; margin-bottom:4px; color:#555;">📊 Pauta 24hrs: <b>${calcTotalVol} ml</b> ${cycleStr}</div>
@@ -2498,7 +2500,7 @@ function initInfusionLogic() {
             logBox.style.display = 'none';
         }
     };
-    
+
     // Add volume listener so it triggers the calculator dynamically
     const volInput = document.getElementById('volume');
     if (volInput) {
@@ -3406,7 +3408,7 @@ function calcTMB_OMS() {
 
     let tmb = 0;
     let overrideGET = false;
-    
+
     // Phase 10: Poblaciones Especiales overrides
     const specCond = document.getElementById('specialCondition')?.value || 'none';
     const isPediatric = (p.type === 'pediatric' || document.getElementById('ptPediatric')?.checked);
@@ -3426,7 +3428,7 @@ function calcTMB_OMS() {
             resBadge.style.background = '#8e44ad';
             resBadge.style.color = '#fff';
         }
-        
+
         // This is total GET, so update GET explicitly
         const getVal = document.getElementById('valGET');
         if (getVal) getVal.innerHTML = `${Math.round(tmb)} kcal <span style="font-size:0.6rem;">(Krick)</span>`;
@@ -4005,7 +4007,7 @@ window.evaluateWaist = (makeBadgeFn = null) => {
     const p = AppState.patient;
     const cc = parseFloat(document.getElementById('ccintura')?.value) || 0;
     const resEl = document.getElementById('valWaistClass');
-    
+
     if (cc <= 0) {
         if (resEl) resEl.innerText = "";
         return "";
@@ -4044,7 +4046,7 @@ window.evaluateWaist = (makeBadgeFn = null) => {
         resEl.innerText = status;
         resEl.style.color = color;
     }
-    
+
     if (makeBadgeFn) {
         return makeBadgeFn('Cintura (CC)', 0, status, color);
     }

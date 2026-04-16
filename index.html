@@ -129,7 +129,8 @@
                                 Neonato</label>
                         </div>
 
-                        <div class="grid-col-4" id="rowAdultBase" style="grid-template-columns: repeat(5, minmax(0, 1fr));">
+                        <div class="grid-col-4" id="rowAdultBase"
+                            style="grid-template-columns: repeat(5, minmax(0, 1fr));">
                             <div class="mini-input" id="colEdad">
                                 <label>Edad</label>
                                 <input type="number" id="edad" placeholder="0">
@@ -151,8 +152,10 @@
                             </div>
                             <div class="mini-input" id="colCintura">
                                 <label>Cintura (cm)</label>
-                                <input type="number" step="0.1" id="ccintura" placeholder="0" oninput="calculateRequirements()">
-                                <div id="valWaistClass" style="font-size:0.6rem; font-weight:700; margin-top:2px;"></div>
+                                <input type="number" step="0.1" id="ccintura" placeholder="0"
+                                    oninput="calculateRequirements()">
+                                <div id="valWaistClass" style="font-size:0.6rem; font-weight:700; margin-top:2px;">
+                                </div>
                             </div>
                         </div>
 
@@ -184,19 +187,24 @@
                             <!-- NEW V3.95: Growth Velocity Inputs -->
                             <div class="mini-input" style="flex:1; min-width: 110px;">
                                 <label style="color:#27ae60;">Peso Anterior (kg)</label>
-                                <input type="number" step="0.001" id="pesoAnterior" placeholder="kg" oninput="calculateRequirements()">
+                                <input type="number" step="0.001" id="pesoAnterior" placeholder="kg"
+                                    oninput="calculateRequirements()">
                             </div>
                             <div class="mini-input" style="flex:1; min-width: 90px;">
                                 <label style="color:#27ae60;">Días Medición</label>
-                                <input type="number" id="diasMedicion" placeholder="Días" oninput="calculateRequirements()">
+                                <input type="number" id="diasMedicion" placeholder="Días"
+                                    oninput="calculateRequirements()">
                             </div>
                         </div>
 
                         <!-- NEW V3.90: Poblaciones Especiales -->
-                        <div id="rowSpecialPopulations" style="display:none; gap:10px; margin-top:10px; background:#f4ebf9; padding:8px; border-radius:8px;">
+                        <div id="rowSpecialPopulations"
+                            style="display:none; gap:10px; margin-top:10px; background:#f4ebf9; padding:8px; border-radius:8px;">
                             <div class="mini-input" style="flex:1;">
                                 <label style="color:#8e44ad;">Condición Especial (Pediatría)</label>
-                                <select id="specialCondition" onchange="calculatePediatricAge(); calculateRequirements();" style="border-color:#d2b4de;">
+                                <select id="specialCondition"
+                                    onchange="calculatePediatricAge(); calculateRequirements();"
+                                    style="border-color:#d2b4de;">
                                     <option value="none">Ninguna / Sano</option>
                                     <option value="down">Síndrome de Down (Tablas Zemel)</option>
                                     <option value="cp_i_ii">Parálisis Cerebral (GMFCS I-II)</option>
@@ -207,19 +215,32 @@
                         </div>
 
                         <!-- NEW V3.90: Amputaciones Panel (Osterkamp) -->
-                        <div style="margin-top:10px; background:#fbfcfe; border: 1px solid #d5dbdb; padding:8px; border-radius:8px;">
-                            <label style="font-size:0.75rem; font-weight:700; color:#5d6d7e; margin-bottom:0px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="const p = document.getElementById('amputeePanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'">
-                                🦿 Ajuste P.I por Amputaciones (Osterkamp) <span style="font-size:0.6rem; background:#ebedef; padding:2px 6px; border-radius:4px;">Desplegar ▼</span>
+                        <div
+                            style="margin-top:10px; background:#fbfcfe; border: 1px solid #d5dbdb; padding:8px; border-radius:8px;">
+                            <label
+                                style="font-size:0.75rem; font-weight:700; color:#5d6d7e; margin-bottom:0px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
+                                onclick="const p = document.getElementById('amputeePanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'">
+                                🦿 Ajuste P.I por Amputaciones (Osterkamp) <span
+                                    style="font-size:0.6rem; background:#ebedef; padding:2px 6px; border-radius:4px;">Desplegar
+                                    ▼</span>
                             </label>
-                            <div id="amputeePanel" style="display:none; font-size:0.75rem; margin-top:8px; border-top:1px dashed #d5dbdb; padding-top:8px;">
+                            <div id="amputeePanel"
+                                style="display:none; font-size:0.75rem; margin-top:8px; border-top:1px dashed #d5dbdb; padding-top:8px;">
                                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
-                                    <label><input type="checkbox" class="amp-check" value="0.7" onchange="calculateRequirements()"> Mano (0.7%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="2.3" onchange="calculateRequirements()"> Antebrazo+Mano (2.3%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="5.0" onchange="calculateRequirements()"> Brazo Entero (5.0%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="1.5" onchange="calculateRequirements()"> Pie (1.5%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="5.9" onchange="calculateRequirements()"> Pierna+Pie (5.9%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="10.1" onchange="calculateRequirements()"> Muslo (10.1%)</label>
-                                    <label><input type="checkbox" class="amp-check" value="16.0" onchange="calculateRequirements()"> Pierna Entera (16.0%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="0.7"
+                                            onchange="calculateRequirements()"> Mano (0.7%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="2.3"
+                                            onchange="calculateRequirements()"> Antebrazo+Mano (2.3%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="5.0"
+                                            onchange="calculateRequirements()"> Brazo Entero (5.0%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="1.5"
+                                            onchange="calculateRequirements()"> Pie (1.5%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="5.9"
+                                            onchange="calculateRequirements()"> Pierna+Pie (5.9%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="10.1"
+                                            onchange="calculateRequirements()"> Muslo (10.1%)</label>
+                                    <label><input type="checkbox" class="amp-check" value="16.0"
+                                            onchange="calculateRequirements()"> Pierna Entera (16.0%)</label>
                                 </div>
                             </div>
                         </div>
@@ -236,7 +257,8 @@
                         </div>
 
                         <!-- NEW V3.19 / V3.90: Ideal Weight, Amputee Adj & IPT Row -->
-                        <div id="idealWeightRowContainer" style="display:flex; gap:10px; margin-top:10px; flex-wrap:nowrap;">
+                        <div id="idealWeightRowContainer"
+                            style="display:flex; gap:10px; margin-top:10px; flex-wrap:nowrap;">
                             <div
                                 style="flex:1; background:rgba(52, 152, 219, 0.05); padding:8px; border-radius:8px; border:1px solid rgba(52, 152, 219, 0.1);">
                                 <span
@@ -249,7 +271,8 @@
                             <div id="ampWeightAdjContainer"
                                 style="flex:1; display:none; background:rgba(155, 89, 182, 0.05); padding:8px; border-radius:8px; border:1px solid rgba(155, 89, 182, 0.1);">
                                 <span
-                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px; line-height:1.2;">Peso Final Descontado</span>
+                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px; line-height:1.2;">Peso
+                                    Final Descontado</span>
                                 <strong style="font-size:1rem; color:#8e44ad;" id="ampWeightAdj">-- kg</strong>
                             </div>
 
@@ -436,14 +459,17 @@
 
                 <!-- NEW V4.02: Evolución Clínica (Moved from History) -->
                 <section class="card module-card" id="chartContainer"
-                    style="display:none; border-left-color: #f39c12; margin-bottom:15px;">
-                    <div class="module-head">
-                        <h3>📈 Evolución Clínica</h3>
+                    style="display:none; border-left-color: #f39c12; margin: 0 auto 15px auto; max-width: 350px;">
+                    <div class="module-head" style="margin-bottom:0;">
+                        <h3 style="font-size:0.9rem;">📈 Evolución Clínica</h3>
                     </div>
-                    <div style="padding: 10px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                        <canvas id="evolutionChart" width="400" height="200"></canvas>
-                        <p style="text-align:center; font-size:0.75rem; color:#888; font-style:italic; margin-top:8px;">
-                            Progreso de peso (Últimos 5 registros) de <strong id="lblChartPatientName">--</strong>
+                    <div
+                        style="padding: 8px; background: white; border-radius: 12px;">
+                        <div style="position: relative; height: 160px; width: 100%;">
+                            <canvas id="evolutionChart"></canvas>
+                        </div>
+                        <p style="text-align:center; font-size:0.7rem; color:#888; font-style:italic; margin-top:5px; margin-bottom:0;">
+                            Peso (últimos 5 reg) de <strong id="lblChartPatientName">--</strong>
                         </p>
                     </div>
                 </section>
@@ -549,19 +575,25 @@
                             </div>
                             <div class="mini-input">
                                 <label>Instal. Producto RTH Actual</label>
-                                <input type="time" title="Hora en que se colgó el envase actual" id="infusionStart" onchange="window.calcInfusion()">
+                                <input type="time" title="Hora en que se colgó el envase actual" id="infusionStart"
+                                    onchange="window.calcInfusion()">
                             </div>
                             <div class="mini-input">
                                 <label>Velocidad de Pasaje (ml/hr)</label>
-                                <input type="number" id="infusionRate" placeholder="Ej. 60" oninput="window.calcInfusion()">
+                                <input type="number" id="infusionRate" placeholder="Ej. 60"
+                                    oninput="window.calcInfusion()">
                             </div>
                         </div>
-                        <div class="infusion-result" id="infusionResultBox" style="display:none; flex-direction:column; gap:5px;">
+                        <div class="infusion-result" id="infusionResultBox"
+                            style="display:none; flex-direction:column; gap:5px;">
                             <div style="font-size:0.85rem;">
-                                El envase se acabará a las: <strong id="valEndTime" style="color:#d35400; font-size:1.1rem;">--:--</strong> 
-                                <span id="valDuration" style="font-size:0.75rem; opacity:0.8; font-weight:500;">(0 hrs)</span>
+                                El envase se acabará a las: <strong id="valEndTime"
+                                    style="color:#d35400; font-size:1.1rem;">--:--</strong>
+                                <span id="valDuration" style="font-size:0.75rem; opacity:0.8; font-weight:500;">(0
+                                    hrs)</span>
                             </div>
-                            <div id="valLogisticsBox" style="margin-top:2px; font-size:0.7rem; background:#fef9e7; color:#b7950b; padding:6px; border-radius:6px; border:1px solid rgba(241, 196, 15, 0.4); font-weight:600; text-align:left; line-height:1.4; display:none;">
+                            <div id="valLogisticsBox"
+                                style="margin-top:2px; font-size:0.7rem; background:#fef9e7; color:#b7950b; padding:6px; border-radius:6px; border:1px solid rgba(241, 196, 15, 0.4); font-weight:600; text-align:left; line-height:1.4; display:none;">
                                 <!-- SEDILE Logistics string -->
                             </div>
                         </div>
@@ -615,16 +647,20 @@
                         </div>
 
                         <!-- NEW V3.95: Fortificante Neonatal (FM85) -->
-                        <div id="fortifierNeonatePanel" style="display:none; margin-top:15px; padding:10px; background:rgba(46, 204, 113, 0.05); border:1px solid rgba(46, 204, 113, 0.2); border-radius:8px;">
-                            <label style="color:#27ae60; font-weight:700; display:block; margin-bottom:5px;">🧬 Fortificante (PreNAN FM85)</label>
+                        <div id="fortifierNeonatePanel"
+                            style="display:none; margin-top:15px; padding:10px; background:rgba(46, 204, 113, 0.05); border:1px solid rgba(46, 204, 113, 0.2); border-radius:8px;">
+                            <label style="color:#27ae60; font-weight:700; display:block; margin-bottom:5px;">🧬
+                                Fortificante (PreNAN FM85)</label>
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                                 <div class="mini-input">
                                     <label>Concentración (%)</label>
-                                    <input type="number" step="0.5" id="fortifierPercent" placeholder="Ej. 5" oninput="runSimulation()">
+                                    <input type="number" step="0.5" id="fortifierPercent" placeholder="Ej. 5"
+                                        oninput="runSimulation()">
                                 </div>
                                 <div class="mini-input">
                                     <label>Total Gramos (Neto)</label>
-                                    <input type="number" step="0.1" id="fortifierGrams" placeholder="Automático" disabled style="background:#f4f6f7; cursor:not-allowed;">
+                                    <input type="number" step="0.1" id="fortifierGrams" placeholder="Automático"
+                                        disabled style="background:#f4f6f7; cursor:not-allowed;">
                                 </div>
                             </div>
                         </div>
@@ -1381,7 +1417,7 @@
                     for (let registration of registrations) {
                         if (!localStorage.getItem('sw_purged_3.7')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.02', 'true');
+                            localStorage.setItem('sw_purged_4.03', 'true');
                             window.location.reload();
                         }
                     }
@@ -1392,7 +1428,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.02"></script>
+        <script src="app_core.js?v=4.03"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
