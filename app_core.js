@@ -4097,23 +4097,6 @@ function updateMacroGoals() {
         document.getElementById('macroPctProt').innerText = `(${gkgP.toFixed(2)} g/kg)`;
         document.getElementById('macroPctCHO').innerText = `(${gkgC.toFixed(2)} g/kg)`;
         document.getElementById('macroPctLip').innerText = `(${gkgL.toFixed(2)} g/kg)`;
-
-        // Show warning if total % != 100
-        const totalPct = pctP + pctC + pctL;
-        const warnLabel = document.getElementById('pctTotalWarning');
-        const warnVal = document.getElementById('pctTotalVal');
-        if (warnLabel && warnVal) {
-            if (valP > 0 || valC > 0 || valL > 0) {
-                if (Math.round(totalPct) !== 100) {
-                    warnLabel.style.display = 'inline';
-                    warnVal.innerText = totalPct.toFixed(1);
-                } else {
-                    warnLabel.style.display = 'none';
-                }
-            } else {
-                warnLabel.style.display = 'none';
-            }
-        }
     }
 
     const kcalProt = gProt * 4;
@@ -4123,6 +4106,34 @@ function updateMacroGoals() {
 
     const elMacroKcal = document.getElementById('goalMacroKcal');
     if (elMacroKcal) elMacroKcal.innerText = Math.round(totalKcal);
+
+    // --- TOTAL % INDICATOR (both modes) ---
+    const totalPctOfGoal = (getTotal > 0) ? (totalKcal / getTotal) * 100 : (pctP + pctC + pctL);
+    const warnBox = document.getElementById('pctTotalWarning');
+    const warnCheck = document.getElementById('pctTotalCheck');
+    
+    if (warnBox && warnCheck && (valP > 0 || valC > 0 || valL > 0)) {
+        const pctDisplay = macroGoalMode === 'pct' ? (pctP + pctC + pctL) : totalPctOfGoal;
+        warnCheck.innerText = pctDisplay.toFixed(1) + '%';
+        
+        let barColor, textColor;
+        if (pctDisplay >= 95 && pctDisplay <= 105) {
+            barColor = 'rgba(39, 174, 96, 0.15)';
+            textColor = '#27ae60';
+        } else if (pctDisplay < 95) {
+            barColor = 'rgba(243, 156, 18, 0.15)';
+            textColor = '#f39c12';
+        } else {
+            barColor = 'rgba(231, 76, 60, 0.15)';
+            textColor = '#e74c3c';
+        }
+        warnBox.style.background = barColor;
+        warnBox.style.borderColor = textColor.replace(')', ', 0.4)').replace('rgb', 'rgba');
+        warnCheck.style.color = textColor;
+        warnBox.style.display = 'flex';
+    } else if (warnBox) {
+        warnBox.style.display = 'none';
+    }
 
     if (goalChartInstance) {
         goalChartInstance.data.datasets[0].data = [kcalProt, kcalCHO, kcalLip];

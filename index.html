@@ -497,12 +497,9 @@
                                     style="text-align:right; font-size:0.65rem; color:#666; font-style:italic; margin-top:4px; display:flex; justify-content:space-between; align-items:center;">
                                     Kcal teórica macros: <strong id="goalMacroKcal">0</strong> kcal
                                     <div id="pctTotalWarning"
-                                        style="flex:1; display:none; flex-direction:column; justify-content:center; align-items:center; background:rgba(231, 76, 60, 0.1); border:1px solid rgba(231, 76, 60, 0.3); border-radius:8px; padding:5px;">
-                                        <span
-                                            style="font-size:0.55rem; color:#888; text-transform:uppercase; font-weight:700;">Kcal
-                                            Aportadas por %</span>
-                                        <span id="pctTotalCheck"
-                                            style="font-size:0.9rem; font-weight:800; color:#e74c3c;">0%</span>
+                                        style="display:none; flex-direction:column; justify-content:center; align-items:center; padding:4px 8px; border-radius:6px; border:1px solid rgba(231,76,60,0.3); margin-left:8px; min-width:60px;">
+                                        <span style="font-size:0.5rem; color:#888; text-transform:uppercase; font-weight:700; white-space:nowrap;">Total macros</span>
+                                        <span id="pctTotalCheck" style="font-size:0.88rem; font-weight:800; color:#e74c3c;">0%</span>
                                     </div>
                                 </div>
                             </div>
@@ -1479,13 +1476,13 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.14
+            // EMERGENCY CACHE PURGE V4.15
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        if (!localStorage.getItem('sw_purged_4.14')) {
+                        if (!localStorage.getItem('sw_purged_4.15')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.14', 'true');
+                            localStorage.setItem('sw_purged_4.15', 'true');
                             window.location.reload();
                         }
                     }
@@ -1496,7 +1493,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.14"></script>
+        <script src="app_core.js?v=4.15"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
