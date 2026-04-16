@@ -3988,10 +3988,10 @@ function initGoalMacroChart() {
             document.getElementById('goalCHOKg').placeholder = "Ej. 5.0";
             document.getElementById('goalLipKg').placeholder = "Ej. 2.0";
 
-            document.getElementById('macroPctProt').style.display = 'none';
-            document.getElementById('macroPctCHO').style.display = 'none';
-            document.getElementById('macroPctLip').style.display = 'none';
-            document.getElementById('pctTotalWarning').style.display = 'none';
+            document.getElementById('macroPctProt').style.display = 'block';
+            document.getElementById('macroPctCHO').style.display = 'block';
+            document.getElementById('macroPctLip').style.display = 'block';
+            document.getElementById('pctTotalWarning').style.display = 'flex';
 
             updateMacroGoals();
         };
@@ -4011,6 +4011,7 @@ function initGoalMacroChart() {
             document.getElementById('macroPctProt').style.display = 'block';
             document.getElementById('macroPctCHO').style.display = 'block';
             document.getElementById('macroPctLip').style.display = 'block';
+            document.getElementById('pctTotalWarning').style.display = 'flex';
 
             updateMacroGoals();
         };
@@ -4096,6 +4097,11 @@ function updateMacroGoals() {
         if (document.getElementById('macroPctProt')) document.getElementById('macroPctProt').innerText = `(${gkgP.toFixed(2)} g/kg)`;
         if (document.getElementById('macroPctCHO')) document.getElementById('macroPctCHO').innerText = `(${gkgC.toFixed(2)} g/kg)`;
         if (document.getElementById('macroPctLip')) document.getElementById('macroPctLip').innerText = `(${gkgL.toFixed(2)} g/kg)`;
+    } else {
+        // En modo g/kg: mostrar el aporte porcentual de cada macro respecto al GET
+        if (document.getElementById('macroPctProt')) document.getElementById('macroPctProt').innerText = `(${pctP.toFixed(1)}%)`;
+        if (document.getElementById('macroPctCHO')) document.getElementById('macroPctCHO').innerText = `(${pctC.toFixed(1)}%)`;
+        if (document.getElementById('macroPctLip')) document.getElementById('macroPctLip').innerText = `(${pctL.toFixed(1)}%)`;
     }
 
     const kcalProt = gProt * 4;
