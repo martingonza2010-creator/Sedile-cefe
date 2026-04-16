@@ -3253,6 +3253,11 @@ function updateCompareResults(k1, p1, c1, l1) {
 
 // --- 15. COMPLETE ASSESSMENT LOGIC (NEW) ---
 function initAssessmentLogic() {
+    // Elements for Strategic Feedback
+    const inpGoalKcal = document.getElementById('goalKcalBox');
+    const inpGoalTotal = document.getElementById('goalTotal');
+    const resEvoBadge = document.getElementById('evolutionResult');
+
     // Name Sync
     const nameInput = document.getElementById('nombre');
     if (nameInput) {
