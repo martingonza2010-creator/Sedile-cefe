@@ -415,9 +415,22 @@
                                 --% ADECUACIÓN
                             </div>
                             
-                            <label style="font-size: 0.8rem; font-weight: 800; color: #6c5ce7; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-                                🎯 Estrategia de Nutrición
-                            </label>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <label style="font-size: 0.8rem; font-weight: 800; color: #6c5ce7; margin:0; display: flex; align-items: center; gap: 6px;">
+                                    🎯 Estrategia de Nutrición
+                                </label>
+                                <!-- Adequacy Mode Toggle -->
+                                <div style="display:flex; background:#eee; padding:2px; border-radius:8px; gap:2px;">
+                                    <button id="btnAdeqGoal" onclick="window.setAdequacyMode('goal')" 
+                                            style="padding:3px 8px; font-size:0.6rem; font-weight:800; border:none; border-radius:6px; cursor:pointer; background:#6c5ce7; color:white; transition:all 0.2s;">
+                                        META 🎯
+                                    </button>
+                                    <button id="btnAdeqGET" onclick="window.setAdequacyMode('get')" 
+                                            style="padding:3px 8px; font-size:0.6rem; font-weight:800; border:none; border-radius:6px; cursor:pointer; background:transparent; color:#666; transition:all 0.2s;">
+                                        GET 🧬
+                                    </button>
+                                </div>
+                            </div>
 
                             <div class="grid-col-2" style="gap:15px;">
                                 <!-- Left: Input/Evol Area -->
@@ -1535,13 +1548,13 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.23
+            // EMERGENCY CACHE PURGE V4.24
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        if (!localStorage.getItem('sw_purged_4.23')) {
+                        if (!localStorage.getItem('sw_purged_4.24')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.23', 'true');
+                            localStorage.setItem('sw_purged_4.24', 'true');
                             window.location.reload();
                         }
                     }
@@ -1552,7 +1565,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.23"></script>
+        <script src="app_core.js?v=4.24"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

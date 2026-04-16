@@ -95,6 +95,7 @@ const AppState = {
     favorites: [], // Init empty first
     userOverridesGoal: false,
     compareMode: false,
+    adequacyMode: 'goal', // 'goal' or 'get'
     formulaB: null,
     chart: null
 };
@@ -3164,9 +3165,35 @@ function initAssessmentLogic() {
         });
     }
 
+    // --- NEW V4.24: Adequacy Mode Control ---
+    window.setAdequacyMode = (mode) => {
+        AppState.adequacyMode = mode;
+        
+        // Update UI buttons
+        const btnGoal = document.getElementById('btnAdeqGoal');
+        const btnGET = document.getElementById('btnAdeqGET');
+        
+        if (btnGoal && btnGET) {
+            if (mode === 'goal') {
+                btnGoal.style.background = '#6c5ce7';
+                btnGoal.style.color = 'white';
+                btnGET.style.background = 'transparent';
+                btnGET.style.color = '#666';
+            } else {
+                btnGET.style.background = '#3498db';
+                btnGET.style.color = 'white';
+                btnGoal.style.background = 'transparent';
+                btnGoal.style.color = '#666';
+            }
+        }
+        
+        window.updatePrescriptionStrategy();
+    };
+
     // --- NEW V4.23: Real-time Strategic Feedback (Intake vs Requirement) ---
     window.updatePrescriptionStrategy = (currentKcalOverride) => {
         const p = AppState.patient || {};
+        const mode = AppState.adequacyMode || 'goal';
         
         // Use provided kcal (from simulation) or scrape from UI
         let currentKcal = currentKcalOverride;
@@ -3174,10 +3201,12 @@ function initAssessmentLogic() {
             currentKcal = parseFloat(document.getElementById('valKcal')?.innerText) || 0;
         }
 
-        // The denominator is prioritised: User Defined Goal > Theoretical GET
+        // The denominator is determined by the selected clinical mode
         const goalTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
         const theoreticalGET = p.tmt_calculated || 0; 
-        const targetDenominator = goalTotal || theoreticalGET;
+        
+        const targetDenominator = (mode === 'goal') ? (goalTotal || theoreticalGET) : theoreticalGET;
+        const labelBase = (mode === 'goal') ? 'Meta' : 'GET';
         
         const badge = document.getElementById('strategyBadge');
         const fdbkText = document.getElementById('strategyText');
@@ -3192,12 +3221,12 @@ function initAssessmentLogic() {
             badge.style.color = '#888';
             badge.style.background = '#eee';
             badge.style.borderColor = '#ddd';
-            if (fdbkText) fdbkText.innerText = "Ingresa volumen o selecciona fórmula para calcular adecuación.";
+            if (fdbkText) fdbkText.innerText = `Ingresa volumen para medir adecuación vs ${labelBase}.`;
             return;
         }
         
         const adequacy = (currentKcal / targetDenominator) * 100;
-        badge.innerText = adequacy.toFixed(0) + '% ADECUACIÓN';
+        badge.innerText = `${labelBase}: ${adequacy.toFixed(0)}%`;
         badge.style.display = 'inline-block';
         
         let label = '';
@@ -3227,7 +3256,7 @@ function initAssessmentLogic() {
             bgColor = 'rgba(231, 76, 60, 0.05)';
         }
         
-        if (fdbkText) fdbkText.innerText = `Estado: ${label} (${Math.round(currentKcal)} kcal de ${Math.round(targetDenominator)} kcal)`;
+        if (fdbkText) fdbkText.innerText = `Estado (${labelBase}): ${label} (${Math.round(currentKcal)} kcal de ${Math.round(targetDenominator)} kcal)`;
         if (fdbkText) fdbkText.style.color = color;
         if (fdbkIcon) fdbkIcon.innerText = icon;
         if (fdbkCard) {
