@@ -459,7 +459,7 @@
 
                 <!-- NEW V4.02: Evolución Clínica (Moved from History) -->
                 <section class="card module-card" id="chartContainer"
-                    style="display:none; border-left-color: #f39c12; margin: 0 auto 15px auto; max-width: 350px;">
+                    style="display:block; border-left-color: #f39c12; margin: 0 auto 15px auto; max-width: 350px;">
                     <div class="module-head" style="margin-bottom:0;">
                         <h3 style="font-size:0.9rem;">📈 Evolución Clínica</h3>
                     </div>
@@ -1417,7 +1417,7 @@
                     for (let registration of registrations) {
                         if (!localStorage.getItem('sw_purged_3.7')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.04', 'true');
+                            localStorage.setItem('sw_purged_4.05', 'true');
                             window.location.reload();
                         }
                     }
@@ -1428,7 +1428,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.04"></script>
+        <script src="app_core.js?v=4.05"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

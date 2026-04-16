@@ -354,7 +354,16 @@ function initPatientLogic() {
     const fields = ['nombre', 'edad', 'sexo', 'peso', 'estatura', 'actividad'];
     fields.forEach(f => {
         const el = document.getElementById(f);
-        if (el) el.oninput = calculateRequirements;
+        if (el) {
+            el.oninput = calculateRequirements;
+            if (f === 'nombre') {
+                el.addEventListener('change', (e) => {
+                    if (typeof window.updatePatientEvolutionChart === 'function') {
+                        window.updatePatientEvolutionChart(e.target.value);
+                    }
+                });
+            }
+        }
     });
 
     const form = document.getElementById('form-paciente');
@@ -979,7 +988,13 @@ function renderEvolutionChart(history) {
     ctx.lineTo(width - padding, height - padding);
     ctx.stroke();
 
-    if (history.length < 2) return;
+    if (!history || history.length < 2) {
+        ctx.fillStyle = '#aaa';
+        ctx.font = 'italic 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Añade un 2do registro para graficar', width / 2, height / 2);
+        return;
+    }
 
     // Normalize Data
     const weights = history.map(h => h.peso_kg);
@@ -1119,12 +1134,13 @@ window.updatePatientEvolutionChart = async (nombre) => {
 
     if (!error && records && records.length > 1) {
         const history = records.slice(0, 5).reverse();
-        chartSection.style.display = 'block';
         const lbl = document.getElementById('lblChartPatientName');
         if (lbl) lbl.innerText = nombre;
         if (typeof renderEvolutionChart === 'function') renderEvolutionChart(history);
     } else {
-        chartSection.style.display = 'none';
+        const lbl = document.getElementById('lblChartPatientName');
+        if (lbl) lbl.innerText = nombre || '--';
+        if (typeof renderEvolutionChart === 'function') renderEvolutionChart([]);
     }
 };
 
