@@ -409,11 +409,6 @@
                         <div id="strategyCard" 
                              style="margin-top: 15px; padding: 15px; background: rgba(108, 92, 231, 0.03); border-radius: 12px; border: 1px solid rgba(108, 92, 231, 0.1); position: relative; overflow: hidden;">
                             
-                            <!-- Adequacy Watermark/Badge -->
-                            <div id="strategyBadge" 
-                                 style="position: absolute; top: 12px; right: 12px; font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; background:#eee; color:#666; display:inline-block; border:1px solid rgba(0,0,0,0.1);">
-                                --% ADECUACIÓN
-                            </div>
                             
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                                 <label style="font-size: 0.8rem; font-weight: 800; color: #6c5ce7; margin:0; display: flex; align-items: center; gap: 6px;">
@@ -453,9 +448,6 @@
                                                 onchange="if(typeof updateSelectedGET === 'function') updateSelectedGET()">
                                             <option value="manual">Manual</option>
                                             <option value="factorial" title="Usar Evolución (kcal/kg)">Evol.</option>
-                                            <option value="hb" title="Usar Harris-Benedict">H-B</option>
-                                            <option value="schofield" title="Usar Schofield">Schof</option>
-                                            <option value="fao" title="Usar FAO/OMS">FAO</option>
                                         </select>
                                         <input type="number" id="goalTotal" placeholder="kcal/día" 
                                                style="flex:1; border:none; padding:8px; font-size:1.1rem; font-weight:800; color:#6c5ce7; outline:none;">

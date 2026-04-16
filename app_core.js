@@ -3257,6 +3257,7 @@ function initAssessmentLogic() {
     const inpGoalKcal = document.getElementById('goalKcalBox');
     const inpGoalTotal = document.getElementById('goalTotal');
     const resEvoBadge = document.getElementById('evolutionResult');
+    const lastGoalLabel = document.getElementById('valLastGoalDate');
 
     // Name Sync
     const nameInput = document.getElementById('nombre');
