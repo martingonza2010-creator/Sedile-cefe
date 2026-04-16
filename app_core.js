@@ -382,7 +382,8 @@ function initPatientLogic() {
                 const peso = parseFloat(document.getElementById('peso').value) || 0;
                 const estatura = parseFloat(document.getElementById('estatura').value) || 0;
                 const sexo = document.getElementById('sexo').value;
-                const actividad = parseFloat(document.getElementById('actividad').value) || 1.2;
+                const actividad = parseFloat(document.getElementById('actividad').value) || 1.0;
+                const estres = parseFloat(document.getElementById('estres')?.value) || 1.0;
                 const diagnostico = document.getElementById('diagnostico')?.value || '';
                 const cama = document.getElementById('cama')?.value || '';
                 const tmt = parseFloat(document.getElementById('goalTotal').value) || 0;
@@ -436,7 +437,10 @@ function initPatientLogic() {
                             diarrea: document.getElementById('diarrea').value,
                             distension: document.getElementById('distension').value
                         },
-                        pes: document.getElementById('diagnosticoPES').value
+                        pes: document.getElementById('diagnosticoPES').value,
+                        estres: estres,
+                        isQuemado: document.getElementById('chkQuemado')?.checked || false,
+                        scqPercent: document.getElementById('scqPercent')?.value || ''
                     }
                 };
 
@@ -1095,19 +1099,35 @@ window.loadPatient = async (id) => {
         calculateRequirements();
 
         // Restore goals if exist
-        if (data.metadata && data.metadata.simulator) {
+        if (data.metadata) {
             const sim = data.metadata.simulator;
-            if (sim.macro_mode) {
-                if (sim.macro_mode === 'pct') {
-                    document.getElementById('btnModePct')?.click();
-                } else {
-                    document.getElementById('btnModeGkg')?.click();
+            if (sim) {
+                if (sim.macro_mode) {
+                    if (sim.macro_mode === 'pct') {
+                        document.getElementById('btnModePct')?.click();
+                    } else {
+                        document.getElementById('btnModeGkg')?.click();
+                    }
+                }
+                if (sim.goal_prot) document.getElementById('goalProtKg').value = sim.goal_prot;
+                if (sim.goal_cho) document.getElementById('goalCHOKg').value = sim.goal_cho;
+                if (sim.goal_lip) document.getElementById('goalLipKg').value = sim.goal_lip;
+                if (typeof updateMacroGoals === 'function') updateMacroGoals();
+            }
+
+            const ass = data.metadata.assessment;
+            if (ass) {
+                if (ass.estres) {
+                    const elEstres = document.getElementById('estres');
+                    if (elEstres) elEstres.value = ass.estres;
+                }
+                if (ass.isQuemado) {
+                    const elQ = document.getElementById('chkQuemado');
+                    if (elQ) elQ.checked = true;
+                    if (ass.scqPercent) document.getElementById('scqPercent').value = ass.scqPercent;
+                    if (typeof window.toggleQuemado === 'function') window.toggleQuemado();
                 }
             }
-            if (sim.goal_prot) document.getElementById('goalProtKg').value = sim.goal_prot;
-            if (sim.goal_cho) document.getElementById('goalCHOKg').value = sim.goal_cho;
-            if (sim.goal_lip) document.getElementById('goalLipKg').value = sim.goal_lip;
-            if (typeof updateMacroGoals === 'function') updateMacroGoals();
         }
 
         document.getElementById('historyModal').classList.remove('active');
@@ -1164,6 +1184,7 @@ function calculateRequirements() {
     const pesoEl = document.getElementById('peso');
     const estaturaEl = document.getElementById('estatura');
     const actividadEl = document.getElementById('actividad');
+    const estresEl = document.getElementById('estres');
     const sexoEl = document.getElementById('sexo');
 
     if (!nombreEl || !edadEl || !pesoEl || !estaturaEl || !actividadEl || !sexoEl) return;
@@ -1172,7 +1193,8 @@ function calculateRequirements() {
     p.edad = parseFloat(edadEl.value) || 0;
     p.peso = parseFloat(pesoEl.value) || 0;
     p.estatura = parseFloat(estaturaEl.value) || 0;
-    p.actividad = parseFloat(actividadEl.value) || 1.2;
+    p.actividad = parseFloat(actividadEl.value) || 1.0;
+    p.estres = parseFloat(estresEl?.value) || 1.0;
     p.sexo = sexoEl.value; // Store in AppState
     const sexo = p.sexo;
 
@@ -1340,9 +1362,31 @@ function calculateRequirements() {
             }
         }
 
+        const isQuemado = document.getElementById('chkQuemado')?.checked && p.peso > 0;
+        const scqPercent = parseFloat(document.getElementById('scqPercent')?.value) || 0;
+        let finalTMT = bmr * p.actividad * p.estres;
+        let eqName = "(TMB × FA × FE)";
+
+        if (isQuemado && scqPercent > 0) {
+            if (p.type === 'pediatric' || p.type === 'neonate') {
+                // Galveston
+                const sct = Math.sqrt((p.peso * cm) / 3600);
+                const scqM2 = sct * (scqPercent / 100);
+                document.getElementById('scqM2').value = scqM2.toFixed(2);
+                finalTMT = (1800 * sct) + (2200 * scqM2);
+                eqName = "Galveston (Quemados)";
+                bmr = finalTMT / (p.actividad * p.estres); // Back-calculate display mock
+            } else {
+                // Curreri
+                finalTMT = (25 * p.peso) + (40 * scqPercent);
+                eqName = "Curreri (Quemados)";
+                bmr = finalTMT / (p.actividad * p.estres); 
+            }
+        }
+
         const resTMB = document.getElementById('resTMB');
-        if (resTMB) resTMB.innerText = `${Math.round(bmr * p.actividad)} kcal (TMBxFA)`;
-        p.tmt_calculated = bmr * p.actividad;
+        if (resTMB) resTMB.innerHTML = `${Math.round(finalTMT)} kcal <span style="font-size:0.6rem;">${eqName}</span>`;
+        p.tmt_calculated = finalTMT;
 
         // Ensure factorial is also calculated
         calcFactorialNoRecursion();
@@ -1387,6 +1431,37 @@ window.togglePatientMode = () => {
     const iwRow = document.getElementById('valIdealWeight')?.parentElement?.parentElement;
     if (iwRow) iwRow.style.display = mode === 'adult' ? 'flex' : 'none';
 
+    // Rigger UI reset based on changes
+    if (typeof window.toggleQuemado === 'function') window.toggleQuemado();
+
+    calculateRequirements();
+};
+
+window.toggleQuemado = () => {
+    const isQuemado = document.getElementById('chkQuemado')?.checked;
+    const panel = document.getElementById('quemadoPanel');
+    if (panel) panel.style.display = isQuemado ? 'block' : 'none';
+
+    // Set Stress Factor Automatically on toggle
+    const estresEl = document.getElementById('estres');
+    if (isQuemado && estresEl && estresEl.value === "1.0") {
+        estresEl.value = "1.5"; // Default severe burn minimum
+    } else if (!isQuemado && estresEl && parseFloat(estresEl.value) >= 1.5) {
+        estresEl.value = "1.0"; // Revert to healthy
+    }
+
+    // Adapt Protein Goal Placeholder
+    const protInput = document.getElementById('goalProtKg');
+    if (protInput) {
+        const type = AppState.patient?.type || 'adult';
+        if (isQuemado) {
+            protInput.placeholder = type === 'adult' ? 'Ej. 1.5 - 2.5 (Quemado)' : 'Ej. 2.5 - 3.0 (Quemado)';
+            protInput.style.border = '2px solid #e74c3c';
+        } else {
+            protInput.placeholder = 'Ej. 1.0';
+            protInput.style.border = '1px solid #ddd';
+        }
+    }
     calculateRequirements();
 };
 

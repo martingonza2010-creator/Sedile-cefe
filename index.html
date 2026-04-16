@@ -287,16 +287,47 @@
                             </div>
                         </div>
 
-                        <div class="grid-col-4" style="margin-top:10px;">
-                            <!-- Restored Actividad Field (Fix TypeError) -->
+                        <div class="grid-col-2" style="margin-top:10px;">
                             <div class="mini-input">
-                                <label>Actividad</label>
-                                <select id="actividad">
-                                    <option value="1.2">Encamado (1.2)</option>
-                                    <option value="1.3">Ligera (1.3)</option>
-                                    <option value="1.5">Moderada (1.5)</option>
-                                    <option value="1.7">Intensa (1.7)</option>
+                                <label>Ambulación / Actividad</label>
+                                <select id="actividad" onchange="calculateRequirements()">
+                                    <option value="1.0">No considerarla (1.0)</option>
+                                    <option value="1.1">Reposo Absoluto (1.1)</option>
+                                    <option value="1.2" selected>En Cama / Mov. leve (1.2)</option>
+                                    <option value="1.3">Deambulante (1.3)</option>
                                 </select>
+                            </div>
+                            <div class="mini-input">
+                                <label>Factor Estrés / Patología</label>
+                                <select id="estres" onchange="calculateRequirements()">
+                                    <option value="1.0">Sano / Sin estrés (1.0)</option>
+                                    <option value="1.1">Cirugía Electiva (1.1)</option>
+                                    <option value="1.2">Trauma esquelético (1.2)</option>
+                                    <option value="1.3">Sepsis / Trauma Severo (1.3)</option>
+                                    <option value="1.5">Gran Quemado < 20% (1.5)</option>
+                                    <option value="1.8">Gran Quemado 20-40% (1.8)</option>
+                                    <option value="2.0">Gran Quemado > 40% (2.0)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- NEW: Gran Quemado Calc -->
+                        <div id="rowBurned" style="margin-top:10px; background:#fdf7f2; border:1px solid #fadbd8; padding:8px; border-radius:8px;">
+                            <label style="font-size:0.75rem; font-weight:700; color:#c0392b; margin-bottom:0px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="document.getElementById('chkQuemado').click()">
+                                <span>🔥 Cálculos de Gran Quemado</span>
+                                <input type="checkbox" id="chkQuemado" onchange="window.toggleQuemado()" style="pointer-events:none;">
+                            </label>
+                            <div id="quemadoPanel" style="display:none; font-size:0.75rem; margin-top:8px; border-top:1px dashed #fadbd8; padding-top:8px;">
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+                                    <div class="mini-input">
+                                        <label>% SCQ (Superficie Quemada)</label>
+                                        <input type="number" step="0.1" id="scqPercent" placeholder="Ej: 30" oninput="calculateRequirements()">
+                                    </div>
+                                    <div class="mini-input">
+                                        <label>Área Quemada (m²)</label>
+                                        <input type="number" id="scqM2" title="Auto-calculado" disabled style="background:#f4f6f7; cursor:not-allowed;">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <!-- New Calculator Section: TMB & Factorial -->
@@ -1417,7 +1448,7 @@
                     for (let registration of registrations) {
                         if (!localStorage.getItem('sw_purged_3.7')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.05', 'true');
+                            localStorage.setItem('sw_purged_4.06', 'true');
                             window.location.reload();
                         }
                     }
@@ -1428,7 +1459,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.05"></script>
+        <script src="app_core.js?v=4.06"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
