@@ -145,6 +145,18 @@ let goalChartInstance = null; // Global chart instance
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("🚀 SEDILE HRA: DOMContentLoaded initialized");
+
+    // --- AUTH LISTENER V4.29 (Robust Login) ---
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        console.log("🔑 Auth Event:", event);
+        if (session) {
+            AppState.user = session.user;
+            showApp();
+        } else if (event === 'SIGNED_OUT') {
+            showLogin();
+        }
+    });
+
     checkUser();
 
     const btnLogin = document.getElementById('btnLoginGoogle');

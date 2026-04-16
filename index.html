@@ -1587,15 +1587,14 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.28/4.29
+            // EMERGENCY CACHE PURGE V4.29
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        // Prevent reload if we are in the middle of an OAuth redirect
                         const isAuthCallback = window.location.hash.includes('access_token') || window.location.hash.includes('error');
-                        if (!localStorage.getItem('sw_purged_4.28') && !isAuthCallback) {
+                        if (!localStorage.getItem('sw_purged_4.29') && !isAuthCallback) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.28', 'true');
+                            localStorage.setItem('sw_purged_4.29', 'true');
                             window.location.reload();
                         }
                     }
@@ -1606,7 +1605,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.28"></script>
+        <script src="app_core.js?v=4.29"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
