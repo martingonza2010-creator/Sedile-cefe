@@ -405,8 +405,60 @@
                             </div>
                         </div>
 
-                        <!-- Goal & Evolution Inputs -->
-                        <div style="margin-top: 15px; padding-top:15px; border-top:1px dashed #ddd;">
+                        <!-- Goal & Evolution Strategy Card V4.22 -->
+                        <div id="strategyCard" 
+                             style="margin-top: 15px; padding: 15px; background: rgba(108, 92, 231, 0.03); border-radius: 12px; border: 1px solid rgba(108, 92, 231, 0.1); position: relative; overflow: hidden;">
+                            
+                            <!-- Adequacy Watermark/Badge -->
+                            <div id="strategyBadge" 
+                                 style="position: absolute; top: 12px; right: 12px; font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; background:#eee; color:#666; display:none; border:1px solid rgba(0,0,0,0.1);">
+                            </div>
+                            
+                            <label style="font-size: 0.8rem; font-weight: 800; color: #6c5ce7; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                                🎯 Estrategia de Nutrición
+                            </label>
+
+                            <div class="grid-col-2" style="gap:15px;">
+                                <!-- Left: Input/Evol Area -->
+                                <div class="mini-input">
+                                    <label style="color:#666; font-size:0.75rem;">Ajuste por Evolución (kcal/kg)</label>
+                                    <div style="position:relative;">
+                                        <input type="number" id="goalKcalBox" placeholder="Ej. 20" 
+                                               style="font-size:1.1rem; font-weight:700; padding-right:55px; width:100%;">
+                                        <span style="position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:0.65rem; color:#aaa; font-weight:600;">kcal/kg</span>
+                                    </div>
+                                    <div id="evolutionResult" style="font-size:0.7rem; color:#999; margin-top:4px; font-weight:600;">= 0 kcal/día</div>
+                                </div>
+
+                                <!-- Right: Prescription Final Area -->
+                                <div class="mini-input">
+                                    <label style="color:#666; font-size:0.75rem;">Meta de Prescripción Actual</label>
+                                    <div style="display:flex; gap:0; border:1px solid #ddd; border-radius:8px; overflow:hidden; background:white;">
+                                        <select id="getSelector" 
+                                                style="width:65px; border:none; background:#f8f9fa; font-size:0.7rem; border-right:1px solid #ddd; padding:0 5px; outline:none;"
+                                                onchange="if(typeof updateSelectedGET === 'function') updateSelectedGET()">
+                                            <option value="manual">Manual</option>
+                                            <option value="factorial" title="Usar Evolución (kcal/kg)">Evol.</option>
+                                            <option value="hb" title="Usar Harris-Benedict">H-B</option>
+                                            <option value="schofield" title="Usar Schofield">Schof</option>
+                                            <option value="fao" title="Usar FAO/OMS">FAO</option>
+                                        </select>
+                                        <input type="number" id="goalTotal" placeholder="kcal/día" 
+                                               style="flex:1; border:none; padding:8px; font-size:1.1rem; font-weight:800; color:#6c5ce7; outline:none;">
+                                    </div>
+                                    <div id="valLastGoalDate" style="font-size:0.6rem; color:#bbb; margin-top:4px; font-style:italic;">Ultima meta: --</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Strategy Feedback Footer -->
+                            <div id="strategyFeedback" 
+                                 style="margin-top:12px; font-size:0.7rem; color:#555; display:flex; align-items:center; gap:8px; padding:6px 10px; background:white; border-radius:8px; border:1px solid #eee; transition: all 0.3s ease;">
+                                <span id="strategyIcon" style="font-size:0.8rem;">💡</span>
+                                <span id="strategyText">Selecciona un método o ingresa los kcal/kg para definir la meta.</span>
+                            </div>
+                        </div>
+                        <div style="display:none;"> <!-- Hiding the old block below -->
+
                             <label
                                 style="font-size:0.75rem; font-weight:700; color:#666; margin-bottom:5px; display:block;">Metas
                                 y Evolución</label>
@@ -1482,13 +1534,13 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.21
+            // EMERGENCY CACHE PURGE V4.22
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        if (!localStorage.getItem('sw_purged_4.21')) {
+                        if (!localStorage.getItem('sw_purged_4.22')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.21', 'true');
+                            localStorage.setItem('sw_purged_4.22', 'true');
                             window.location.reload();
                         }
                     }
@@ -1499,7 +1551,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.21"></script>
+        <script src="app_core.js?v=4.22"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

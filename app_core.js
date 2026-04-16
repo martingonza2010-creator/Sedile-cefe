@@ -3162,37 +3162,84 @@ function initAssessmentLogic() {
         });
     }
 
-    // Evolution Logic (Auxiliary Tool) V3.18
-    const inpGoalKcal = document.getElementById('goalKcalBox');
-    const inpGoalTotal = document.getElementById('goalTotal');
-    const resEvoBadge = document.getElementById('evolutionResult');
-    const lastGoalLabel = document.getElementById('valLastGoalDate');
-
-    // Load last goal date from storage
-    if (localStorage.getItem('sedile_last_goal_date') && lastGoalLabel) {
-        lastGoalLabel.innerText = `Ultima meta: ${localStorage.getItem('sedile_last_goal_date')}`;
-    }
+    // --- NEW V4.22: Prescription Strategy Logic ---
+    window.updatePrescriptionStrategy = () => {
+        const p = AppState.patient || {};
+        const goalTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
+        const theoreticalGET = p.tmt_calculated || 0; 
+        
+        const badge = document.getElementById('strategyBadge');
+        const fdbkText = document.getElementById('strategyText');
+        const fdbkIcon = document.getElementById('strategyIcon');
+        const fdbkCard = document.getElementById('strategyFeedback');
+        
+        if (!badge || theoreticalGET <= 0 || goalTotal <= 0) {
+            if (badge) badge.style.display = 'none';
+            return;
+        }
+        
+        const adequacy = (goalTotal / theoreticalGET) * 100;
+        badge.innerText = adequacy.toFixed(0) + '% ADECUACIÓN';
+        badge.style.display = 'block';
+        
+        let label = '';
+        let color = '';
+        let icon = '';
+        let bgColor = '';
+        
+        if (adequacy < 40) {
+            label = 'Inicio / Refeeding';
+            color = '#e67e22';
+            icon = '⚠️';
+            bgColor = 'rgba(230, 126, 34, 0.05)';
+        } else if (adequacy < 85) {
+            label = 'Progresión';
+            color = '#3498db';
+            icon = '📈';
+            bgColor = 'rgba(52, 152, 219, 0.05)';
+        } else if (adequacy <= 115) {
+            label = 'Meta Alcanzada';
+            color = '#27ae60';
+            icon = '✅';
+            bgColor = 'rgba(39, 174, 96, 0.05)';
+        } else {
+            label = 'Sobrealimentación';
+            color = '#e74c3c';
+            icon = '🔥';
+            bgColor = 'rgba(231, 76, 60, 0.05)';
+        }
+        
+        fdbkText.innerText = `Estrategia: ${label} (${Math.round(goalTotal)} kcal de ${Math.round(theoreticalGET)} kcal)`;
+        fdbkText.style.color = color;
+        fdbkIcon.innerText = icon;
+        fdbkCard.style.borderColor = color + '44';
+        fdbkCard.style.background = bgColor;
+        badge.style.color = color;
+        badge.style.borderColor = color + '66';
+        badge.style.background = bgColor;
+    };
 
     if (inpGoalKcal) {
         inpGoalKcal.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value) || 0;
             const weight = parseFloat(document.getElementById('peso').value) || 0;
             const total = Math.round(val * weight);
-
-            if (resEvoBadge) {
-                resEvoBadge.innerHTML = `<b>${total}</b> kcal/día`;
-                resEvoBadge.style.color = "#8e44ad";
-            }
-
-            // NEW V3.26: Sync with Total Goal input
-            if (inpGoalTotal) {
+            if (resEvoBadge) resEvoBadge.innerText = `= ${total} kcal/día`;
+            
+            if (inpGoalTotal && document.getElementById('getSelector')?.value === 'factorial') {
                 inpGoalTotal.value = total;
-                // Trigger simulator update
-                AppState.userOverridesGoal = true;
-                const simGoalBadge = document.getElementById('simGoal');
-                if (simGoalBadge) simGoalBadge.innerText = total;
+                window.updatePrescriptionStrategy();
                 runSimulation();
+                updateMacroGoals();
             }
+        });
+    }
+
+    if (inpGoalTotal) {
+        inpGoalTotal.addEventListener('input', () => {
+            window.updatePrescriptionStrategy();
+            runSimulation();
+            updateMacroGoals();
         });
     }
 
