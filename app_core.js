@@ -131,6 +131,9 @@ try {
 }
 
 // --- 4. INITIALIZATION & AUTH ---
+let macroGoalMode = 'gkg'; // Global macro mode initialized
+let goalChartInstance = null; // Global chart instance
+
 // --- 4. INITIALIZATION & AUTH ---
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("🚀 SEDILE HRA: DOMContentLoaded initialized");
@@ -4060,24 +4063,26 @@ function updateMacroGoals() {
     let gProt = 0, gCHO = 0, gLip = 0;
     let pctP = 0, pctC = 0, pctL = 0;
 
+    const effectiveGoal = getTotal || p.tmt_calculated || 0;
+
     if (macroGoalMode === 'gkg') {
         gProt = valP * peso;
         gCHO = valC * peso;
         gLip = valL * peso;
-        if (getTotal > 0) {
-            pctP = ((gProt * 4) / getTotal) * 100;
-            pctC = ((gCHO * 4) / getTotal) * 100;
-            pctL = ((gLip * 9) / getTotal) * 100;
+        if (effectiveGoal > 0) {
+            pctP = ((gProt * 4) / effectiveGoal) * 100;
+            pctC = ((gCHO * 4) / effectiveGoal) * 100;
+            pctL = ((gLip * 9) / effectiveGoal) * 100;
         }
     } else {
         // Mode: PCT
         pctP = valP;
         pctC = valC;
         pctL = valL;
-        if (getTotal > 0) {
-            gProt = (getTotal * (pctP / 100)) / 4;
-            gCHO = (getTotal * (pctC / 100)) / 4;
-            gLip = (getTotal * (pctL / 100)) / 9;
+        if (effectiveGoal > 0) {
+            gProt = (effectiveGoal * (pctP / 100)) / 4;
+            gCHO = (effectiveGoal * (pctC / 100)) / 4;
+            gLip = (effectiveGoal * (pctL / 100)) / 9;
         }
     }
 
@@ -4114,7 +4119,7 @@ function updateMacroGoals() {
 
     // --- TOTAL % INDICATOR ---
     const currentPctSum = pctP + pctC + pctL;
-    const totalPctOfEnergia = (getTotal > 0) ? (totalKcal / getTotal) * 100 : currentPctSum;
+    const totalPctOfEnergia = (effectiveGoal > 0) ? (totalKcal / effectiveGoal) * 100 : currentPctSum;
     const pctDisplay = (macroGoalMode === 'pct') ? currentPctSum : totalPctOfEnergia;
 
     const warnBox = document.getElementById('pctTotalWarning');
