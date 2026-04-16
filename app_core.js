@@ -134,7 +134,6 @@ try {
 let macroGoalMode = 'gkg'; // Global macro mode initialized
 let goalChartInstance = null; // Global chart instance
 
-// --- 4. INITIALIZATION & AUTH ---
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("🚀 SEDILE HRA: DOMContentLoaded initialized");
     checkUser();
@@ -3936,8 +3935,6 @@ function initVoiceDictation() {
 }
 
 // --- 19. MACRONUTRIENT GOALS (NEW V3.63) ---
-let goalChartInstance = null;
-let macroGoalMode = 'gkg'; // 'gkg' or 'pct'
 
 function initGoalMacroChart() {
     const ctx = document.getElementById('goalMacroChart')?.getContext('2d');
