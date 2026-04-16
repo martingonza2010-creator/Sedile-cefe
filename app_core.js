@@ -2498,6 +2498,8 @@ function runSimulation() {
             proTracker.style.display = 'none';
         }
     }
+    // --- FINAL V4.23: Global update for Adequacy Strategy ---
+    if (typeof window.updatePrescriptionStrategy === 'function') window.updatePrescriptionStrategy(k);
 }
 
 // --- 10. INFUSION CALCULATOR LOGIC (NEW) ---
@@ -3162,25 +3164,41 @@ function initAssessmentLogic() {
         });
     }
 
-    // --- NEW V4.22: Prescription Strategy Logic ---
-    window.updatePrescriptionStrategy = () => {
+    // --- NEW V4.23: Real-time Strategic Feedback (Intake vs Requirement) ---
+    window.updatePrescriptionStrategy = (currentKcalOverride) => {
         const p = AppState.patient || {};
+        
+        // Use provided kcal (from simulation) or scrape from UI
+        let currentKcal = currentKcalOverride;
+        if (currentKcal === undefined) {
+            currentKcal = parseFloat(document.getElementById('valKcal')?.innerText) || 0;
+        }
+
+        // The denominator is prioritised: User Defined Goal > Theoretical GET
         const goalTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
         const theoreticalGET = p.tmt_calculated || 0; 
+        const targetDenominator = goalTotal || theoreticalGET;
         
         const badge = document.getElementById('strategyBadge');
         const fdbkText = document.getElementById('strategyText');
         const fdbkIcon = document.getElementById('strategyIcon');
         const fdbkCard = document.getElementById('strategyFeedback');
         
-        if (!badge || theoreticalGET <= 0 || goalTotal <= 0) {
-            if (badge) badge.style.display = 'none';
+        if (!badge) return;
+
+        // Reset state if no data
+        if (targetDenominator <= 0 || currentKcal < 0) {
+            badge.innerText = '--% ADECUACIÓN';
+            badge.style.color = '#888';
+            badge.style.background = '#eee';
+            badge.style.borderColor = '#ddd';
+            if (fdbkText) fdbkText.innerText = "Ingresa volumen o selecciona fórmula para calcular adecuación.";
             return;
         }
         
-        const adequacy = (goalTotal / theoreticalGET) * 100;
+        const adequacy = (currentKcal / targetDenominator) * 100;
         badge.innerText = adequacy.toFixed(0) + '% ADECUACIÓN';
-        badge.style.display = 'block';
+        badge.style.display = 'inline-block';
         
         let label = '';
         let color = '';
@@ -3203,17 +3221,19 @@ function initAssessmentLogic() {
             icon = '✅';
             bgColor = 'rgba(39, 174, 96, 0.05)';
         } else {
-            label = 'Sobrealimentación';
+            label = 'Sobrealimentación / Superávit';
             color = '#e74c3c';
             icon = '🔥';
             bgColor = 'rgba(231, 76, 60, 0.05)';
         }
         
-        fdbkText.innerText = `Estrategia: ${label} (${Math.round(goalTotal)} kcal de ${Math.round(theoreticalGET)} kcal)`;
-        fdbkText.style.color = color;
-        fdbkIcon.innerText = icon;
-        fdbkCard.style.borderColor = color + '44';
-        fdbkCard.style.background = bgColor;
+        if (fdbkText) fdbkText.innerText = `Estado: ${label} (${Math.round(currentKcal)} kcal de ${Math.round(targetDenominator)} kcal)`;
+        if (fdbkText) fdbkText.style.color = color;
+        if (fdbkIcon) fdbkIcon.innerText = icon;
+        if (fdbkCard) {
+            fdbkCard.style.borderColor = color + '44';
+            fdbkCard.style.background = bgColor;
+        }
         badge.style.color = color;
         badge.style.borderColor = color + '66';
         badge.style.background = bgColor;

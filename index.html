@@ -411,7 +411,8 @@
                             
                             <!-- Adequacy Watermark/Badge -->
                             <div id="strategyBadge" 
-                                 style="position: absolute; top: 12px; right: 12px; font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; background:#eee; color:#666; display:none; border:1px solid rgba(0,0,0,0.1);">
+                                 style="position: absolute; top: 12px; right: 12px; font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; background:#eee; color:#666; display:inline-block; border:1px solid rgba(0,0,0,0.1);">
+                                --% ADECUACIÓN
                             </div>
                             
                             <label style="font-size: 0.8rem; font-weight: 800; color: #6c5ce7; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
@@ -1534,13 +1535,13 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.22
+            // EMERGENCY CACHE PURGE V4.23
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        if (!localStorage.getItem('sw_purged_4.22')) {
+                        if (!localStorage.getItem('sw_purged_4.23')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.22', 'true');
+                            localStorage.setItem('sw_purged_4.23', 'true');
                             window.location.reload();
                         }
                     }
@@ -1551,7 +1552,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.22"></script>
+        <script src="app_core.js?v=4.23"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
