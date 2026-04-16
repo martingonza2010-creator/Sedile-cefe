@@ -4048,7 +4048,8 @@ function initGoalMacroChart() {
 }
 
 function updateMacroGoals() {
-    const peso = AppState.patient.peso_calculo || AppState.patient.peso || 0;
+    const p = AppState.patient || {};
+    const peso = p.peso_calculo || p.peso || 0;
     const getTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
 
     const valP = parseFloat(document.getElementById('goalProtKg')?.value) || 0;
@@ -4062,7 +4063,6 @@ function updateMacroGoals() {
         gProt = valP * peso;
         gCHO = valC * peso;
         gLip = valL * peso;
-
         if (getTotal > 0) {
             pctP = ((gProt * 4) / getTotal) * 100;
             pctC = ((gCHO * 4) / getTotal) * 100;
@@ -4070,11 +4070,10 @@ function updateMacroGoals() {
         }
     } else {
         // Mode: PCT
+        pctP = valP;
+        pctC = valC;
+        pctL = valL;
         if (getTotal > 0) {
-            pctP = valP;
-            pctC = valC;
-            pctL = valL;
-
             gProt = (getTotal * (pctP / 100)) / 4;
             gCHO = (getTotal * (pctC / 100)) / 4;
             gLip = (getTotal * (pctL / 100)) / 9;
@@ -4094,9 +4093,9 @@ function updateMacroGoals() {
 
     // Update internal sub-labels
     if (macroGoalMode === 'pct') {
-        document.getElementById('macroPctProt').innerText = `(${gkgP.toFixed(2)} g/kg)`;
-        document.getElementById('macroPctCHO').innerText = `(${gkgC.toFixed(2)} g/kg)`;
-        document.getElementById('macroPctLip').innerText = `(${gkgL.toFixed(2)} g/kg)`;
+        if (document.getElementById('macroPctProt')) document.getElementById('macroPctProt').innerText = `(${gkgP.toFixed(2)} g/kg)`;
+        if (document.getElementById('macroPctCHO')) document.getElementById('macroPctCHO').innerText = `(${gkgC.toFixed(2)} g/kg)`;
+        if (document.getElementById('macroPctLip')) document.getElementById('macroPctLip').innerText = `(${gkgL.toFixed(2)} g/kg)`;
     }
 
     const kcalProt = gProt * 4;
@@ -4107,36 +4106,37 @@ function updateMacroGoals() {
     const elMacroKcal = document.getElementById('goalMacroKcal');
     if (elMacroKcal) elMacroKcal.innerText = Math.round(totalKcal);
 
-    // --- TOTAL % INDICATOR (both modes) ---
-    const totalPctOfGoal = (getTotal > 0) ? (totalKcal / getTotal) * 100 : (pctP + pctC + pctL);
+    // --- TOTAL % INDICATOR ---
+    const currentPctSum = pctP + pctC + pctL;
+    const totalPctOfEnergia = (getTotal > 0) ? (totalKcal / getTotal) * 100 : currentPctSum;
+    const pctDisplay = (macroGoalMode === 'pct') ? currentPctSum : totalPctOfEnergia;
+
     const warnBox = document.getElementById('pctTotalWarning');
     const warnCheck = document.getElementById('pctTotalCheck');
     
     if (warnBox && warnCheck && (valP > 0 || valC > 0 || valL > 0)) {
-        const pctDisplay = macroGoalMode === 'pct' ? (pctP + pctC + pctL) : totalPctOfGoal;
         warnCheck.innerText = pctDisplay.toFixed(1) + '%';
         
-        let barColor, textColor;
-        if (pctDisplay >= 95 && pctDisplay <= 105) {
-            barColor = 'rgba(39, 174, 96, 0.15)';
-            textColor = '#27ae60';
-        } else if (pctDisplay < 95) {
-            barColor = 'rgba(243, 156, 18, 0.15)';
-            textColor = '#f39c12';
-        } else {
-            barColor = 'rgba(231, 76, 60, 0.15)';
-            textColor = '#e74c3c';
-        }
-        warnBox.style.background = barColor;
-        warnBox.style.borderColor = textColor.replace(')', ', 0.4)').replace('rgb', 'rgba');
-        warnCheck.style.color = textColor;
+        let color;
+        if (pctDisplay >= 98 && pctDisplay <= 102) color = '#27ae60';
+        else if (pctDisplay < 98) color = '#f39c12';
+        else color = '#e74c3c';
+
+        warnBox.style.background = color + '22';
+        warnBox.style.borderColor = color + '66';
+        warnCheck.style.color = color;
         warnBox.style.display = 'flex';
     } else if (warnBox) {
         warnBox.style.display = 'none';
     }
 
     if (goalChartInstance) {
-        goalChartInstance.data.datasets[0].data = [kcalProt, kcalCHO, kcalLip];
+        let chartData = [kcalProt, kcalCHO, kcalLip];
+        // Proporciones para el gráfico si las kcal absolutas son 0
+        if (totalKcal === 0 && (pctP || pctC || pctL)) {
+            chartData = [pctP * 4, pctC * 4, pctL * 9];
+        }
+        goalChartInstance.data.datasets[0].data = chartData;
         goalChartInstance.update();
     }
 

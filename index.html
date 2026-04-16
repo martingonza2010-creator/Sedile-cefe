@@ -1476,13 +1476,13 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.15
+            // EMERGENCY CACHE PURGE V4.16
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        if (!localStorage.getItem('sw_purged_4.15')) {
+                        if (!localStorage.getItem('sw_purged_4.16')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.15', 'true');
+                            localStorage.setItem('sw_purged_4.16', 'true');
                             window.location.reload();
                         }
                     }
@@ -1493,7 +1493,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.15"></script>
+        <script src="app_core.js?v=4.16"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
