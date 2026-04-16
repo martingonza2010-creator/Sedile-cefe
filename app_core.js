@@ -2496,7 +2496,6 @@ function runSimulation() {
             } else { adeqLip.innerText = "--"; adeqLip.style.color = '#888'; }
 
         }
-    }
 
     // Trigger Infusion Calc update if volume changes
     calcInfusion();
