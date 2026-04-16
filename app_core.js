@@ -3460,7 +3460,7 @@ function initGlobalEvents() {
         };
     }
 
-    // Clinical Note Generator V3.50
+    // Clinical Note Generator V3.50 (Updated to ADIME V4.14)
     const btnNote = document.getElementById('btnGenerateNote');
     if (btnNote) btnNote.onclick = function () {
         const container = document.getElementById('clinicalNoteContainer');
@@ -3468,40 +3468,54 @@ function initGlobalEvents() {
         if (!container || !content) return;
 
         const p = AppState.patient;
-        if (!p) { alert("Selecciona un paciente primero."); return; }
+        
+        const fId = document.getElementById('formulaSelect')?.value;
+        const formula = AppState.formulas ? AppState.formulas.find(f => f.id === fId) : null;
+        const vol = parseFloat(document.getElementById('volume')?.value) || 0;
+        const goal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
+        
+        let pTotal = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
+        let cTotal = parseFloat(document.getElementById('goalCHO')?.dataset.val) || 0;
+        let lTotal = parseFloat(document.getElementById('goalLip')?.dataset.val) || 0;
 
-        const fId = document.getElementById('formulaSelect').value;
-        const formula = AppState.formulas.find(f => f.id === fId);
-        const vol = parseFloat(document.getElementById('volume').value) || 0;
-        const goal = parseFloat(document.getElementById('goalTotal').value) || 0;
-
-        // Modules info
         let modulesText = "";
         const mods = ["Nessucar", "MCT", "Enterex", "Banatrol", "Proteinex", "Fresubin"];
         mods.forEach(m => {
-            const val = parseFloat(document.getElementById('mod' + m).value) || 0;
-            if (val > 0) modulesText += `${m}: ${val}${m === "MCT" ? "ml" : "g"}, `;
+            const val = parseFloat(document.getElementById('mod' + m)?.value) || 0;
+            if (val > 0) modulesText += `${m}: ${val} ${m === "MCT" ? "ml" : "g"}, `;
         });
 
-        const tableHTML = `
-            <table style="width:100%; border-collapse:collapse; margin-bottom:15px; border:1px solid #eee;">
-                <tr style="background:#f9f9f9;">
-                    <th style="padding:8px; border:1px solid #eee; text-align:left;">Parámetro</th>
-                    <th style="padding:8px; border:1px solid #eee; text-align:left;">Dato</th>
-                </tr>
-                <tr><td style="padding:8px; border:1px solid #eee;">Peso Actual</td><td style="padding:8px; border:1px solid #eee;">${p.weight} kg</td></tr>
-                <tr><td style="padding:8px; border:1px solid #eee;">Meta Kcal</td><td style="padding:8px; border:1px solid #eee;">${goal} kcal/día</td></tr>
-                <tr><td style="padding:8px; border:1px solid #eee;">Prescripción</td><td style="padding:8px; border:1px solid #eee;">${formula ? formula.name : 'N/A'} - ${vol} ml</td></tr>
-                ${modulesText ? `<tr><td style="padding:8px; border:1px solid #eee;">Módulos</td><td style="padding:8px; border:1px solid #eee;">${modulesText.slice(0, -2)}</td></tr>` : ''}
-            </table>
-        `;
+        const examenes = document.getElementById('evoExamenes')?.value || "Sin reportar";
+        const tolerancia = document.getElementById('evoTolerancia')?.value || "Adecuada";
+        const des = document.getElementById('diagnosticoPES')?.value || "Sin diagnóstico ingresado";
+        
+        const pesoFisico = p.peso || 0;
+        const pesoCalc = document.getElementById('pesoCalculoSelect')?.value === 'real' ? pesoFisico : (p.peso_calculo || pesoFisico);
+        
+        const cm = (document.getElementById('tallaCM')?.value || (p.estatura * 100)) || 0;
+        const sctVal = document.getElementById('valSCT')?.innerText || '-- m²';
 
-        const des = document.getElementById('diagnosticoPES').value || "(Sin diagnóstico ingresado)";
-        const textHTML = `<p><strong>Evolución Nutricional:</strong> Paciente bajo control de Nutrición. Meta calórica de ${goal} kcal/día (${(goal / p.weight).toFixed(1)} kcal/kg).
-            Prescripción actual: ${formula ? formula.name : '---'} en volumen de ${vol}ml. ${modulesText ? `Reforzado con módulos: ${modulesText.slice(0, -2)}.` : ''}</p>
-            <p><strong>Diagnóstico/PES:</strong> ${des}</p>`;
+        // Build ADIME Text
+        const adimeText = `A - ANTROPOMETRÍA Y REQUERIMIENTOS:
+- Peso Real: ${pesoFisico} kg | Talla: ${cm} cm
+- Peso de Cálculo: ${pesoCalc.toFixed(1)} kg | Superficie Corp: ${sctVal}
+- Meta Energética: ${Math.round(goal)} kcal/día (${pesoCalc > 0 ? (goal/pesoCalc).toFixed(1) : 0} kcal/kg)
+- Meta Proteínas: ${Math.round(pTotal)} g/día (${pesoCalc > 0 ? (pTotal/pesoCalc).toFixed(1) : 0} g/kg)
+- Meta CHOs: ${Math.round(cTotal)} g/día | Líp: ${Math.round(lTotal)} g/día
 
-        content.innerHTML = tableHTML + textHTML;
+B - BIOQUÍMICA Y CLÍNICA (TOLERANCIA):
+- Exámenes Clave: ${examenes}
+- Tolerancia Subjetiva: ${tolerancia}
+
+D - DIAGNÓSTICO NUTRICIONAL INTEGRADO:
+- ${des}
+
+I - INTERVENCIÓN Y PRESCRIPCIÓN:
+- Fórmula Indicada: ${formula ? formula.name : 'N/A'}
+- Volumen Prescrito: ${vol} ml
+${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
+
+        content.innerText = adimeText;
         container.style.display = 'block';
         container.scrollIntoView({ behavior: 'smooth' });
     };
@@ -3510,7 +3524,7 @@ function initGlobalEvents() {
     const btnCopy = document.getElementById('btnCopyNote');
     if (btnCopy) btnCopy.onclick = () => {
         const text = document.getElementById('noteContent').innerText;
-        navigator.clipboard.writeText(text).then(() => alert("Nota clínica copiada al portapapeles."));
+        navigator.clipboard.writeText(text).then(() => alert("Evolución Clínica (ADIME) copiada al portapapeles."));
     };
 
     // Module Input Watcher

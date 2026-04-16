@@ -1238,21 +1238,32 @@
                 </section>
             </div>
 
-            <!-- NEW V3.50: GENERADOR DE NOTA CLÍNICA -->
-            <div style="margin: 25px 15px;">
-                <button class="btn-ia-generate" id="btnGenerateNote"
-                    style="background: linear-gradient(135deg, #8e44ad, #9b59b6); margin-bottom: 15px;">
-                    ✨ Generar Nota Clínica (Copy)
+            <!-- GENERADOR DE EVOLUCIÓN (ADIME - CYCLOPE) -->
+            <div style="margin: 25px 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                <h3 style="color:#2c3e50; font-size:1.1rem; margin-bottom:15px; font-weight:600;">Registro de Evolución Quirúrgica/Clínica</h3>
+                
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.75rem; color:#7f8c8d; font-weight:600; display:block; margin-bottom:4px;">Parámetros Bioquímicos / Exámenes</label>
+                        <input type="text" id="evoExamenes" placeholder="Ej: PCR 45, Albúmina 2.8, BUN 20..." style="width:100%; padding:8px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:0.75rem; color:#7f8c8d; font-weight:600; display:block; margin-bottom:4px;">Tolerancia y Clínica Subjetiva</label>
+                        <input type="text" id="evoTolerancia" placeholder="Ej: Buena tolerancia V.O, deposiciones (-)..." style="width:100%; padding:8px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem;">
+                    </div>
+                </div>
+
+                <button id="btnGenerateNote" style="background: #2c3e50; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:600; cursor:pointer; width:100%; margin-bottom: 15px; font-size:0.9rem;">
+                    Generar Evolucion para Cyclope
                 </button>
 
-                <div id="clinicalNoteContainer" class="card"
-                    style="display:none; padding:20px; border: 1px solid var(--primary); background: white;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                        <h4 style="margin:0; color:var(--primary);">📋 Resumen de Evolución</h4>
-                        <button class="btn-micro" id="btnCopyNote">Copiar Texto</button>
+                <div id="clinicalNoteContainer" class="card" style="display:none; padding:15px; border: 1px solid #bdc3c7; background: #fafbfc;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                        <h4 style="margin:0; color:#34495e; font-size:0.9rem;">Vista Previa de Evolución (ADIME)</h4>
+                        <button id="btnCopyNote" style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:600;">Copiar Texto</button>
                     </div>
-                    <div id="noteContent" style="font-size:0.85rem; line-height:1.5; color:#333;">
-                        <!-- Generated Content -->
+                    <div id="noteContent" style="font-size:0.8rem; line-height:1.6; color:#2c3e50; white-space:pre-wrap; font-family:monospace; background:white; padding:10px; border:1px solid #eee; border-radius:4px;">
+                        <!-- Generated ADIME Content -->
                     </div>
                 </div>
             </div>
@@ -1468,13 +1479,13 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.13
+            // EMERGENCY CACHE PURGE V4.14
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        if (!localStorage.getItem('sw_purged_4.13')) {
+                        if (!localStorage.getItem('sw_purged_4.14')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.13', 'true');
+                            localStorage.setItem('sw_purged_4.14', 'true');
                             window.location.reload();
                         }
                     }
@@ -1485,7 +1496,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.13"></script>
+        <script src="app_core.js?v=4.14"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
