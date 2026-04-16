@@ -1487,6 +1487,7 @@ window.togglePatientMode = () => {
     if (iwRow) iwRow.style.display = mode === 'adult' ? 'flex' : 'none';
 
     calculateRequirements();
+    if (typeof window.updateInfusionProposal === 'function') window.updateInfusionProposal();
 };
 
 window.toggleQuemado = () => {
@@ -2511,6 +2512,28 @@ function initInfusionLogic() {
         rthSel.innerHTML = html;
     }
 
+    // --- NEW V4.20: Population-aware Infusion Proposals ---
+    window.updateInfusionProposal = () => {
+        const p = AppState.patient || {};
+        const label = document.getElementById('infusionSuggestionLabel');
+        if (!label) return;
+        const isPeds = p.type === 'pediatric' || p.type === 'neonate';
+        const limit = isPeds ? 250 : 80;
+        label.innerText = `Sug: ${limit}`;
+        label.dataset.suggestion = limit;
+        label.style.borderColor = isPeds ? '#9b59b6' : '#3498db';
+        label.style.color = isPeds ? '#9b59b6' : '#3498db';
+    };
+
+    window.applyInfusionSuggestion = () => {
+        const label = document.getElementById('infusionSuggestionLabel');
+        const input = document.getElementById('infusionRate');
+        if (label && input) {
+            input.value = label.dataset.suggestion || 80;
+            window.calcInfusion();
+        }
+    };
+
     // Bind inputs to global scope since we referenced it inline
     window.calcInfusion = function () {
         // We listen to the main prescribed volume! 
@@ -2526,8 +2549,13 @@ function initInfusionLogic() {
 
         if (totalVolPrescrito <= 0 && rate <= 0) {
             resBox.style.display = 'none';
+            if (logBox) logBox.style.display = 'none';
             return;
         }
+
+        const p = AppState.patient || {};
+        const isPeds = p.type === 'pediatric' || p.type === 'neonate';
+        const limit = isPeds ? 250 : 80;
 
         // --- 1. Sachet Terminate Calculation ---
         let sachetEndStrDisplay = '--:--';
@@ -2637,6 +2665,7 @@ function initInfusionLogic() {
                 📦 Necesitas <b>${envasesNedded} producto(s) RTH diarios</b> de ${fallbackName}.<br>
                 ${planesText}
                 ${currentSachetWarningStr}
+                ${rate > limit ? `<div style="margin-top:6px; color:#e74c3c; font-weight:700; background:rgba(231,76,60,0.1); padding:5px; border-radius:4px; border:1px solid rgba(231,76,60,0.3);">⚠️ Alerta Velocidad: Estás superando el límite clínico sugerido (${limit} ml/hr) para esta población.</div>` : ''}
             `;
         } else {
             logBox.style.display = 'none';

@@ -633,7 +633,13 @@
                                     onchange="window.calcInfusion()">
                             </div>
                             <div class="mini-input">
-                                <label>Velocidad de Pasaje (ml/hr)</label>
+                                <label style="display:flex; justify-content:space-between; align-items:center;">
+                                    Velocidad (ml/hr)
+                                    <span id="infusionSuggestionLabel" 
+                                          style="font-size:0.55rem; color:#3498db; cursor:pointer; background:#eaf2f8; padding:1px 4px; border-radius:3px; border:1px solid #d4e6f1;" 
+                                          title="Hacer clic para aplicar sugerencia clínica"
+                                          onclick="window.applyInfusionSuggestion()">Sug: 80</span>
+                                </label>
                                 <input type="number" id="infusionRate" placeholder="Ej. 60"
                                     oninput="window.calcInfusion()">
                             </div>
@@ -1476,13 +1482,13 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.19
+            // EMERGENCY CACHE PURGE V4.20
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
-                        if (!localStorage.getItem('sw_purged_4.19')) {
+                        if (!localStorage.getItem('sw_purged_4.20')) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.19', 'true');
+                            localStorage.setItem('sw_purged_4.20', 'true');
                             window.location.reload();
                         }
                     }
@@ -1493,7 +1499,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.19"></script>
+        <script src="app_core.js?v=4.20"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
