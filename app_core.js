@@ -382,8 +382,7 @@ function initPatientLogic() {
                 const peso = parseFloat(document.getElementById('peso').value) || 0;
                 const estatura = parseFloat(document.getElementById('estatura').value) || 0;
                 const sexo = document.getElementById('sexo').value;
-                const actividad = parseFloat(document.getElementById('actividad').value) || 1.0;
-                const estres = parseFloat(document.getElementById('estres')?.value) || 1.0;
+                const actividad = parseFloat(document.getElementById('actividad').value) || 1.2;
                 const diagnostico = document.getElementById('diagnostico')?.value || '';
                 const cama = document.getElementById('cama')?.value || '';
                 const tmt = parseFloat(document.getElementById('goalTotal').value) || 0;
@@ -437,10 +436,7 @@ function initPatientLogic() {
                             diarrea: document.getElementById('diarrea').value,
                             distension: document.getElementById('distension').value
                         },
-                        pes: document.getElementById('diagnosticoPES').value,
-                        estres: estres,
-                        isQuemado: document.getElementById('chkQuemado')?.checked || false,
-                        scqPercent: document.getElementById('scqPercent')?.value || ''
+                        pes: document.getElementById('diagnosticoPES').value
                     }
                 };
 
@@ -1099,35 +1095,19 @@ window.loadPatient = async (id) => {
         calculateRequirements();
 
         // Restore goals if exist
-        if (data.metadata) {
+        if (data.metadata && data.metadata.simulator) {
             const sim = data.metadata.simulator;
-            if (sim) {
-                if (sim.macro_mode) {
-                    if (sim.macro_mode === 'pct') {
-                        document.getElementById('btnModePct')?.click();
-                    } else {
-                        document.getElementById('btnModeGkg')?.click();
-                    }
-                }
-                if (sim.goal_prot) document.getElementById('goalProtKg').value = sim.goal_prot;
-                if (sim.goal_cho) document.getElementById('goalCHOKg').value = sim.goal_cho;
-                if (sim.goal_lip) document.getElementById('goalLipKg').value = sim.goal_lip;
-                if (typeof updateMacroGoals === 'function') updateMacroGoals();
-            }
-
-            const ass = data.metadata.assessment;
-            if (ass) {
-                if (ass.estres) {
-                    const elEstres = document.getElementById('estres');
-                    if (elEstres) elEstres.value = ass.estres;
-                }
-                if (ass.isQuemado) {
-                    const elQ = document.getElementById('chkQuemado');
-                    if (elQ) elQ.checked = true;
-                    if (ass.scqPercent) document.getElementById('scqPercent').value = ass.scqPercent;
-                    if (typeof window.toggleQuemado === 'function') window.toggleQuemado();
+            if (sim.macro_mode) {
+                if (sim.macro_mode === 'pct') {
+                    document.getElementById('btnModePct')?.click();
+                } else {
+                    document.getElementById('btnModeGkg')?.click();
                 }
             }
+            if (sim.goal_prot) document.getElementById('goalProtKg').value = sim.goal_prot;
+            if (sim.goal_cho) document.getElementById('goalCHOKg').value = sim.goal_cho;
+            if (sim.goal_lip) document.getElementById('goalLipKg').value = sim.goal_lip;
+            if (typeof updateMacroGoals === 'function') updateMacroGoals();
         }
 
         document.getElementById('historyModal').classList.remove('active');
@@ -1431,35 +1411,31 @@ window.togglePatientMode = () => {
     const iwRow = document.getElementById('valIdealWeight')?.parentElement?.parentElement;
     if (iwRow) iwRow.style.display = mode === 'adult' ? 'flex' : 'none';
 
-    // Rigger UI reset based on changes
-    if (typeof window.toggleQuemado === 'function') window.toggleQuemado();
-
     calculateRequirements();
 };
 
 window.toggleQuemado = () => {
-    const isQuemado = document.getElementById('chkQuemado')?.checked;
+    const chk = document.getElementById('chkQuemado');
     const panel = document.getElementById('quemadoPanel');
-    if (panel) panel.style.display = isQuemado ? 'block' : 'none';
-
-    // Set Stress Factor Automatically on toggle
     const estresEl = document.getElementById('estres');
-    if (isQuemado && estresEl && estresEl.value === "1.0") {
-        estresEl.value = "1.5"; // Default severe burn minimum
-    } else if (!isQuemado && estresEl && parseFloat(estresEl.value) >= 1.5) {
-        estresEl.value = "1.0"; // Revert to healthy
-    }
-
-    // Adapt Protein Goal Placeholder
-    const protInput = document.getElementById('goalProtKg');
-    if (protInput) {
-        const type = AppState.patient?.type || 'adult';
-        if (isQuemado) {
-            protInput.placeholder = type === 'adult' ? 'Ej. 1.5 - 2.5 (Quemado)' : 'Ej. 2.5 - 3.0 (Quemado)';
-            protInput.style.border = '2px solid #e74c3c';
+    
+    if (chk && panel) {
+        const isPeds = AppState.patient.type === 'pediatric' || AppState.patient.type === 'neonate';
+        const protInput = document.getElementById('goalProtKg');
+        
+        if (chk.checked) {
+            panel.style.display = 'block';
+            if (estresEl && parseFloat(estresEl.value) < 1.5) {
+                estresEl.value = "1.5"; // Auto set stress to minimum burn multiplier
+            }
+            if (protInput && typeof macroGoalMode !== 'undefined' && macroGoalMode === 'gkg') {
+                protInput.placeholder = isPeds ? "Ej. 2.5 - 3.0" : "Ej. 1.5 - 2.5";
+            }
         } else {
-            protInput.placeholder = 'Ej. 1.0';
-            protInput.style.border = '1px solid #ddd';
+            panel.style.display = 'none';
+            if (protInput && typeof macroGoalMode !== 'undefined' && macroGoalMode === 'gkg') {
+                protInput.placeholder = "Ej. 1.5";
+            }
         }
     }
     calculateRequirements();
