@@ -96,6 +96,14 @@ const AppState = {
     userOverridesGoal: false,
     compareMode: false,
     adequacyMode: 'goal', // 'goal' or 'get'
+    traslape: {
+        active: false,
+        sourceKcal: 0,
+        sourceProt: 0,
+        sourceVol: 0,
+        pct: 100 // % Enteral
+    },
+    uun: 4, // Urea Nitrogen in Urine (default factor)
     formulaB: null,
     chart: null
 };
@@ -2368,6 +2376,14 @@ function runSimulation() {
     c += (modC + oralC + ivC);
     l += (modL + oralL);
 
+    // --- NEW V4.25: Factor in Route Overlap (Traslape) ---
+    if (AppState.traslape && AppState.traslape.active) {
+        k += AppState.traslape.sourceKcal;
+        p += AppState.traslape.sourceProt;
+        // Total water includes Enteral + Oral + IV + Source Route
+        // (vol variable used in hyd calculation is already added)
+    }
+
     // Animation: Count Up Numbers
     animateValue("valKcal", Math.round(k));
     animateValue("valProt", p.toFixed(1));
@@ -2419,40 +2435,37 @@ function runSimulation() {
     const officialKcalGoal = AppState.officialGET || parseFloat(document.getElementById('goalTotal').value) || 2000;
 
     if (adeqCard) {
-        if (officialKcalGoal > 0 || goalP > 0 || goalC > 0 || goalL > 0) {
-            adeqCard.style.display = 'block';
+        // Redefined V4.27: Card is permanent. Values calculated if goals exist.
+        adeqCard.style.display = 'block';
 
-            // Kcal Adequacy
-            if (officialKcalGoal > 0) {
+        // Kcal Adequacy
+        if (officialKcalGoal > 0) {
                 const pctK = (k / officialKcalGoal) * 100;
                 adeqKcal.innerText = Math.round(pctK) + "%";
-                adeqKcal.style.color = (pctK < 90) ? '#e67e22' : (pctK > 110) ? '#e74c3c' : '#27ae60';
+                adeqKcal.style.color = (pctK < 90 || pctK > 110) ? '#e74c3c' : '#27ae60';
             } else { adeqKcal.innerText = "--"; adeqKcal.style.color = '#888'; }
 
             // Prot Adequacy
             if (goalP > 0) {
                 const pctP = (p / goalP) * 100;
                 adeqProt.innerText = Math.round(pctP) + "%";
-                adeqProt.style.color = (pctP < 90) ? '#e67e22' : (pctP > 110) ? '#e74c3c' : '#27ae60';
+                adeqProt.style.color = (pctP < 90 || pctP > 110) ? '#e74c3c' : '#27ae60';
             } else { adeqProt.innerText = "--"; adeqProt.style.color = '#888'; }
 
             // CHO Adequacy
             if (goalC > 0) {
                 const pctC = (c / goalC) * 100;
                 adeqCHO.innerText = Math.round(pctC) + "%";
-                adeqCHO.style.color = (pctC < 90) ? '#e67e22' : (pctC > 110) ? '#e74c3c' : '#27ae60';
+                adeqCHO.style.color = (pctC < 90 || pctC > 110) ? '#e74c3c' : '#27ae60';
             } else { adeqCHO.innerText = "--"; adeqCHO.style.color = '#888'; }
 
             // Lip Adequacy
             if (goalL > 0) {
                 const pctL = (l / goalL) * 100;
                 adeqLip.innerText = Math.round(pctL) + "%";
-                adeqLip.style.color = (pctL < 90) ? '#e67e22' : (pctL > 110) ? '#e74c3c' : '#27ae60';
+                adeqLip.style.color = (pctL < 90 || pctL > 110) ? '#e74c3c' : '#27ae60';
             } else { adeqLip.innerText = "--"; adeqLip.style.color = '#888'; }
 
-        } else {
-            // Hide card if no goals exist
-            adeqCard.style.display = 'none';
         }
     }
 
@@ -2499,7 +2512,64 @@ function runSimulation() {
             proTracker.style.display = 'none';
         }
     }
-    // --- FINAL V4.23: Global update for Adequacy Strategy ---
+    // --- NEW V4.25: Metabolic Efficiency Monitoring ---
+    const updateMetabolicEfficiency = (totalKcal, totalProt) => {
+        const bnVal = document.getElementById('valBN');
+        const bnLabel = document.getElementById('labelBN');
+        const npcnVal = document.getElementById('valNPCN');
+        const npcnLabel = document.getElementById('labelNPCN');
+        const advice = document.getElementById('metabolicAdvice');
+        
+        if (!bnVal || !npcnVal) return;
+        
+        if (totalKcal <= 0 || totalProt <= 0) {
+            bnVal.innerText = "--";
+            npcnVal.innerText = "--";
+            return;
+        }
+        
+        // 1. Nitrogen Balance (BN)
+        // Nitrogen Intake = Prot / 6.25
+        // Nitrogen Loss = UUN + 4
+        const nitrogenIntake = totalProt / 6.25;
+        const nitrogenLoss = (AppState.uun || 4) + 4;
+        const bn = nitrogenIntake - nitrogenLoss;
+        
+        bnVal.innerText = bn.toFixed(2);
+        if (bn < -2) {
+            bnLabel.innerText = "CATABÓLICO";
+            bnLabel.style.background = "#e74c3c";
+        } else if (bn > 2) {
+            bnLabel.innerText = "ANABÓLICO";
+            bnLabel.style.background = "#27ae60";
+        } else {
+            bnLabel.innerText = "EQUILIBRIO";
+            bnLabel.style.background = "#f1c40f";
+        }
+        
+        // 2. NPC:N Ratio
+        // Non-Protein Calories = Total Kcal - (Prot * 4)
+        const npc = totalKcal - (totalProt * 4);
+        const npcn = npc / (nitrogenIntake || 1);
+        
+        npcnVal.innerText = Math.round(npcn);
+        if (npcn < 80) {
+            npcnLabel.innerText = "BAJO (Estrés)";
+            npcnLabel.style.background = "#e67e22";
+        } else if (npcn > 150) {
+            npcnLabel.innerText = "ALTO (Estable)";
+            npcnLabel.style.background = "#3498db";
+        } else {
+            npcnLabel.innerText = "ÓPTIMO";
+            npcnLabel.style.background = "#27ae60";
+        }
+        
+        if (advice) advice.innerText = `Balance detectado: ${bn > 0 ? 'Fase de recuperación' : 'Fase catabólica detectada'}.`;
+    };
+
+    updateMetabolicEfficiency(k, p);
+
+    // --- FINAL V4.25: Global update for Adequacy Strategy ---
     if (typeof window.updatePrescriptionStrategy === 'function') window.updatePrescriptionStrategy(k);
 }
 
@@ -3164,6 +3234,58 @@ function initAssessmentLogic() {
             if (patientBadge) patientBadge.innerText = val || 'Nuevo Paciente';
         });
     }
+
+    // --- NEW V4.25: Route Overlap (Traslape) Control ---
+    window.setTraslapePct = (pct) => {
+        AppState.traslape.pct = pct;
+        AppState.traslape.active = true;
+        
+        // Update UI Badge
+        const badge = document.getElementById('traslapeBadge');
+        if (badge) {
+            badge.innerText = `Activo: ${pct}% Enteral`;
+            badge.style.background = '#e74c3c';
+            badge.style.color = '#fff';
+        }
+        
+        // Update status box
+        const status = document.getElementById('traslapeStatus');
+        if (status) {
+            status.style.display = 'block';
+            status.innerHTML = `
+                📌 <strong>Fase de Traslape:</strong> El sistema ahora espera que el <strong>${pct}%</strong> 
+                de los requerimientos sean cubiertos por la vía Enteral. 
+                El resto se sumará de la Vía de Inicio.
+            `;
+        }
+        
+        window.runSimulation();
+    };
+
+    window.updateTraslapeConfig = () => {
+        const k = parseFloat(document.getElementById('trasKcal').value) || 0;
+        const p = parseFloat(document.getElementById('trasProt').value) || 0;
+        const v = parseFloat(document.getElementById('trasVol').value) || 0;
+        const u = parseFloat(document.getElementById('valUUN').value) || 4;
+        
+        AppState.traslape.sourceKcal = k;
+        AppState.traslape.sourceProt = p;
+        AppState.traslape.sourceVol = v;
+        AppState.uun = u;
+        AppState.traslape.active = (k > 0 || p > 0 || v > 0);
+        
+        if (!AppState.traslape.active) {
+            const badge = document.getElementById('traslapeBadge');
+            if (badge) {
+                badge.innerText = 'Inactivo';
+                badge.style.background = '#fef9e7';
+                badge.style.color = '#d35400';
+            }
+            document.getElementById('traslapeStatus').style.display = 'none';
+        }
+        
+        window.runSimulation();
+    };
 
     // --- NEW V4.24: Adequacy Mode Control ---
     window.setAdequacyMode = (mode) => {
