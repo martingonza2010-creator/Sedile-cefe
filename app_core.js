@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     safelyInit(initChartSim, "ChartSim");
     safelyInit(initGoalMacroChart, "GoalMacroChart");
     safelyInit(initAssessmentLogic, "AssessmentLogic");
+    safelyInit(initEvolutionLogic, "EvolutionLogic");
     safelyInit(initGlobalEvents, "GlobalEvents");
     safelyInit(initNutriIA, "NutriIA");
     safelyInit(initVoiceDictation, "VoiceDictation");
@@ -1013,14 +1014,66 @@ function renderEvolutionChart(history) {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    const VERSION = "3.50";
-    const padding = 20;
+    const padding = 25;
 
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
+    if (!history || history.length === 0) {
+        ctx.fillStyle = '#aaa';
+        ctx.font = 'italic 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Sin registros de evolución', width / 2, height / 2);
+        return;
+    }
+
+    // Reference Weights from AppState
+    const pesoIdeal = AppState.patient?.peso_ideal || 0;
+    const pesoAjustado = AppState.patient?.peso_ajustado || 0;
+
+    // Normalize Data
+    const weights = history.map(h => h.peso_kg);
+    let allReferenceWeights = [pesoIdeal, pesoAjustado].filter(w => w > 0);
+    
+    const maxW = Math.max(...weights, ...allReferenceWeights) + 2;
+    const minW = Math.max(0, Math.min(...weights, ...allReferenceWeights) - 2);
+    const xStep = (history.length > 1) ? (width - 2 * padding) / (history.length - 1) : 0;
+
+    const getY = (w) => height - padding - ((w - minW) / (maxW - minW) * (height - 2 * padding));
+
+    // Draw Reference Lines FIRST
+    if (pesoIdeal > 0) {
+        const yIdeal = getY(pesoIdeal);
+        ctx.beginPath();
+        ctx.setLineDash([5, 3]);
+        ctx.strokeStyle = 'rgba(46, 204, 113, 0.5)'; // Greenish for Ideal
+        ctx.lineWidth = 1;
+        ctx.moveTo(padding, yIdeal);
+        ctx.lineTo(width - padding, yIdeal);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#27ae60';
+        ctx.font = '8px Arial';
+        ctx.fillText('Ideal', 5, yIdeal + 3);
+    }
+
+    if (pesoAjustado > 0) {
+        const yAdj = getY(pesoAjustado);
+        ctx.beginPath();
+        ctx.setLineDash([5, 3]);
+        ctx.strokeStyle = 'rgba(243, 156, 18, 0.5)'; // Orange for Adjusted
+        ctx.lineWidth = 1;
+        ctx.moveTo(padding, yAdj);
+        ctx.lineTo(width - padding, yAdj);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#f39c12';
+        ctx.font = '8px Arial';
+        ctx.fillText('Ajust.', 5, yAdj + 3);
+    }
+
     // Draw Axis
-    ctx.strokeStyle = '#ddd';
+    ctx.strokeStyle = '#eee';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padding, padding);
@@ -1028,49 +1081,86 @@ function renderEvolutionChart(history) {
     ctx.lineTo(width - padding, height - padding);
     ctx.stroke();
 
-    if (!history || history.length < 2) {
-        ctx.fillStyle = '#aaa';
-        ctx.font = 'italic 12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Añade un 2do registro para graficar', width / 2, height / 2);
-        return;
+    // Draw Evolution Line
+    if (history.length > 1) {
+        ctx.beginPath();
+        ctx.strokeStyle = '#f39c12';
+        ctx.lineWidth = 2.5;
+        history.forEach((h, i) => {
+            const x = padding + i * xStep;
+            const y = getY(h.peso_kg);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
     }
 
-    // Normalize Data
-    const weights = history.map(h => h.peso_kg);
-    const maxW = Math.max(...weights) + 2;
-    const minW = Math.min(...weights) - 2;
-    const xStep = (width - 2 * padding) / (history.length - 1);
-
-    const getY = (w) => height - padding - ((w - minW) / (maxW - minW) * (height - 2 * padding));
-
-    // Draw Line
-    ctx.beginPath();
-    ctx.strokeStyle = '#8e44ad';
-    ctx.lineWidth = 3;
-    history.forEach((h, i) => {
-        const x = padding + i * xStep;
-        const y = getY(h.peso_kg);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
     // Draw Points
-    ctx.fillStyle = '#8e44ad';
     history.forEach((h, i) => {
-        const x = padding + i * xStep;
+        const x = (history.length > 1) ? padding + i * xStep : width / 2;
         const y = getY(h.peso_kg);
+        ctx.fillStyle = '#f39c12';
         ctx.beginPath();
         ctx.arc(x, y, 4, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
         // Label
         ctx.fillStyle = '#333';
-        ctx.font = '10px Arial';
-        ctx.fillText(h.peso_kg + 'kg', x - 10, y - 10);
-        ctx.fillStyle = '#8e44ad';
+        ctx.font = 'bold 9px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(h.peso_kg, x, y - 8);
     });
+}
+
+function initEvolutionLogic() {
+    const btnLog = document.getElementById('btnLogEvolution');
+    if (btnLog) {
+        btnLog.onclick = async () => {
+            const p = AppState.patient;
+            const nombre = document.getElementById('nombre')?.value;
+            const peso = parseFloat(document.getElementById('peso')?.value) || 0;
+            
+            if (!nombre || peso <= 0) {
+                showToast("⚠️ Ingresa nombre y peso para registrar");
+                return;
+            }
+
+            btnLog.disabled = true;
+            btnLog.innerText = "⏳ Registrando...";
+
+            try {
+                const metadata = {
+                    is_evolution_point: true,
+                    peso_ideal: p.peso_ideal || 0,
+                    peso_ajustado: p.peso_ajustado || 0,
+                    logged_at: new Date().toISOString()
+                };
+
+                const data = {
+                    nombre: nombre,
+                    peso_kg: peso,
+                    user_id: AppState.user.id,
+                    metadata: metadata,
+                    estado_sala: 'activo'
+                };
+
+                const { error } = await supabaseClient.from('pacientes').insert([data]);
+                if (error) throw error;
+
+                showToast("📈 Punto de evolución registrado");
+                updatePatientEvolutionChart(nombre);
+            } catch (err) {
+                console.error("Error logging evolution:", err);
+                showToast("❌ Error al registrar punto");
+            } finally {
+                btnLog.disabled = false;
+                btnLog.innerText = "Actualizar Gráfico con Peso";
+            }
+        };
+    }
 }
 
 // Ensure initProtocolModal exists
@@ -1164,6 +1254,7 @@ window.updatePatientEvolutionChart = async (nombre) => {
     const chartSection = document.getElementById('chartContainer');
     if (!chartSection) return;
 
+    // Decoupled: Only fetch records that are explicitly evolution points
     const { data: records, error } = await supabaseClient
         .from('pacientes')
         .select('*, metadata')
@@ -1172,15 +1263,18 @@ window.updatePatientEvolutionChart = async (nombre) => {
         .neq('estado_sala', 'eliminado')
         .order('created_at', { ascending: false });
 
-    if (!error && records && records.length > 1) {
-        const history = records.slice(0, 5).reverse();
+    // Filter by flag in metadata
+    const evolutionPoints = (records || []).filter(r => r.metadata?.is_evolution_point === true);
+
+    if (!error && evolutionPoints.length > 0) {
+        const history = evolutionPoints.slice(0, 10).reverse();
         const lbl = document.getElementById('lblChartPatientName');
         if (lbl) lbl.innerText = nombre;
-        if (typeof renderEvolutionChart === 'function') renderEvolutionChart(history);
+        renderEvolutionChart(history);
     } else {
         const lbl = document.getElementById('lblChartPatientName');
         if (lbl) lbl.innerText = nombre || '--';
-        if (typeof renderEvolutionChart === 'function') renderEvolutionChart([]);
+        renderEvolutionChart([]);
     }
 };
 
@@ -2405,12 +2499,12 @@ function runSimulation() {
     c += (modC + oralC + ivC);
     l += (modL + oralL);
 
-    // --- NEW V4.25: Factor in Route Overlap (Traslape) ---
+    // --- NEW V4.40: Factor in Route Overlap (Traslape) ---
     if (AppState.traslape && AppState.traslape.active) {
-        k += AppState.traslape.sourceKcal;
-        p += AppState.traslape.sourceProt;
-        // Total water includes Enteral + Oral + IV + Source Route
-        // (vol variable used in hyd calculation is already added)
+        k += (AppState.traslape.sourceKcal || 0);
+        p += (AppState.traslape.sourceProt || 0);
+        c += (AppState.traslape.sourceCHO || 0);
+        l += (AppState.traslape.sourceLip || 0);
     }
 
     // Animation: Count Up Numbers
@@ -3251,11 +3345,8 @@ function updateCompareResults(k1, p1, c1, l1) {
     }
 }
 
-// --- 15. COMPLETE ASSESSMENT LOGIC (NEW) ---
 function initAssessmentLogic() {
-    // Elements for Strategic Feedback
-    const inpGoalKcal = document.getElementById('goalKcalBox');
-    const inpGoalTotal = document.getElementById('goalTotal');
+    // Elements for Strategic Feedback (Scoped or accessed via DOM to avoid ReferenceErrors)
     const resEvoBadge = document.getElementById('evolutionResult');
     const lastGoalLabel = document.getElementById('valLastGoalDate');
 
@@ -3269,53 +3360,52 @@ function initAssessmentLogic() {
         });
     }
 
-    // --- NEW V4.25: Route Overlap (Traslape) Control ---
-    window.setTraslapePct = (pct) => {
-        AppState.traslape.pct = pct;
-        AppState.traslape.active = true;
-        
-        // Update UI Badge
-        const badge = document.getElementById('traslapeBadge');
-        if (badge) {
-            badge.innerText = `Activo: ${pct}% Enteral`;
-            badge.style.background = '#e74c3c';
-            badge.style.color = '#fff';
+    // --- NEW V4.40: Route Overlap (Traslape) Control ---
+    // Initialize AppState.traslape if not exists
+    if (!AppState.traslape) AppState.traslape = { active: false, mode: 'np-ne', sourceKcal: 0, sourceProt: 0, sourceCHO: 0, sourceLip: 0 };
+
+    window.setTraslapeMode = (mode) => {
+        AppState.traslape.mode = mode;
+        const label = document.getElementById('traslapeLabel');
+        const btnNPNE = document.getElementById('btnModeNPNE');
+        const btnNEVO = document.getElementById('btnModeNEVO');
+
+        if (label) {
+            label.innerText = mode === 'np-ne' ? 'Aporte de Vía de Salida (NP):' : 'Aporte de Vía de Salida (NE):';
         }
-        
-        // Update status box
-        const status = document.getElementById('traslapeStatus');
-        if (status) {
-            status.style.display = 'block';
-            status.innerHTML = `
-                📌 <strong>Fase de Traslape:</strong> El sistema ahora espera que el <strong>${pct}%</strong> 
-                de los requerimientos sean cubiertos por la vía Enteral. 
-                El resto se sumará de la Vía de Inicio.
-            `;
+
+        if (btnNPNE && btnNEVO) {
+            if (mode === 'np-ne') {
+                btnNPNE.style.background = '#e67e22'; btnNPNE.style.color = 'white';
+                btnNEVO.style.background = 'transparent'; btnNEVO.style.color = '#666';
+            } else {
+                btnNEVO.style.background = '#e67e22'; btnNEVO.style.color = 'white';
+                btnNPNE.style.background = 'transparent'; btnNPNE.style.color = '#666';
+            }
         }
-        
-        window.runSimulation();
+        window.updateTraslapeConfig();
     };
 
     window.updateTraslapeConfig = () => {
         const k = parseFloat(document.getElementById('trasKcal').value) || 0;
         const p = parseFloat(document.getElementById('trasProt').value) || 0;
-        const v = parseFloat(document.getElementById('trasVol').value) || 0;
-        const u = parseFloat(document.getElementById('valUUN').value) || 4;
+        const c = parseFloat(document.getElementById('trasCHO').value) || 0;
+        const l = parseFloat(document.getElementById('trasLip').value) || 0;
         
         AppState.traslape.sourceKcal = k;
         AppState.traslape.sourceProt = p;
-        AppState.traslape.sourceVol = v;
-        AppState.uun = u;
-        AppState.traslape.active = (k > 0 || p > 0 || v > 0);
+        AppState.traslape.sourceCHO = c;
+        AppState.traslape.sourceLip = l;
+        AppState.traslape.active = (k > 0 || p > 0 || c > 0 || l > 0);
         
-        if (!AppState.traslape.active) {
-            const badge = document.getElementById('traslapeBadge');
-            if (badge) {
-                badge.innerText = 'Inactivo';
-                badge.style.background = '#fef9e7';
-                badge.style.color = '#d35400';
-            }
-            document.getElementById('traslapeStatus').style.display = 'none';
+        const statusBox = document.getElementById('traslapeStatus');
+        const summary = document.getElementById('traslapeSummary');
+        
+        if (AppState.traslape.active) {
+            if (statusBox) statusBox.style.display = 'block';
+            if (summary) summary.innerHTML = `Vía Secundaria: <strong>${Math.round(k)} kcal</strong> | <strong>${p.toFixed(1)}g Prot</strong>`;
+        } else {
+            if (statusBox) statusBox.style.display = 'none';
         }
         
         window.runSimulation();
@@ -3344,6 +3434,7 @@ function initAssessmentLogic() {
         }
         
         window.updatePrescriptionStrategy();
+        updateMacroGoals();
     };
 
     // --- NEW V4.23: Real-time Strategic Feedback (Intake vs Requirement) ---
@@ -3424,12 +3515,16 @@ function initAssessmentLogic() {
         badge.style.background = bgColor;
     };
 
+    const inpGoalKcal = document.getElementById('goalKcalBox');
+    const inpGoalTotal = document.getElementById('goalTotal');
+
     if (inpGoalKcal) {
         inpGoalKcal.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value) || 0;
-            const weight = parseFloat(document.getElementById('peso').value) || 0;
+            const weight = parseFloat(document.getElementById('peso')?.value) || 0;
             const total = Math.round(val * weight);
-            if (resEvoBadge) resEvoBadge.innerText = `= ${total} kcal/día`;
+            const resEvo = document.getElementById('evolutionResult');
+            if (resEvo) resEvo.innerText = `= ${total} kcal/día`;
             
             if (inpGoalTotal && document.getElementById('getSelector')?.value === 'factorial') {
                 inpGoalTotal.value = total;
@@ -3461,7 +3556,8 @@ function initAssessmentLogic() {
             // Store and show date
             const today = new Date().toLocaleDateString('es-CL');
             localStorage.setItem('sedile_last_goal_date', today);
-            if (lastGoalLabel) lastGoalLabel.innerText = `Ultima meta: ${today}`;
+            const lastGoalLbl = document.getElementById('valLastGoalDate');
+            if (lastGoalLbl) lastGoalLbl.innerText = `Ultima meta: ${today}`;
         });
     }
 
@@ -4299,34 +4395,32 @@ function initGoalMacroChart() {
     }
 
     // GET Selector Logic
+    // GET Selector Logic: Keep only Manual and Evol.
     const getSelector = document.getElementById('getSelector');
-    if (getSelector) {
-        getSelector.addEventListener('change', (e) => {
-            const mode = e.target.value;
-            const goalTotalEl = document.getElementById('goalTotal');
+    // The getSelector is now a hidden field or simplified, but we keep the logic for factorial
+    const updateFinalMeta = () => {
+        const boxVal = document.getElementById('goalKcalBox')?.value || 0;
+        const peso = AppState.patient?.peso || 0;
+        const goalTotalEl = document.getElementById('goalTotal');
+        if (goalTotalEl && boxVal > 0) {
+            goalTotalEl.value = Math.round(parseFloat(boxVal) * peso);
+            goalTotalEl.dispatchEvent(new Event('input'));
+        }
+    };
 
-            if (mode === 'manual') return; // Do nothing, let user type
-
-            let val = 0;
-            if (mode === 'factorial') {
-                const box = document.getElementById('goalKcalBox').value;
-                const peso = AppState.patient.peso || 0;
-                val = (parseFloat(box) || 0) * peso;
-            } else if (mode === 'hb') {
-                val = AppState.patient._tempHB || 0;
-            } else if (mode === 'schofield') {
-                val = AppState.patient._tempSchofield || 0;
-            } else if (mode === 'fao') {
-                val = AppState.patient._tempFAO || 0;
+    document.getElementById('goalKcalBox')?.addEventListener('input', updateFinalMeta);
+    
+    // NEW V4.39: Macro Presets
+    window.applyMacroPreset = (type, value) => {
+        if (type === 'prot') {
+            const input = document.getElementById('goalProtKg');
+            if (input) {
+                input.value = value;
+                input.dispatchEvent(new Event('input'));
+                showToast(`🎯 Proteína fijada en ${value} g/kg`);
             }
-
-            if (val > 0) {
-                goalTotalEl.value = Math.round(val);
-                // Dispatch input event to trigger downstream updates like runSimulation
-                goalTotalEl.dispatchEvent(new Event('input'));
-            }
-        });
-    }
+        }
+    };
 }
 
 function updateMacroGoals() {
@@ -4344,8 +4438,10 @@ function updateMacroGoals() {
     let gProt = 0, gCHO = 0, gLip = 0;
     let pctP = 0, pctC = 0, pctL = 0;
 
-    // Use Goal Total or calculated GET as fallback for % calculation
-    const effectiveGoal = getTotal || p.tmt_calculated || parseFloat(document.getElementById('valGET')?.innerText) || 2000;
+    // Determine effectiveGoal based on selected adequacyMode (META vs GET)
+    const adeqMode = AppState.adequacyMode || 'goal';
+    const theoreticalGET = p.tmt_calculated || parseFloat(document.getElementById('valGET')?.innerText) || 2000;
+    const effectiveGoal = (adeqMode === 'get') ? theoreticalGET : (getTotal || theoreticalGET);
 
     if (macroGoalMode === 'gkg') {
         gProt = valP * peso;
