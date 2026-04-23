@@ -3388,23 +3388,46 @@ function initAssessmentLogic() {
     };
 
     window.updateTraslapeConfig = () => {
-        const k = parseFloat(document.getElementById('trasKcal').value) || 0;
-        const p = parseFloat(document.getElementById('trasProt').value) || 0;
-        const c = parseFloat(document.getElementById('trasCHO').value) || 0;
-        const l = parseFloat(document.getElementById('trasLip').value) || 0;
+        const inputPct = parseFloat(document.getElementById('trasPercentage')?.value) || 0;
+        const mainPctEl = document.getElementById('traslapeMainPct');
+        
+        let pct = inputPct;
+        if (pct < 0) pct = 0;
+        if (pct > 100) pct = 100;
+
+        if (mainPctEl) mainPctEl.innerText = (100 - pct) + '%';
+        
+        // Use active macro goal dataset values
+        const goalTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
+        const goalP = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
+        const goalC = parseFloat(document.getElementById('goalCHO')?.dataset.val) || 0;
+        const goalL = parseFloat(document.getElementById('goalLip')?.dataset.val) || 0;
+
+        const k = goalTotal * (pct / 100);
+        const p = goalP * (pct / 100);
+        const c = goalC * (pct / 100);
+        const l = goalL * (pct / 100);
         
         AppState.traslape.sourceKcal = k;
         AppState.traslape.sourceProt = p;
         AppState.traslape.sourceCHO = c;
         AppState.traslape.sourceLip = l;
-        AppState.traslape.active = (k > 0 || p > 0 || c > 0 || l > 0);
+        AppState.traslape.pct = pct;
+        AppState.traslape.active = (pct > 0);
         
         const statusBox = document.getElementById('traslapeStatus');
-        const summary = document.getElementById('traslapeSummary');
         
         if (AppState.traslape.active) {
             if (statusBox) statusBox.style.display = 'block';
-            if (summary) summary.innerHTML = `Vía Secundaria: <strong>${Math.round(k)} kcal</strong> | <strong>${p.toFixed(1)}g Prot</strong>`;
+            const calcKcal = document.getElementById('trasCalcKcal');
+            const calcProt = document.getElementById('trasCalcProt');
+            const calcCHO = document.getElementById('trasCalcCHO');
+            const calcLip = document.getElementById('trasCalcLip');
+            
+            if (calcKcal) calcKcal.innerText = Math.round(k);
+            if (calcProt) calcProt.innerText = p.toFixed(1);
+            if (calcCHO) calcCHO.innerText = c.toFixed(1);
+            if (calcLip) calcLip.innerText = l.toFixed(1);
         } else {
             if (statusBox) statusBox.style.display = 'none';
         }
@@ -4530,8 +4553,12 @@ function updateMacroGoals() {
         goalChartInstance.update();
     }
 
-    // Auto-update adequacy
-    runSimulation();
+    // Auto-update adequacy and Traslape
+    if (window.updateTraslapeConfig) {
+        window.updateTraslapeConfig();
+    } else {
+        runSimulation();
+    }
 }
 
 // --- HELPER: TOAST NOTIFICATIONS ---
