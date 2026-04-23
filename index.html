@@ -1384,6 +1384,35 @@
                 </section>
             </div>
 
+            <!-- NEW V4.42: JUSTIFICACIÓN PROTEICA (CNP:N) -->
+            <div style="margin: 0 15px 15px 15px;">
+                <section class="card assess-module" style="border-left-color: #27ae60; background: #fdfefe;">
+                    <div class="module-head" style="margin-bottom:10px;">
+                        <h3 style="color:#27ae60;">⚖️ Justificación Proteica (CNP:N)</h3>
+                    </div>
+                    
+                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                        <!-- Goal Ratio -->
+                        <div style="flex:1; background:var(--bg); border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center;">
+                            <div style="font-size:0.7rem; color:#7f8c8d; font-weight:700; text-transform:uppercase; margin-bottom:5px;">Según Meta (GET)</div>
+                            <div id="ratioGoalVal" style="font-size:1.5rem; font-weight:800; color:#34495e; line-height:1;">-- : 1</div>
+                            <div id="ratioGoalDiag" style="font-size:0.65rem; color:#888; font-style:italic; margin-top:4px;">Esperando datos...</div>
+                        </div>
+                        
+                        <!-- Actual Prescription Ratio -->
+                        <div style="flex:1; background:rgba(39, 174, 96, 0.05); border:1px solid #27ae60; border-radius:8px; padding:10px; text-align:center;">
+                            <div style="font-size:0.7rem; color:#27ae60; font-weight:800; text-transform:uppercase; margin-bottom:5px;">Aporte Real (Simulador)</div>
+                            <div id="ratioActualVal" style="font-size:1.6rem; font-weight:900; color:#27ae60; line-height:1;">-- : 1</div>
+                            <div id="ratioActualDiag" style="font-size:0.75rem; color:#1e8449; font-weight:700; margin-top:4px;">Esperando datos...</div>
+                        </div>
+                    </div>
+                    
+                    <small style="display:block; margin-top:10px; font-size:0.65rem; color:#95a5a6; line-height:1.3; text-align:center;">
+                        *El diagnóstico metabólico de la fórmula se ajusta automáticamente si el paciente es pediátrico (Crecimiento) o Adulto (Estrés). Ratios de 90-150:1 son ideales para rápido crecimiento/estrés.
+                    </small>
+                </section>
+            </div>
+
             <!-- GENERADOR DE EVOLUCIÓN (ADIME - CYCLOPE) -->
             <div style="margin: 25px 15px; border-top: 1px solid #eee; padding-top: 15px;">
                 <h3 style="color:#2c3e50; font-size:1.1rem; margin-bottom:15px; font-weight:600;">Registro de Evolución Quirúrgica/Clínica</h3>

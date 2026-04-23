@@ -2634,62 +2634,67 @@ function runSimulation() {
             proTracker.style.display = 'none';
         }
     }
-    // --- NEW V4.25: Metabolic Efficiency Monitoring ---
-    const updateMetabolicEfficiency = (totalKcal, totalProt) => {
-        const bnVal = document.getElementById('valBN');
-        const bnLabel = document.getElementById('labelBN');
-        const npcnVal = document.getElementById('valNPCN');
-        const npcnLabel = document.getElementById('labelNPCN');
-        const advice = document.getElementById('metabolicAdvice');
+    // --- NEW V4.42: Protein Justification (NPC:N Ratio) ---
+    const updateProteinJustification = (actualKcal, actualProt) => {
+        const goalRatioVal = document.getElementById('ratioGoalVal');
+        const goalRatioDiag = document.getElementById('ratioGoalDiag');
+        const actualRatioVal = document.getElementById('ratioActualVal');
+        const actualRatioDiag = document.getElementById('ratioActualDiag');
         
-        if (!bnVal || !npcnVal) return;
+        if (!actualRatioVal || !goalRatioVal) return;
+
+        const pA = AppState.patient || {};
+        const isPed = (pA.type === 'pediatric' || pA.type === 'neonate' || (pA.ageParts && pA.ageParts.y < 18));
         
-        if (totalKcal <= 0 || totalProt <= 0) {
-            bnVal.innerText = "--";
-            npcnVal.innerText = "--";
-            return;
-        }
+        const getNPCDiagnosis = (ratio, isPed) => {
+            if (isPed) {
+                if (ratio < 90) return '⚠️ ¡Demasiada Proteína! (Riesgo Renal)';
+                if (ratio <= 150) return '✅ ¡Perfecto para Crecimiento Rápido!';
+                if (ratio <= 200) return '💡 Mantenimiento (Sube prote si quieres anabolismo)';
+                return '⚠️ ¡Faltan Proteínas urgentemente! (Riesgo Nutricional)';
+            } else {
+                if (ratio < 100) return '✅ Fórmula apta para Estrés Severo (UCI)';
+                if (ratio <= 130) return '✅ Fórmula apta para Estrés Moderado';
+                if (ratio <= 180) return '✅ Mantenimiento (Normal)';
+                return '⚠️ ¡Falta Proteína! (Exceso de Energía / Lipogénesis)';
+            }
+        };
+
+        // --- 1. Evaluate GOAL ---
+        const goalTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
+        const goalP = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
         
-        // 1. Nitrogen Balance (BN)
-        // Nitrogen Intake = Prot / 6.25
-        // Nitrogen Loss = UUN + 4
-        const nitrogenIntake = totalProt / 6.25;
-        const nitrogenLoss = (AppState.uun || 4) + 4;
-        const bn = nitrogenIntake - nitrogenLoss;
-        
-        bnVal.innerText = bn.toFixed(2);
-        if (bn < -2) {
-            bnLabel.innerText = "CATABÓLICO";
-            bnLabel.style.background = "#e74c3c";
-        } else if (bn > 2) {
-            bnLabel.innerText = "ANABÓLICO";
-            bnLabel.style.background = "#27ae60";
+        if (goalTotal > 0 && goalP > 0) {
+            const goalN = goalP / 6.25;
+            const goalNPC = goalTotal - (goalP * 4);
+            const goalRatio = goalNPC / goalN;
+            goalRatioVal.innerText = `${Math.round(goalRatio)}:1`;
+            goalRatioDiag.innerText = getNPCDiagnosis(goalRatio, isPed);
         } else {
-            bnLabel.innerText = "EQUILIBRIO";
-            bnLabel.style.background = "#f1c40f";
+            goalRatioVal.innerText = '-- : 1';
+            goalRatioDiag.innerText = 'Faltan metas';
         }
         
-        // 2. NPC:N Ratio
-        // Non-Protein Calories = Total Kcal - (Prot * 4)
-        const npc = totalKcal - (totalProt * 4);
-        const npcn = npc / (nitrogenIntake || 1);
-        
-        npcnVal.innerText = Math.round(npcn);
-        if (npcn < 80) {
-            npcnLabel.innerText = "BAJO (Estrés)";
-            npcnLabel.style.background = "#e67e22";
-        } else if (npcn > 150) {
-            npcnLabel.innerText = "ALTO (Estable)";
-            npcnLabel.style.background = "#3498db";
+        // --- 2. Evaluate ACTUAL ---
+        if (actualKcal > 0 && actualProt > 0) {
+            const actN = actualProt / 6.25;
+            const actNPC = actualKcal - (actualProt * 4);
+            const actRatio = actNPC / actN;
+            actualRatioVal.innerText = `${Math.round(actRatio)}:1`;
+            actualRatioDiag.innerText = getNPCDiagnosis(actRatio, isPed);
+            
+            if (actRatio < 90) actualRatioVal.style.color = '#e74c3c'; 
+            else if (actRatio <= 150) actualRatioVal.style.color = '#27ae60'; 
+            else if (actRatio <= 200) actualRatioVal.style.color = '#3498db'; 
+            else actualRatioVal.style.color = '#f39c12'; 
+            
         } else {
-            npcnLabel.innerText = "ÓPTIMO";
-            npcnLabel.style.background = "#27ae60";
+            actualRatioVal.innerText = '-- : 1';
+            actualRatioDiag.innerText = 'Sin simulación';
         }
-        
-        if (advice) advice.innerText = `Balance detectado: ${bn > 0 ? 'Fase de recuperación' : 'Fase catabólica detectada'}.`;
     };
 
-    updateMetabolicEfficiency(k, p);
+    updateProteinJustification(k, p);
 
     // --- FINAL V4.25: Global update for Adequacy Strategy ---
     if (typeof window.updatePrescriptionStrategy === 'function') window.updatePrescriptionStrategy(k);
