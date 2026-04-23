@@ -2961,23 +2961,24 @@ function resetPatientForm() {
 
 function calcHydration() {
     const p = AppState.patient;
-    const vol = parseFloat(document.getElementById('volume').value) || 0;
-    const dil = (parseFloat(document.getElementById('dilution').value) || 100) / 100;
+    const vol = parseFloat(document.getElementById('volume')?.value) || 0;
+    const dil = (parseFloat(document.getElementById('dilution')?.value) || 100) / 100;
     let realVol = vol * dil; // Effective volume from formula
 
     // NEW V3.60: Add Oral Water and IV Volume to Real Volume
-    const oralWater = parseFloat(document.getElementById('oralWater').value) || 0;
-    const ivVol = parseFloat(document.getElementById('ivVolume').value) || 0;
+    const oralWater = parseFloat(document.getElementById('oralWater')?.value) || 0;
+    const ivVol = parseFloat(document.getElementById('ivVolume')?.value) || 0;
 
     realVol += oralWater + ivVol;
 
     if (p.peso <= 0) return;
 
     let req = 0;
-    const isMlKg = document.querySelector('input[name="hydMethod"][value="mlkg"]').checked;
+    const isMlKgRadio = document.querySelector('input[name="hydMethod"][value="mlkg"]');
+    const isMlKg = isMlKgRadio ? isMlKgRadio.checked : true;
 
     if (isMlKg) {
-        const factor = parseFloat(document.getElementById('hydFactor').value) || 0;
+        const factor = parseFloat(document.getElementById('hydFactor')?.value) || 0;
         req = p.peso * factor;
     } else {
         if (p.peso <= 10) req = p.peso * 100;
