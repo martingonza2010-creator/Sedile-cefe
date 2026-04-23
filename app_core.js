@@ -3415,23 +3415,6 @@ function initAssessmentLogic() {
         AppState.traslape.pct = pct;
         AppState.traslape.active = (pct > 0);
         
-        const statusBox = document.getElementById('traslapeStatus');
-        
-        if (AppState.traslape.active) {
-            if (statusBox) statusBox.style.display = 'block';
-            const calcKcal = document.getElementById('trasCalcKcal');
-            const calcProt = document.getElementById('trasCalcProt');
-            const calcCHO = document.getElementById('trasCalcCHO');
-            const calcLip = document.getElementById('trasCalcLip');
-            
-            if (calcKcal) calcKcal.innerText = Math.round(k);
-            if (calcProt) calcProt.innerText = p.toFixed(1);
-            if (calcCHO) calcCHO.innerText = c.toFixed(1);
-            if (calcLip) calcLip.innerText = l.toFixed(1);
-        } else {
-            if (statusBox) statusBox.style.display = 'none';
-        }
-        
         window.runSimulation();
     };
 
