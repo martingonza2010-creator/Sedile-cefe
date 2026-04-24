@@ -1591,8 +1591,9 @@ function calculateRequirements() {
 function calcFactorialNoRecursion() {
     const p = AppState.patient;
     const fKcal = parseFloat(document.getElementById('factorKcal')?.value) || 25;
-    if (p.peso > 0) {
-        const factTotal = p.peso * fKcal;
+    const pesoCalculo = p.peso_calculo || p.peso;
+    if (pesoCalculo > 0) {
+        const factTotal = pesoCalculo * fKcal;
         p.factorial_calculated = factTotal;
         const resF = document.getElementById('resFactorial');
         if (resF) resF.innerText = `${Math.round(factTotal)} kcal`;
@@ -4606,7 +4607,7 @@ function updateMacroGoals() {
 
     // Determine effectiveGoal based on selected adequacyMode (META vs GET)
     const adeqMode = AppState.adequacyMode || 'goal';
-    const theoreticalGET = p.tmt_calculated || parseFloat(document.getElementById('valGET')?.innerText) || 2000;
+    const theoreticalGET = p.tmt || p.tmt_calculated || parseFloat(document.getElementById('valGET')?.innerText) || 2000;
     const effectiveGoal = (adeqMode === 'get') ? theoreticalGET : (getTotal || theoreticalGET);
 
     if (macroGoalMode === 'gkg') {
