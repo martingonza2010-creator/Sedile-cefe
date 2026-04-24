@@ -3934,8 +3934,10 @@ function calcFactorial() {
     if (!inpFactor) return;
 
     const f = parseFloat(inpFactor.value) || 0;
-    const p = AppState.patient.peso || parseFloat(document.getElementById('peso').value) || 0;
-    const res = Math.round(f * p);
+    const pObj = AppState.patient || {};
+    const inputPeso = document.getElementById('peso');
+    const ptWeight = parseFloat(inputPeso ? inputPeso.value : 0) || pObj.peso_calculo || pObj.peso || 0;
+    const res = Math.round(f * ptWeight);
 
     const resBadge = document.getElementById('resFactorial');
     if (resBadge) resBadge.innerText = `${res} kcal`;
@@ -3946,7 +3948,8 @@ function calcTMB_OMS() {
     const method = document.getElementById('tmbMethod').value;
     const sexo = document.getElementById('sexo').value;
     const age = p.edad || parseFloat(document.getElementById('edad').value) || 0;
-    const weight = p.peso || parseFloat(document.getElementById('peso').value) || 0;
+    const inputPeso = document.getElementById('peso');
+    const weight = parseFloat(inputPeso ? inputPeso.value : 0) || p.peso_calculo || p.peso || 0;
     const height = p.estatura || parseFloat(document.getElementById('estatura').value) || 0;
 
     if (age <= 0 || weight <= 0) return;
@@ -4412,15 +4415,21 @@ function initGoalMacroChart() {
     // The getSelector is now a hidden field or simplified, but we keep the logic for factorial
     const updateFinalMeta = () => {
         const boxVal = document.getElementById('goalKcalBox')?.value || 0;
-        const peso = AppState.patient?.peso || 0;
+        const p = AppState.patient || {};
+        const inputPeso = document.getElementById('peso');
+        const peso = parseFloat(inputPeso ? inputPeso.value : 0) || p.peso_calculo || p.peso || 0;
+        
         const goalTotalEl = document.getElementById('goalTotal');
         if (goalTotalEl && boxVal > 0) {
             goalTotalEl.value = Math.round(parseFloat(boxVal) * peso);
             goalTotalEl.dispatchEvent(new Event('input'));
         }
-    };
-
     document.getElementById('goalKcalBox')?.addEventListener('input', updateFinalMeta);
+    document.getElementById('peso')?.addEventListener('input', () => {
+        updateFinalMeta();
+        if (typeof calcTMB_OMS === 'function') calcTMB_OMS();
+        if (typeof calcFactorial === 'function') calcFactorial();
+    });
     
     // NEW V4.39: Macro Presets
     window.applyMacroPreset = (type, value) => {
