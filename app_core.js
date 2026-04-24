@@ -3435,6 +3435,20 @@ function initAssessmentLogic() {
         AppState.traslape.sourceLip = l;
         AppState.traslape.pct = pct;
         AppState.traslape.active = (pct > 0);
+
+        const breakdownPanel = document.getElementById('traslapeMacroBreakdown');
+        if (breakdownPanel) {
+            if (pct > 0) {
+                breakdownPanel.style.display = 'flex';
+                document.getElementById('valTrasSalida').innerText = `${Math.round(k)} kcal | ${p.toFixed(1)}g P`;
+                
+                const mainK = goalTotal - k;
+                const mainP = goalP - p;
+                document.getElementById('valTrasPrincipal').innerText = `${Math.round(mainK)} kcal | ${mainP.toFixed(1)}g P`;
+            } else {
+                breakdownPanel.style.display = 'none';
+            }
+        }
         
         window.runSimulation();
     };
