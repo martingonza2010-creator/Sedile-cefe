@@ -89,7 +89,7 @@
                 <span class="tab-icon">📋</span> Evaluación Completa
             </button>
             <button class="tab-btn" data-view="nutri-ia">
-                <span class="tab-icon">🦦</span> Nutri IA
+                <span class="tab-icon">💉</span> NPT Avanzada
             </button>
         </nav>
 
@@ -1519,92 +1519,119 @@
         </div>
 
         <!-- VISTA NUTRI IA (🦦 NUEVO V3.23) -->
+        <!-- VISTA NPT AVANZADA (REPLACING NUTRI-IA) -->
         <div id="view-nutri-ia" class="view-section" style="display:none;">
             <div class="view-header">
-                <h2>🦦 Nutri IA - Análisis Clínico Inteligente</h2>
+                <h2>💉 Calculadora Avanzada NPT & Traslape</h2>
             </div>
 
-            <div class="ia-welcome-card" id="iaInitialState">
-                <div class="ia-icon-large">🦦</div>
-                <h3>¡Hola! Soy tu asistente de Nutrición IA</h3>
-                <p>Analizaré toda la información recolectada del paciente para sugerir un plan basado en los protocolos
-                    del <b>Hospital Regional de Antofagasta</b>.</p>
-                <div style="margin: 20px 0;">
-                    <button class="btn-ia-generate" id="btnGenerateIA">
-                        <span id="iaBtnLabel">🚀 Generar Análisis Completo</span>
-                        <div class="spinner-ia" id="iaSpinner" style="display:none;"></div>
-                    </button>
-                </div>
-                <small style="opacity:0.6; font-size:0.7rem;">Requiere conexión a internet y configuración de API Gemini.</small>
-            </div>
-
-            <!-- GESTIÓN DE TRASLAPE DE VÍAS (MOVED TO IA TOOLS) -->
-            <section class="card" id="traslapeCard"
-                style="border-left: 4px solid #e67e22; background: rgba(230, 126, 34, 0.02); margin-top: 20px;">
+            <!-- NPT DESIGNER CARD -->
+            <div class="card" style="border-left: 5px solid #8e44ad; margin-bottom: 20px;">
                 <div class="card-header">
-                    <h3 style="color:#d35400;">🔄 Herramienta de Traslape de Vías</h3>
+                    <h3 style="color:#8e44ad;">⚙️ 1. Diseño de Nutrición Parenteral</h3>
+                    <select id="nptTemplate" onchange="window.applyNPTTemplate()" style="padding:4px 8px; border-radius:8px; border:1px solid #ddd; font-size:0.75rem;">
+                        <option value="manual">Personalizado (Manual)</option>
+                        <option value="smof_central">Smofkabiven Central</option>
+                        <option value="smof_peri">Smofkabiven Periférico</option>
+                    </select>
                 </div>
-                <div style="padding-top:12px;">
-                    <!-- Mode Toggle -->
-                    <div
-                        style="display:flex; gap:5px; margin-bottom:15px; background:#eee; padding:3px; border-radius:10px;">
-                        <button type="button" id="btnModeNPNE" onclick="window.setTraslapeMode('np-ne')"
-                            style="flex:1; padding:6px; border:none; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:#e67e22; color:white; transition:all 0.2s;">
-                            NP ➔ NE
-                        </button>
-                        <button type="button" id="btnModeNEVO" onclick="window.setTraslapeMode('ne-vo')"
-                            style="flex:1; padding:6px; border:none; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.2s;">
-                            NE ➔ V.O.
-                        </button>
+                
+                <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin-top:15px;">
+                    <div class="mini-input">
+                        <label>Volumen NPT (ml)</label>
+                        <input type="number" id="advNptVol" value="1000" oninput="window.updateAdvancedNPT()">
                     </div>
-
-                    <div
-                        style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                        <label
-                            style="font-size:0.8rem; font-weight: 700; margin-bottom: 8px; display:block; color:#2c3e50;">
-                            Progreso del Traslape
-                        </label>
-                        <div style="display:flex; align-items:center; gap: 10px;">
-                            <div class="mini-input" style="flex:1; margin-bottom:0;">
-                                <label id="traslapeLabel"
-                                    style="font-size:0.65rem; color:#e67e22; font-weight:700;">% Vía de Salida
-                                    (NP)</label>
-                                <div style="display:flex; align-items:center; gap:5px;">
-                                    <input type="number" id="trasPercentage" placeholder="Ej: 40"
-                                        oninput="window.updateTraslapeConfig()"
-                                        style="font-size: 1.2rem; font-weight: 800; text-align: center; color: #e67e22; padding: 8px;">
-                                    <span style="font-weight:800; color:#888; font-size:1.1rem;">%</span>
-                                </div>
-                            </div>
-                            <div style="flex:1; text-align:center;">
-                                <div
-                                    style="font-size:0.65rem; color:#3498db; font-weight:700; margin-bottom: 5px;">
-                                    % Vía Principal</div>
-                                <div id="traslapeMainPct"
-                                    style="font-size:1.2rem; font-weight:800; color:#3498db;">100%</div>
-                            </div>
-                        </div>
+                    <div class="mini-input">
+                        <label>Peso Cálculo (kg)</label>
+                        <input type="number" id="advNptWeight" disabled style="background:#f8f9fa;">
                     </div>
-
-                    <!-- Macro Breakdown Panel -->
-                    <div id="traslapeMacroBreakdown" style="display:none; background:#fefefe; border:1px dashed #ddd; border-radius:10px; padding:12px; margin-top:10px;">
-                        <h4 style="font-size:0.7rem; color:#7f8c8d; margin-top:0; border-bottom:1px solid #eee; padding-bottom:4px;">DESGLOSE DE APORTES POR TRASLAPE</h4>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                            <div style="padding:6px; background:rgba(230, 126, 34, 0.05); border-radius:6px;">
-                                <span style="font-size:0.6rem; color:#d35400; display:block;">Vía Salida (Traslape)</span>
-                                <div id="trasBreakdownOut" style="font-size:0.8rem; font-weight:700; color:#d35400;">0 Kcal | 0g P</div>
-                            </div>
-                            <div style="padding:6px; background:rgba(52, 152, 219, 0.05); border-radius:6px;">
-                                <span style="font-size:0.6rem; color:#2980b9; display:block;">Vía Principal (Resto)</span>
-                                <div id="trasBreakdownMain" style="font-size:0.8rem; font-weight:700; color:#2980b9;">0 Kcal | 0g P</div>
-                            </div>
+                    <div class="mini-input">
+                        <label>Dextrosa (g)</label>
+                        <input type="number" id="advNptDex" oninput="window.updateAdvancedNPT()">
+                    </div>
+                    <div class="mini-input">
+                        <label>Aminoácidos (g)</label>
+                        <input type="number" id="advNptAA" oninput="window.updateAdvancedNPT()">
+                    </div>
+                    <div class="mini-input">
+                        <label>Lípidos (g)</label>
+                        <input type="number" id="advNptLip" oninput="window.updateAdvancedNPT()">
+                    </div>
+                    <div class="mini-input">
+                        <label>Na+ / K+ (mEq/L)</label>
+                        <div style="display:flex; gap:5px;">
+                            <input type="number" id="advNptNa" placeholder="Na" oninput="window.updateAdvancedNPT()">
+                            <input type="number" id="advNptK" placeholder="K" oninput="window.updateAdvancedNPT()">
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <div id="iaResultContainer" class="ia-report-view" style="display:none;">
-                <!-- Generated Report will appear here -->
+                <!-- NPT Metrics -->
+                <div style="background:#f9f4ff; border:1px solid #e1d5f2; border-radius:12px; padding:15px; margin-top:15px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                        <div>
+                            <span style="font-size:0.65rem; color:#8e44ad; font-weight:700;">OSMOLARIDAD</span>
+                            <div id="advNptOsm" style="font-size:1.2rem; font-weight:800; color:#e74c3c;">0 <small style="font-size:0.6rem;">mOsm/L</small></div>
+                            <span id="advNptStatus" style="font-size:0.6rem; background:#8e44ad; color:white; padding:1px 5px; border-radius:3px;">Central</span>
+                        </div>
+                        <div>
+                            <span style="font-size:0.65rem; color:#8e44ad; font-weight:700;">CARGA GLUCOSA (GIR)</span>
+                            <div id="advNptGIR" style="font-size:1.2rem; font-weight:800; color:#27ae60;">0 <small style="font-size:0.6rem;">mg/kg/m</small></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONCURRENT ENTERAL (TRASLAPE) CARD -->
+            <div class="card" style="border-left: 5px solid #e67e22; margin-bottom: 20px;">
+                <div class="card-header">
+                    <h3 style="color:#d35400;">🔄 2. Aporte Enteral Concurrente (Traslape)</h3>
+                </div>
+                <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:12px; margin-top:15px;">
+                    <div class="mini-input">
+                        <label>Producto RTH / Enteral</label>
+                        <select id="advEnteralProduct" onchange="window.updateAdvancedNPT()" style="width:100%; padding:8px; border-radius:8px;">
+                            <option value="none">-- Sin Enteral --</option>
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div class="mini-input">
+                        <label>Volumen (ml/día)</label>
+                        <input type="number" id="advEnteralVol" placeholder="ml" oninput="window.updateAdvancedNPT()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOTAL ADEQUACY SUMMARY -->
+            <div class="card" style="background:#2c3e50; color:white; border:none; padding:20px;">
+                <h3 style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; font-size:1rem; color:#ecf0f1;">📊 Adecuación Total (NP + NE)</h3>
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; margin-top:15px; text-align:center;">
+                    <div>
+                        <span style="font-size:0.7rem; opacity:0.7; display:block;">ENERGÍA</span>
+                        <div id="totalAdeqKcal" style="font-size:1.2rem; font-weight:800; color:#f1c40f;">0%</div>
+                        <small id="totalKcalVal" style="font-size:0.6rem; opacity:0.8;">0 / 0 kcal</small>
+                    </div>
+                    <div>
+                        <span style="font-size:0.7rem; opacity:0.7; display:block;">PROTEÍNA</span>
+                        <div id="totalAdeqProt" style="font-size:1.2rem; font-weight:800; color:#3498db;">0%</div>
+                        <small id="totalProtVal" style="font-size:0.6rem; opacity:0.8;">0 / 0 g</small>
+                    </div>
+                    <div>
+                        <span style="font-size:0.7rem; opacity:0.7; display:block;">LÍQUIDOS</span>
+                        <div id="totalAdeqHyd" style="font-size:1.2rem; font-weight:800; color:#2ecc71;">0%</div>
+                        <small id="totalHydVal" style="font-size:0.6rem; opacity:0.8;">0 / 0 ml</small>
+                    </div>
+                </div>
+                
+                <div style="margin-top:20px; background:rgba(255,255,255,0.05); padding:12px; border-radius:10px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:5px;">
+                        <span>Balance de Traslape:</span>
+                        <span id="traslapeStatusLabel" style="font-weight:700;">En Proceso</span>
+                    </div>
+                    <div style="height:8px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden;">
+                        <div id="totalAdeqBar" style="height:100%; width:0%; background:linear-gradient(90deg, #e67e22, #3498db); transition:width 0.5s ease;"></div>
+                    </div>
+                </div>
             </div>
         </div>
         <div id="pwaInstallContainer" style="display:none; text-align:center; margin-top:15px;">
@@ -1847,7 +1874,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.35"></script>
+        <script src="app_core.js?v=4.40"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
