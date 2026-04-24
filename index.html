@@ -622,46 +622,45 @@
                 </section>
 
 
-                <!-- NEW V4.25: GESTIÓN DE TRASLAPE DE VÍAS -->
-                <section class="card" id="traslapeCard" style="border-left: 4px solid #f39c12; margin-bottom: 20px;">
+                <!-- GESTIÓN DE TRASLAPE DE VÍAS -->
+                <section class="card" id="traslapeCard" style="border-left: 4px solid #e67e22; background: rgba(230, 126, 34, 0.02); margin-bottom: 20px;">
                     <details class="folds-accordion" id="traslapeAccordion">
-                        <summary style="font-weight:700; color:#d35400; display:flex; justify-content:space-between; align-items:center;">
-                            <span>🔄 Gestión de Traslape de Vías</span>
-                            <span id="traslapeBadge" style="font-size:0.6rem; background:#fef9e7; color:#d35400; padding:2px 6px; border-radius:10px; border:1px solid #f39c12;">Inactivo</span>
-                        </summary>
+                        <summary style="font-weight:700; color:#d35400;">🔄 Gestión de Traslape de Vías</summary>
                         
-                        <div style="padding-top:15px;">
-                            <p style="font-size:0.7rem; color:#666; margin-bottom:12px;">Configura la proporción entre la vía actual (NPT/Oral) y la vía de destino (Enteral).</p>
-                            
-                            <div class="grid-col-2" style="gap:15px; margin-bottom:15px;">
-                                <div class="mini-input">
-                                    <label>Aporte Vía Inicio (Kcal)</label>
-                                    <input type="number" id="trasKcal" placeholder="Ej. 500" oninput="window.updateTraslapeConfig()">
-                                </div>
-                                <div class="mini-input">
-                                    <label>Proteína Vía Inicio (g)</label>
-                                    <input type="number" id="trasProt" placeholder="Ej. 20" oninput="window.updateTraslapeConfig()">
-                                </div>
-                                <div class="mini-input">
-                                    <label>Volumen Vía Inicio (ml)</label>
-                                    <input type="number" id="trasVol" placeholder="ml" oninput="window.updateTraslapeConfig()">
-                                </div>
-                                <div class="mini-input">
-                                    <label>UUN (Nitrógeno Urinario)</label>
-                                    <input type="number" id="valUUN" value="4" oninput="window.updateTraslapeConfig()">
-                                </div>
+                        <div style="padding-top:12px;">
+                            <!-- Mode Toggle -->
+                            <div style="display:flex; gap:5px; margin-bottom:15px; background:#eee; padding:3px; border-radius:10px;">
+                                <button type="button" id="btnModeNPNE" onclick="window.setTraslapeMode('np-ne')"
+                                    style="flex:1; padding:6px; border:none; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:#e67e22; color:white; transition:all 0.2s;">
+                                    NP ➔ NE
+                                </button>
+                                <button type="button" id="btnModeNEVO" onclick="window.setTraslapeMode('ne-vo')"
+                                    style="flex:1; padding:6px; border:none; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.2s;">
+                                    NE ➔ V.O.
+                                </button>
                             </div>
 
-                            <label style="font-size:0.75rem; font-weight:700; color:#555; display:block; margin-bottom:8px;">% de Traslape (Aporte Enteral Objetivo)</label>
-                            <div style="display:flex; gap:5px; margin-bottom:15px;">
-                                <button onclick="window.setTraslapePct(25)" class="btn-micro" style="flex:1;">25%</button>
-                                <button onclick="window.setTraslapePct(50)" class="btn-micro" style="flex:1;">50%</button>
-                                <button onclick="window.setTraslapePct(75)" class="btn-micro" style="flex:1;">75%</button>
-                                <button onclick="window.setTraslapePct(100)" class="btn-micro" style="flex:1; background:#27ae60; color:white;">100%</button>
-                            </div>
-
-                            <div id="traslapeStatus" style="font-size:0.75rem; background:#fdf2e9; border:1px solid #fad7a0; padding:10px; border-radius:8px; display:none;">
-                                <!-- Dynamics status -->
+                            <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                                <label style="font-size:0.8rem; font-weight: 700; margin-bottom: 8px; display:block; color:#2c3e50;">
+                                    Progreso del Traslape
+                                </label>
+                                <div style="display:flex; align-items:center; gap: 10px;">
+                                    <div class="mini-input" style="flex:1; margin-bottom:0;">
+                                        <label id="traslapeLabel" style="font-size:0.65rem; color:#e67e22; font-weight:700;">% Vía de Salida (NP)</label>
+                                        <div style="display:flex; align-items:center; gap:5px;">
+                                            <input type="number" id="trasPercentage" placeholder="Ej: 40" oninput="window.updateTraslapeConfig()"
+                                                style="font-size: 1.2rem; font-weight: 800; text-align: center; color: #e67e22; padding: 8px;">
+                                            <span style="font-weight:800; color:#888; font-size:1.1rem;">%</span>
+                                        </div>
+                                    </div>
+                                    <div style="flex:1; text-align:center;">
+                                        <div style="font-size:0.65rem; color:#3498db; font-weight:700; margin-bottom: 5px;">% Vía Principal</div>
+                                        <div id="traslapeMainPct" style="font-size:1.2rem; font-weight:800; color:#3498db;">100%</div>
+                                    </div>
+                                </div>
+                                <small style="display:block; margin-top:8px; font-size:0.65rem; color:#7f8c8d; line-height: 1.3;">
+                                    Ingresa qué porcentaje de la meta total (GET) está siendo cubierto por la vía de salida. El sistema calculará y sumará Kcal, Prot, CHO y Líp automáticamente.
+                                </small>
                             </div>
                         </div>
                     </details>
@@ -914,49 +913,7 @@
                     </details>
                 </section>
 
-                <!-- NEW V4.41: GESTIÓN DE TRASLAPE DE VÍAS (Smart Refactor) -->
-                <section class="card simulator-card" style="margin-top: -15px; border-left: 4px solid #e67e22; background: rgba(230, 126, 34, 0.02);">
-                    <details class="folds-accordion" id="traslapeAccordion">
-                        <summary style="font-weight:700; color:#d35400;">🔄 Gestión Inteligente de Traslape</summary>
-                        
-                        <div style="padding-top:12px;">
-                            <!-- Mode Toggle -->
-                            <div style="display:flex; gap:5px; margin-bottom:15px; background:#eee; padding:3px; border-radius:10px;">
-                                <button type="button" id="btnModeNPNE" onclick="window.setTraslapeMode('np-ne')"
-                                    style="flex:1; padding:6px; border:none; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:#e67e22; color:white; transition:all 0.2s;">
-                                    NP ➔ NE
-                                </button>
-                                <button type="button" id="btnModeNEVO" onclick="window.setTraslapeMode('ne-vo')"
-                                    style="flex:1; padding:6px; border:none; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.2s;">
-                                    NE ➔ V.O.
-                                </button>
-                            </div>
 
-                            <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                                <label style="font-size:0.8rem; font-weight: 700; margin-bottom: 8px; display:block; color:#2c3e50;">
-                                    Progreso del Traslape
-                                </label>
-                                <div style="display:flex; align-items:center; gap: 10px;">
-                                    <div class="mini-input" style="flex:1; margin-bottom:0;">
-                                        <label id="traslapeLabel" style="font-size:0.65rem; color:#e67e22; font-weight:700;">% Vía de Salida (NP)</label>
-                                        <div style="display:flex; align-items:center; gap:5px;">
-                                            <input type="number" id="trasPercentage" placeholder="Ej: 40" oninput="window.updateTraslapeConfig()"
-                                                style="font-size: 1.2rem; font-weight: 800; text-align: center; color: #e67e22; padding: 8px;">
-                                            <span style="font-weight:800; color:#888; font-size:1.1rem;">%</span>
-                                        </div>
-                                    </div>
-                                    <div style="flex:1; text-align:center;">
-                                        <div style="font-size:0.65rem; color:#3498db; font-weight:700; margin-bottom: 5px;">% Vía Principal</div>
-                                        <div id="traslapeMainPct" style="font-size:1.2rem; font-weight:800; color:#3498db;">100%</div>
-                                    </div>
-                                </div>
-                                <small style="display:block; margin-top:8px; font-size:0.65rem; color:#7f8c8d; line-height: 1.3;">
-                                    Ingresa qué porcentaje de la meta total (GET) está siendo cubierto por la vía de salida. El sistema calculará y sumará Kcal, Prot, CHO y Líp automáticamente.
-                                </small>
-                            </div>
-                        </div>
-                    </details>
-                </section>
             </main>
 
             <div class="macro-stack-wrapper">
