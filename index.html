@@ -1587,18 +1587,33 @@
                 <div class="card-header">
                     <h3 style="color:#d35400;">🔄 2. Aporte Enteral Concurrente (Traslape)</h3>
                 </div>
-                <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:12px; margin-top:15px;">
-                    <div class="mini-input">
+                
+                <div style="background:rgba(230, 126, 34, 0.05); padding:10px; border-radius:10px; margin-top:10px;">
+                    <div class="mini-input" style="margin-bottom:12px;">
                         <label>Producto RTH / Enteral</label>
-                        <select id="advEnteralProduct" onchange="window.updateAdvancedNPT()" style="width:100%; padding:8px; border-radius:8px;">
+                        <select id="advEnteralProduct" onchange="window.updateAdvancedNPT('product')" style="width:100%; padding:8px; border-radius:8px;">
                             <option value="none">-- Sin Enteral --</option>
-                            <!-- Options will be populated by JS -->
                         </select>
                     </div>
-                    <div class="mini-input">
-                        <label>Volumen (ml/día)</label>
-                        <input type="number" id="advEnteralVol" placeholder="ml" oninput="window.updateAdvancedNPT()">
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div class="mini-input" style="margin-bottom:0;">
+                            <label style="color:#e67e22; font-weight:700;">% Meta a Cubrir (NE)</label>
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <input type="number" id="advEnteralPct" placeholder="%" oninput="window.updateAdvancedNPT('pct')"
+                                    style="font-size:1.2rem; font-weight:800; color:#e67e22; text-align:center;">
+                                <span style="font-weight:800; color:#888;">%</span>
+                            </div>
+                        </div>
+                        <div class="mini-input" style="margin-bottom:0;">
+                            <label>Volumen (ml/día)</label>
+                            <input type="number" id="advEnteralVol" placeholder="ml" oninput="window.updateAdvancedNPT('vol')"
+                                style="font-size:1.2rem; font-weight:800; text-align:center;">
+                        </div>
                     </div>
+                    <small style="display:block; margin-top:8px; font-size:0.65rem; color:#7f8c8d;">
+                        Indica el % de la meta que deseas cubrir vía Enteral y el sistema calculará el volumen necesario.
+                    </small>
                 </div>
             </div>
 

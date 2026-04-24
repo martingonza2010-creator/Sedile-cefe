@@ -4813,17 +4813,15 @@ window.evaluateWaist = (makeBadgeFn = null) => {
     return "";
 };
 
+
 // --- NEW V4.60: Advanced NPT Dashboard Logic ---
 window.applyNPTTemplate = () => {
     const type = document.getElementById('nptTemplate').value;
     const vol = parseFloat(document.getElementById('advNptVol').value) || 1000;
-    
-    // Typical concentrations per 1000ml
     const templates = {
         'smof_central': { dex: 127, aa: 50, lip: 38, na: 40, k: 30 },
         'smof_peri': { dex: 71, aa: 32, lip: 28, na: 24, k: 18 }
     };
-
     if (templates[type]) {
         const factor = vol / 1000;
         document.getElementById('advNptDex').value = Math.round(templates[type].dex * factor);
@@ -4835,102 +4833,96 @@ window.applyNPTTemplate = () => {
     window.updateAdvancedNPT();
 };
 
-window.updateAdvancedNPT = () => {
+window.updateAdvancedNPT = (trigger) => {
     const vol = parseFloat(document.getElementById('advNptVol')?.value) || 0;
     const dex = parseFloat(document.getElementById('advNptDex')?.value) || 0;
     const aa = parseFloat(document.getElementById('advNptAA')?.value) || 0;
     const lip = parseFloat(document.getElementById('advNptLip')?.value) || 0;
     const weight = AppState.patient?.peso_calculo || AppState.patient?.peso || 0;
-    
     if (document.getElementById('advNptWeight')) document.getElementById('advNptWeight').value = weight;
-
-    // 1. NPT Metrics
-    const kcalNP = (dex * 3.4) + (lip * 9); 
+    const kcalTotalNP = (dex * 3.4) + (lip * 9) + (aa * 4);
     let gir = 0; if (weight > 0) gir = (dex * 1000) / (weight * 1440);
-    
     let osm = 0;
     if (vol > 0) {
         const na = parseFloat(document.getElementById('advNptNa')?.value) || 0;
         const k = parseFloat(document.getElementById('advNptK')?.value) || 0;
         osm = ((dex/vol)*5000) + ((aa/vol)*10000) + ((na/vol)*2000) + ((k/vol)*2000);
     }
-
-    // Update NPT UI
     if (document.getElementById('advNptOsm')) document.getElementById('advNptOsm').innerText = Math.round(osm);
     if (document.getElementById('advNptGIR')) document.getElementById('advNptGIR').innerText = gir.toFixed(1);
     const statusEl = document.getElementById('advNptStatus');
     if (statusEl) {
-        statusEl.innerText = osm > 800 ? "Central" : "PerifÃ©rica";
+        statusEl.innerText = osm > 800 ? "Central" : "Periférica";
         statusEl.style.background = osm > 800 ? "#e74c3c" : "#27ae60";
     }
-
-    // 2. Enteral Contribution (Traslape)
     const entId = document.getElementById('advEnteralProduct').value;
-    const entVol = parseFloat(document.getElementById('advEnteralVol').value) || 0;
-    let entKcal = 0, entProt = 0;
-
-    if (entId !== 'none') {
+    const reqKcal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
+    let entVolInput = document.getElementById('advEnteralVol');
+    let entPctInput = document.getElementById('advEnteralPct');
+    let entVol = parseFloat(entVolInput?.value) || 0;
+    let entPct = parseFloat(entPctInput?.value) || 0;
+    if (entId !== 'none' && reqKcal > 0) {
         const formula = AppState.formulas.find(f => f.id === entId);
         if (formula) {
-            const base = formula.volBase || 100;
-            entKcal = (entVol / base) * formula.k;
-            entProt = (entVol / base) * formula.p;
+            const dens = formula.k / (formula.volBase || 100);
+            if (trigger === 'pct') {
+                entVol = (reqKcal * (entPct / 100)) / dens;
+                if (entVolInput) entVolInput.value = Math.round(entVol);
+            } else if (trigger === 'vol' || trigger === 'product') {
+                entPct = ((entVol * dens) / reqKcal) * 100;
+                if (entPctInput) entPctInput.value = Math.round(entPct);
+            }
         }
     }
-
-    // 3. Totals and Adequacy
-    const totalKcal = kcalNP + (aa * 4) + entKcal;
+    let entKcal = 0, entProt = 0;
+    if (entId !== 'none' && entVol > 0) {
+        const f = AppState.formulas.find(f => f.id === entId);
+        if (f) {
+            const base = f.volBase || 100;
+            entKcal = (entVol / base) * f.k;
+            entProt = (entVol / base) * f.p;
+        }
+    }
+    const totalKcal = kcalTotalNP + entKcal;
     const totalProt = aa + entProt;
     const totalVol = vol + entVol;
-
-    const reqKcal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
     const reqProt = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
     const reqVol = parseFloat(document.getElementById('goalFluid')?.value) || 0;
-
     const adeqKcal = reqKcal > 0 ? (totalKcal / reqKcal) * 100 : 0;
     const adeqProt = reqProt > 0 ? (totalProt / reqProt) * 100 : 0;
     const adeqVol = reqVol > 0 ? (totalVol / reqVol) * 100 : 0;
-
-    // Update Totals UI
     if (document.getElementById('totalAdeqKcal')) document.getElementById('totalAdeqKcal').innerText = Math.round(adeqKcal) + '%';
     if (document.getElementById('totalAdeqProt')) document.getElementById('totalAdeqProt').innerText = Math.round(adeqProt) + '%';
     if (document.getElementById('totalAdeqHyd')) document.getElementById('totalAdeqHyd').innerText = Math.round(adeqVol) + '%';
-    
-    if (document.getElementById('totalKcalVal')) document.getElementById('totalKcalVal').innerText = `${Math.round(totalKcal)} / ${Math.round(reqKcal)} kcal`;
-    if (document.getElementById('totalProtVal')) document.getElementById('totalProtVal').innerText = `${totalProt.toFixed(1)} / ${reqProt.toFixed(1)} g`;
-    if (document.getElementById('totalHydVal')) document.getElementById('totalHydVal').innerText = `${Math.round(totalVol)} / ${Math.round(reqVol)} ml`;
-
+    if (document.getElementById('totalKcalVal')) document.getElementById('totalKcalVal').innerText = Math.round(totalKcal) + " / " + Math.round(reqKcal) + " kcal";
+    if (document.getElementById('totalProtVal')) document.getElementById('totalProtVal').innerText = totalProt.toFixed(1) + " / " + reqProt.toFixed(1) + " g";
+    if (document.getElementById('totalHydVal')) document.getElementById('totalHydVal').innerText = Math.round(totalVol) + " / " + Math.round(reqVol) + " ml";
     const bar = document.getElementById('totalAdeqBar');
     if (bar) bar.style.width = Math.min(adeqKcal, 100) + '%';
-    
     const statusLabel = document.getElementById('traslapeStatusLabel');
     if (statusLabel) {
         if (adeqKcal > 95) statusLabel.innerText = "Meta Alcanzada";
-        else if (entVol > 0) statusLabel.innerText = "En Traslape Activo";
-        else statusLabel.innerText = "Fase Parenteral";
+        else if (entVol > 0) statusLabel.innerText = "En Traslape Activo (" + Math.round(entPct) + "% NE)";
+        else statusLabel.innerText = "Fase Parenteral (100% NP)";
     }
 };
 
 window.populateEnteralList = () => {
     const select = document.getElementById('advEnteralProduct');
     if (!select) return;
-    
     let html = '<option value="none">-- Sin Enteral --</option>';
     AppState.formulas.forEach(f => {
-        if (f.cat === "FÃ³rmulas RTH" || f.cat === "Leches HRA") {
-            html += `<option value="${f.id}">${f.name}</option>`;
+        if (f.cat === "Fórmulas RTH" || f.cat === "Leches HRA") {
+            html += '<option value="' + f.id + '">' + f.name + '</option>';
         }
     });
     select.innerHTML = html;
 };
 
-// Hook into tab changes to populate list
-const originalInitTab = window.initTabNavigation;
+const oldInit = window.initTabNavigation;
 window.initTabNavigation = function() {
-    if (originalInitTab) originalInitTab();
-    
-    const tabs = document.querySelectorAll('.app-tabs .tab-btn');
-    tabs.forEach(t => {
+    if (oldInit) oldInit();
+    document.querySelectorAll('.app-tabs .tab-btn').forEach(t => {
         t.addEventListener('click', () => {
             if (t.dataset.view === 'nutri-ia') {
                 window.populateEnteralList();
