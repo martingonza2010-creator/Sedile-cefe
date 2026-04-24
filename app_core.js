@@ -1531,12 +1531,7 @@ function calculateRequirements() {
                 bmr = 795 + (7.18 * w);
             }
         }
-        // Holliday-Segar (Pediatría Hídrica/Metabólica)
-        else if (method === 'holliday') {
-            if (w <= 10) bmr = 100 * w;
-            else if (w <= 20) bmr = 1000 + (50 * (w - 10));
-            else bmr = 1500 + (20 * (w - 20));
-        }
+
         // Mifflin-St Jeor
         else if (method === 'msj') {
             if (sexo === 'm') {
@@ -4053,11 +4048,7 @@ function calcTMB_OMS() {
         } else {
             tmb = 795 + (7.18 * weight);
         }
-    } else if (method === 'holliday') {
-        // Holliday-Segar (Pediatría Hídrica/Metabólica)
-        if (weight <= 10) tmb = 100 * weight;
-        else if (weight <= 20) tmb = 1000 + (50 * (weight - 10));
-        else tmb = 1500 + (20 * (weight - 20));
+
     } else if (method === 'msj') {
         // Mifflin-St Jeor
         if (sexo === 'm') {
