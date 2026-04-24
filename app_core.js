@@ -508,7 +508,7 @@ function initPatientLogic() {
                 if (!error) {
                     showToast("✅ Ficha completa guardada en historial");
                     window.loadHistoryList(false);
-                    
+
                     if (typeof updatePatientEvolutionChart === 'function') {
                         updatePatientEvolutionChart(nombre);
                     }
@@ -1041,7 +1041,7 @@ function renderEvolutionChart(history) {
     // Normalize Data
     const weights = history.map(h => h.peso_kg);
     let allReferenceWeights = [pesoIdeal, pesoAjustado].filter(w => w > 0);
-    
+
     const maxW = Math.max(...weights, ...allReferenceWeights) + 2;
     const minW = Math.max(0, Math.min(...weights, ...allReferenceWeights) - 2);
     const xStep = (history.length > 1) ? (width - 2 * padding) / (history.length - 1) : 0;
@@ -1129,7 +1129,7 @@ function initEvolutionLogic() {
             const p = AppState.patient;
             const nombre = document.getElementById('nombre')?.value;
             const peso = parseFloat(document.getElementById('peso')?.value) || 0;
-            
+
             if (!nombre || peso <= 0) {
                 showToast("⚠️ Ingresa nombre y peso para registrar");
                 return;
@@ -1248,7 +1248,7 @@ window.loadPatient = async (id) => {
         }
 
         document.getElementById('historyModal').classList.remove('active');
-        
+
         // Update Chart for loaded patient (nuevo panel en cálculo)
         if (typeof updatePatientEvolutionChart === 'function') {
             updatePatientEvolutionChart(data.nombre);
@@ -1387,14 +1387,14 @@ function calculateRequirements() {
             const ipt = (p.peso / pesoIdeal) * 100;
             const iptVal = ipt.toFixed(1);
             document.getElementById('valIPT').innerText = iptVal + '%';
-            
+
             // NEW: Peso Ajustado para Obesos (IPT > 120%) -> Ahora permanente para Adultos
             const elPesoAjustado = document.getElementById('valPesoAjustado');
             if (elPesoAjustado) {
                 if (p.type === 'adult') {
                     const adjW = pesoIdeal + 0.40 * (p.peso - pesoIdeal);
                     elPesoAjustado.innerText = adjW.toFixed(1) + ' kg';
-                    
+
                     if (ipt > 120) {
                         elPesoAjustado.style.color = '#c0392b'; // Warning rojo
                     } else {
@@ -1406,7 +1406,7 @@ function calculateRequirements() {
                     elPesoAjustado.style.color = '#888';
                 }
             }
-            
+
             // NEW: Superficie Corporal (Mosteller)
             const elSCT = document.getElementById('valSCT');
             if (elSCT && p.estatura > 0) {
@@ -1569,7 +1569,7 @@ function calculateRequirements() {
                 // Curreri
                 finalTMT = (25 * p.peso) + (40 * scqPercent);
                 eqName = "Curreri (Quemados)";
-                bmr = finalTMT / (p.actividad * p.estres); 
+                bmr = finalTMT / (p.actividad * p.estres);
             }
         }
 
@@ -1629,11 +1629,11 @@ window.toggleQuemado = () => {
     const chk = document.getElementById('chkQuemado');
     const panel = document.getElementById('quemadoPanel');
     const estresEl = document.getElementById('estres');
-    
+
     if (chk && panel) {
         const isPeds = AppState.patient.type === 'pediatric' || AppState.patient.type === 'neonate';
         const protInput = document.getElementById('goalProtKg');
-        
+
         if (chk.checked) {
             panel.style.display = 'block';
             if (estresEl && parseFloat(estresEl.value) < 1.5) {
@@ -2579,33 +2579,33 @@ function runSimulation() {
 
         // Kcal Adequacy
         if (officialKcalGoal > 0) {
-                const pctK = (k / officialKcalGoal) * 100;
-                adeqKcal.innerText = Math.round(pctK) + "%";
-                adeqKcal.style.color = (pctK < 90 || pctK > 110) ? '#e74c3c' : '#27ae60';
-            } else { adeqKcal.innerText = "--"; adeqKcal.style.color = '#888'; }
+            const pctK = (k / officialKcalGoal) * 100;
+            adeqKcal.innerText = Math.round(pctK) + "%";
+            adeqKcal.style.color = (pctK < 90 || pctK > 110) ? '#e74c3c' : '#27ae60';
+        } else { adeqKcal.innerText = "--"; adeqKcal.style.color = '#888'; }
 
-            // Prot Adequacy
-            if (goalP > 0) {
-                const pctP = (p / goalP) * 100;
-                adeqProt.innerText = Math.round(pctP) + "%";
-                adeqProt.style.color = (pctP < 90 || pctP > 110) ? '#e74c3c' : '#27ae60';
-            } else { adeqProt.innerText = "--"; adeqProt.style.color = '#888'; }
+        // Prot Adequacy
+        if (goalP > 0) {
+            const pctP = (p / goalP) * 100;
+            adeqProt.innerText = Math.round(pctP) + "%";
+            adeqProt.style.color = (pctP < 90 || pctP > 110) ? '#e74c3c' : '#27ae60';
+        } else { adeqProt.innerText = "--"; adeqProt.style.color = '#888'; }
 
-            // CHO Adequacy
-            if (goalC > 0) {
-                const pctC = (c / goalC) * 100;
-                adeqCHO.innerText = Math.round(pctC) + "%";
-                adeqCHO.style.color = (pctC < 90 || pctC > 110) ? '#e74c3c' : '#27ae60';
-            } else { adeqCHO.innerText = "--"; adeqCHO.style.color = '#888'; }
+        // CHO Adequacy
+        if (goalC > 0) {
+            const pctC = (c / goalC) * 100;
+            adeqCHO.innerText = Math.round(pctC) + "%";
+            adeqCHO.style.color = (pctC < 90 || pctC > 110) ? '#e74c3c' : '#27ae60';
+        } else { adeqCHO.innerText = "--"; adeqCHO.style.color = '#888'; }
 
-            // Lip Adequacy
-            if (goalL > 0) {
-                const pctL = (l / goalL) * 100;
-                adeqLip.innerText = Math.round(pctL) + "%";
-                adeqLip.style.color = (pctL < 90 || pctL > 110) ? '#e74c3c' : '#27ae60';
-            } else { adeqLip.innerText = "--"; adeqLip.style.color = '#888'; }
+        // Lip Adequacy
+        if (goalL > 0) {
+            const pctL = (l / goalL) * 100;
+            adeqLip.innerText = Math.round(pctL) + "%";
+            adeqLip.style.color = (pctL < 90 || pctL > 110) ? '#e74c3c' : '#27ae60';
+        } else { adeqLip.innerText = "--"; adeqLip.style.color = '#888'; }
 
-        }
+    }
 
     // Trigger Infusion Calc update if volume changes
     calcInfusion();
@@ -2656,12 +2656,12 @@ function runSimulation() {
         const goalRatioDiag = document.getElementById('ratioGoalDiag');
         const actualRatioVal = document.getElementById('ratioActualVal');
         const actualRatioDiag = document.getElementById('ratioActualDiag');
-        
+
         if (!actualRatioVal || !goalRatioVal) return;
 
         const pA = AppState.patient || {};
         const isPed = (pA.type === 'pediatric' || pA.type === 'neonate' || (pA.ageParts && pA.ageParts.y < 18));
-        
+
         const getNPCDiagnosis = (ratio, isPed) => {
             if (isPed) {
                 if (ratio < 90) return '⚠️ ¡Demasiada Proteína! (Riesgo Renal)';
@@ -2679,7 +2679,7 @@ function runSimulation() {
         // --- 1. Evaluate GOAL ---
         const goalTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
         const goalP = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
-        
+
         if (goalTotal > 0 && goalP > 0) {
             const goalN = goalP / 6.25;
             const goalNPC = goalTotal - (goalP * 4);
@@ -2690,7 +2690,7 @@ function runSimulation() {
             goalRatioVal.innerText = '-- : 1';
             goalRatioDiag.innerText = 'Faltan metas';
         }
-        
+
         // --- 2. Evaluate ACTUAL ---
         if (actualKcal > 0 && actualProt > 0) {
             const actN = actualProt / 6.25;
@@ -2698,12 +2698,12 @@ function runSimulation() {
             const actRatio = actNPC / actN;
             actualRatioVal.innerText = `${Math.round(actRatio)}:1`;
             actualRatioDiag.innerText = getNPCDiagnosis(actRatio, isPed);
-            
-            if (actRatio < 90) actualRatioVal.style.color = '#e74c3c'; 
-            else if (actRatio <= 150) actualRatioVal.style.color = '#27ae60'; 
-            else if (actRatio <= 200) actualRatioVal.style.color = '#3498db'; 
-            else actualRatioVal.style.color = '#f39c12'; 
-            
+
+            if (actRatio < 90) actualRatioVal.style.color = '#e74c3c';
+            else if (actRatio <= 150) actualRatioVal.style.color = '#27ae60';
+            else if (actRatio <= 200) actualRatioVal.style.color = '#3498db';
+            else actualRatioVal.style.color = '#f39c12';
+
         } else {
             actualRatioVal.innerText = '-- : 1';
             actualRatioDiag.innerText = 'Sin simulación';
@@ -3411,13 +3411,13 @@ function initAssessmentLogic() {
     window.updateTraslapeConfig = () => {
         const inputPct = parseFloat(document.getElementById('trasPercentage')?.value) || 0;
         const mainPctEl = document.getElementById('traslapeMainPct');
-        
+
         let pct = inputPct;
         if (pct < 0) pct = 0;
         if (pct > 100) pct = 100;
 
         if (mainPctEl) mainPctEl.innerText = (100 - pct) + '%';
-        
+
         // Use active macro goal dataset values
         const goalTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
         const goalP = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
@@ -3428,7 +3428,7 @@ function initAssessmentLogic() {
         const p = goalP * (pct / 100);
         const c = goalC * (pct / 100);
         const l = goalL * (pct / 100);
-        
+
         AppState.traslape.sourceKcal = k;
         AppState.traslape.sourceProt = p;
         AppState.traslape.sourceCHO = c;
@@ -3436,31 +3436,17 @@ function initAssessmentLogic() {
         AppState.traslape.pct = pct;
         AppState.traslape.active = (pct > 0);
 
-        const breakdownPanel = document.getElementById('traslapeMacroBreakdown');
-        if (breakdownPanel) {
-            if (pct > 0) {
-                breakdownPanel.style.display = 'flex';
-                document.getElementById('valTrasSalida').innerText = `${Math.round(k)} kcal | ${p.toFixed(1)}g P`;
-                
-                const mainK = goalTotal - k;
-                const mainP = goalP - p;
-                document.getElementById('valTrasPrincipal').innerText = `${Math.round(mainK)} kcal | ${mainP.toFixed(1)}g P`;
-            } else {
-                breakdownPanel.style.display = 'none';
-            }
-        }
-        
         window.runSimulation();
     };
 
     // --- NEW V4.24: Adequacy Mode Control ---
     window.setAdequacyMode = (mode) => {
         AppState.adequacyMode = mode;
-        
+
         // Update UI buttons
         const btnGoal = document.getElementById('btnAdeqGoal');
         const btnGET = document.getElementById('btnAdeqGET');
-        
+
         if (btnGoal && btnGET) {
             if (mode === 'goal') {
                 btnGoal.style.background = '#6c5ce7';
@@ -3474,7 +3460,7 @@ function initAssessmentLogic() {
                 btnGoal.style.color = '#666';
             }
         }
-        
+
         window.updatePrescriptionStrategy();
         updateMacroGoals();
     };
@@ -3483,7 +3469,7 @@ function initAssessmentLogic() {
     window.updatePrescriptionStrategy = (currentKcalOverride) => {
         const p = AppState.patient || {};
         const mode = AppState.adequacyMode || 'goal';
-        
+
         // Use provided kcal (from simulation) or scrape from UI
         let currentKcal = currentKcalOverride;
         if (currentKcal === undefined) {
@@ -3492,16 +3478,16 @@ function initAssessmentLogic() {
 
         // The denominator is determined by the selected clinical mode
         const goalTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
-        const theoreticalGET = p.tmt_calculated || 0; 
-        
+        const theoreticalGET = p.tmt_calculated || 0;
+
         const targetDenominator = (mode === 'goal') ? (goalTotal || theoreticalGET) : theoreticalGET;
         const labelBase = (mode === 'goal') ? 'Meta' : 'GET';
-        
+
         const badge = document.getElementById('strategyBadge');
         const fdbkText = document.getElementById('strategyText');
         const fdbkIcon = document.getElementById('strategyIcon');
         const fdbkCard = document.getElementById('strategyFeedback');
-        
+
         if (!badge) return;
 
         // Reset state if no data
@@ -3513,16 +3499,16 @@ function initAssessmentLogic() {
             if (fdbkText) fdbkText.innerText = `Ingresa volumen para medir adecuación vs ${labelBase}.`;
             return;
         }
-        
+
         const adequacy = (currentKcal / targetDenominator) * 100;
         badge.innerText = `${labelBase}: ${adequacy.toFixed(0)}%`;
         badge.style.display = 'inline-block';
-        
+
         let label = '';
         let color = '';
         let icon = '';
         let bgColor = '';
-        
+
         if (adequacy < 40) {
             label = 'Inicio / Refeeding';
             color = '#e67e22';
@@ -3544,7 +3530,7 @@ function initAssessmentLogic() {
             icon = '🔥';
             bgColor = 'rgba(231, 76, 60, 0.05)';
         }
-        
+
         if (fdbkText) fdbkText.innerText = `Estado (${labelBase}): ${label} (${Math.round(currentKcal)} kcal de ${Math.round(targetDenominator)} kcal)`;
         if (fdbkText) fdbkText.style.color = color;
         if (fdbkIcon) fdbkIcon.innerText = icon;
@@ -3567,7 +3553,7 @@ function initAssessmentLogic() {
             const total = Math.round(val * weight);
             const resEvo = document.getElementById('evolutionResult');
             if (resEvo) resEvo.innerText = `= ${total} kcal/día`;
-            
+
             if (inpGoalTotal && document.getElementById('getSelector')?.value === 'factorial') {
                 inpGoalTotal.value = total;
                 window.updatePrescriptionStrategy();
@@ -3889,12 +3875,12 @@ function initGlobalEvents() {
         if (!container || !content) return;
 
         const p = AppState.patient;
-        
+
         const fId = document.getElementById('formulaSelect')?.value;
         const formula = AppState.formulas ? AppState.formulas.find(f => f.id === fId) : null;
         const vol = parseFloat(document.getElementById('volume')?.value) || 0;
         const goal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
-        
+
         let pTotal = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
         let cTotal = parseFloat(document.getElementById('goalCHO')?.dataset.val) || 0;
         let lTotal = parseFloat(document.getElementById('goalLip')?.dataset.val) || 0;
@@ -3909,10 +3895,10 @@ function initGlobalEvents() {
         const examenes = document.getElementById('evoExamenes')?.value || "Sin reportar";
         const tolerancia = document.getElementById('evoTolerancia')?.value || "Adecuada";
         const des = document.getElementById('diagnosticoPES')?.value || "Sin diagnóstico ingresado";
-        
+
         const pesoFisico = p.peso || 0;
         const pesoCalc = document.getElementById('pesoCalculoSelect')?.value === 'real' ? pesoFisico : (p.peso_calculo || pesoFisico);
-        
+
         const cm = (document.getElementById('tallaCM')?.value || (p.estatura * 100)) || 0;
         const sctVal = document.getElementById('valSCT')?.innerText || '-- m²';
 
@@ -3923,8 +3909,8 @@ function initGlobalEvents() {
         const adimeText = `A - ANTROPOMETRÍA Y REQUERIMIENTOS:
 - Peso Real: ${pesoFisico} kg | Talla: ${cm} cm
 - Peso de Cálculo: ${pesoCalc.toFixed(1)} kg | Superficie Corp: ${sctVal}
-- Meta Energética: ${Math.round(goal)} kcal/día (${pesoCalc > 0 ? (goal/pesoCalc).toFixed(1) : 0} kcal/kg)
-- Meta Proteínas: ${Math.round(pTotal)} g/día (${pesoCalc > 0 ? (pTotal/pesoCalc).toFixed(1) : 0} g/kg)
+- Meta Energética: ${Math.round(goal)} kcal/día (${pesoCalc > 0 ? (goal / pesoCalc).toFixed(1) : 0} kcal/kg)
+- Meta Proteínas: ${Math.round(pTotal)} g/día (${pesoCalc > 0 ? (pTotal / pesoCalc).toFixed(1) : 0} g/kg)
 - Meta CHOs: ${Math.round(cTotal)} g/día | Líp: ${Math.round(lTotal)} g/día
 
 B - BIOQUÍMICA Y CLÍNICA (TOLERANCIA):
@@ -3956,7 +3942,7 @@ ${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
         const p = AppState.patient;
         const now = new Date();
         const dateStr = now.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        
+
         let ageStr = '--';
         if (p.ageParts) {
             ageStr = `${p.ageParts.y} años ${p.ageParts.m} meses`;
@@ -3968,13 +3954,13 @@ ${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
         const cm = (document.getElementById('tallaCM')?.value || (p.estatura * 100)) || 0;
         const tallaMt = (cm / 100).toFixed(3);
         const cCintura = document.getElementById('cCintura')?.value || '--';
-        
+
         const imcVal = document.getElementById('valIMC')?.innerText || '--';
         const zImcVal = document.getElementById('valZBMI')?.innerText || '--';
         const zTallaVal = document.getElementById('valZHFA')?.innerText || '--';
 
         const des = document.getElementById('diagnosticoPES')?.value || "Sin diagnóstico ingresado";
-        
+
         const goal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
         const pTotal = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
         const cTotal = parseFloat(document.getElementById('goalCHO')?.dataset.val) || 0;
@@ -4576,7 +4562,7 @@ function initGoalMacroChart() {
         const p = AppState.patient || {};
         const inputPeso = document.getElementById('peso');
         const peso = parseFloat(inputPeso ? inputPeso.value : 0) || p.peso_calculo || p.peso || 0;
-        
+
         const goalTotalEl = document.getElementById('goalTotal');
         if (goalTotalEl && boxVal > 0) {
             goalTotalEl.value = Math.round(parseFloat(boxVal) * peso);
@@ -4590,7 +4576,7 @@ function initGoalMacroChart() {
         if (typeof calcTMB_OMS === 'function') calcTMB_OMS();
         if (typeof calcFactorial === 'function') calcFactorial();
     });
-    
+
     // NEW V4.39: Macro Presets
     window.applyMacroPreset = (type, value) => {
         if (type === 'prot') {
@@ -4609,7 +4595,7 @@ function updateMacroGoals() {
     // Robust weight detection
     const inputPeso = document.getElementById('peso');
     const peso = parseFloat(inputPeso ? inputPeso.value : 0) || p.peso_calculo || p.peso || 0;
-    
+
     const getTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
 
     const valP = parseFloat(document.getElementById('goalProtKg')?.value) || 0;
@@ -4683,10 +4669,10 @@ function updateMacroGoals() {
 
     const warnBox = document.getElementById('pctTotalWarning');
     const warnCheck = document.getElementById('pctTotalCheck');
-    
+
     if (warnBox && warnCheck && (valP > 0 || valC > 0 || valL > 0)) {
         warnCheck.innerText = pctDisplay.toFixed(1) + '%';
-        
+
         let color;
         if (pctDisplay >= 98 && pctDisplay <= 102) color = '#27ae60';
         else if (pctDisplay < 98) color = '#f39c12';

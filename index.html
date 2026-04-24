@@ -158,11 +158,15 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- NEW V4.12: Peso de Cálculo Metabólico -->
-                        <div style="margin-top:8px; padding:8px; background:#fffcf5; border:1px solid #fae5d3; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                            <label style="font-size:0.75rem; color:#d35400; font-weight:700;">⚖️ Peso para cálculo nutricional:</label>
-                            <select id="pesoCalculoSelect" style="padding:4px; font-size:0.75rem; border-radius:6px; border:1px solid #e59866; background:#fdf2e9; color:#b9770e; outline:none;" onchange="calculateRequirements()">
+                        <div
+                            style="margin-top:8px; padding:8px; background:#fffcf5; border:1px solid #fae5d3; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <label style="font-size:0.75rem; color:#d35400; font-weight:700;">⚖️ Peso para cálculo
+                                nutricional:</label>
+                            <select id="pesoCalculoSelect"
+                                style="padding:4px; font-size:0.75rem; border-radius:6px; border:1px solid #e59866; background:#fdf2e9; color:#b9770e; outline:none;"
+                                onchange="calculateRequirements()">
                                 <option value="real">Peso real</option>
                                 <option value="ideal">Peso ideal</option>
                                 <option value="ajustado">Peso ajustado</option>
@@ -297,12 +301,18 @@
                             </div>
 
                             <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
-                                <div style="background:rgba(243, 156, 18, 0.05); padding:6px; border-radius:6px; border:1px solid rgba(243, 156, 18, 0.1);">
-                                    <span style="font-size:0.55rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">Peso Ajustado</span>
+                                <div
+                                    style="background:rgba(243, 156, 18, 0.05); padding:6px; border-radius:6px; border:1px solid rgba(243, 156, 18, 0.1);">
+                                    <span
+                                        style="font-size:0.55rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">Peso
+                                        Ajustado</span>
                                     <strong style="font-size:0.9rem; color:#f39c12;" id="valPesoAjustado">-- kg</strong>
                                 </div>
-                                <div style="background:rgba(39, 174, 96, 0.05); padding:6px; border-radius:6px; border:1px solid rgba(39, 174, 96, 0.1);">
-                                    <span style="font-size:0.55rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">Superficie Corp.</span>
+                                <div
+                                    style="background:rgba(39, 174, 96, 0.05); padding:6px; border-radius:6px; border:1px solid rgba(39, 174, 96, 0.1);">
+                                    <span
+                                        style="font-size:0.55rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">Superficie
+                                        Corp.</span>
                                     <strong style="font-size:0.9rem; color:#27ae60;" id="valSCT">-- m²</strong>
                                 </div>
                             </div>
@@ -333,20 +343,25 @@
                         </div>
 
                         <!-- NEW: Gran Quemado Calc -->
-                        <div id="rowBurned" style="margin-top:10px; background:#fdf7f2; border:1px solid #fadbd8; padding:8px; border-radius:8px;">
-                            <label style="font-size:0.75rem; font-weight:700; color:#c0392b; margin-bottom:0px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                        <div id="rowBurned"
+                            style="margin-top:10px; background:#fdf7f2; border:1px solid #fadbd8; padding:8px; border-radius:8px;">
+                            <label
+                                style="font-size:0.75rem; font-weight:700; color:#c0392b; margin-bottom:0px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
                                 <span>🔥 Cálculos de Gran Quemado</span>
                                 <input type="checkbox" id="chkQuemado" onchange="window.toggleQuemado()">
                             </label>
-                            <div id="quemadoPanel" style="display:none; font-size:0.75rem; margin-top:8px; border-top:1px dashed #fadbd8; padding-top:8px;">
+                            <div id="quemadoPanel"
+                                style="display:none; font-size:0.75rem; margin-top:8px; border-top:1px dashed #fadbd8; padding-top:8px;">
                                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
                                     <div class="mini-input">
                                         <label>% SCQ (Superficie Quemada)</label>
-                                        <input type="number" step="0.1" id="scqPercent" placeholder="Ej: 30" oninput="calculateRequirements()">
+                                        <input type="number" step="0.1" id="scqPercent" placeholder="Ej: 30"
+                                            oninput="calculateRequirements()">
                                     </div>
                                     <div class="mini-input">
                                         <label>Área Quemada (m²)</label>
-                                        <input type="number" id="scqM2" title="Auto-calculado" disabled style="background:#f4f6f7; cursor:not-allowed;">
+                                        <input type="number" id="scqM2" title="Auto-calculado" disabled
+                                            style="background:#f4f6f7; cursor:not-allowed;">
                                     </div>
                                 </div>
                             </div>
@@ -405,58 +420,70 @@
                         </div>
 
                         <!-- Goal & Evolution Strategy Card V4.22 -->
-                        <div id="strategyCard" 
-                             style="margin-top: 15px; padding: 15px; background: rgba(108, 92, 231, 0.03); border-radius: 12px; border: 1px solid rgba(108, 92, 231, 0.1); position: relative; overflow: hidden;">
-                            
-                            
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                                <label style="font-size: 0.8rem; font-weight: 800; color: #6c5ce7; margin:0; display: flex; align-items: center; gap: 6px;">
+                        <div id="strategyCard"
+                            style="margin-top: 15px; padding: 15px; background: rgba(108, 92, 231, 0.03); border-radius: 12px; border: 1px solid rgba(108, 92, 231, 0.1); position: relative; overflow: hidden;">
+
+
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <label
+                                    style="font-size: 0.8rem; font-weight: 800; color: #6c5ce7; margin:0; display: flex; align-items: center; gap: 6px;">
                                     🎯 Estrategia de Nutrición
                                 </label>
                                 <!-- Adequacy Mode Toggle -->
                                 <div style="display:flex; background:#eee; padding:2px; border-radius:8px; gap:2px;">
-                                    <button id="btnAdeqGoal" type="button" onclick="window.setAdequacyMode('goal')" 
-                                            style="padding:3px 8px; font-size:0.6rem; font-weight:800; border:none; border-radius:6px; cursor:pointer; background:#6c5ce7; color:white; transition:all 0.2s;">
+                                    <button id="btnAdeqGoal" type="button" onclick="window.setAdequacyMode('goal')"
+                                        style="padding:3px 8px; font-size:0.6rem; font-weight:800; border:none; border-radius:6px; cursor:pointer; background:#6c5ce7; color:white; transition:all 0.2s;">
                                         META 🎯
                                     </button>
-                                    <button id="btnAdeqGET" type="button" onclick="window.setAdequacyMode('get')" 
-                                            style="padding:3px 8px; font-size:0.6rem; font-weight:800; border:none; border-radius:6px; cursor:pointer; background:transparent; color:#666; transition:all 0.2s;">
+                                    <button id="btnAdeqGET" type="button" onclick="window.setAdequacyMode('get')"
+                                        style="padding:3px 8px; font-size:0.6rem; font-weight:800; border:none; border-radius:6px; cursor:pointer; background:transparent; color:#666; transition:all 0.2s;">
                                         GET 🧬
                                     </button>
                                 </div>
                             </div>
 
-                            <div style="display:flex; align-items:center; gap:10px; background:white; padding:12px; border-radius:10px; border:1px solid #eee;">
+                            <div
+                                style="display:flex; align-items:center; gap:10px; background:white; padding:12px; border-radius:10px; border:1px solid #eee;">
                                 <div style="flex:1;">
-                                    <span style="font-size:0.6rem; color:#888; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">Ajuste Evolución</span>
+                                    <span
+                                        style="font-size:0.6rem; color:#888; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">Ajuste
+                                        Evolución</span>
                                     <div style="display:flex; align-items:center; gap:5px;">
-                                        <input type="number" id="goalKcalBox" placeholder="kcal/kg" 
-                                               style="width:80px; font-size:1.1rem; font-weight:700; border:none; outline:none; background:#f8f9fa; border-radius:6px; padding:4px 8px;">
+                                        <input type="number" id="goalKcalBox" placeholder="kcal/kg"
+                                            style="width:80px; font-size:1.1rem; font-weight:700; border:none; outline:none; background:#f8f9fa; border-radius:6px; padding:4px 8px;">
                                         <span style="font-size:0.75rem; color:#aaa; font-weight:600;">kcal/kg</span>
                                     </div>
                                 </div>
-                                
+
                                 <div style="font-size:1.2rem; color:#ddd;">➔</div>
 
-                                <div style="flex:1.5; background:rgba(108, 92, 231, 0.05); padding:8px 12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(108, 92, 231, 0.1);">
+                                <div
+                                    style="flex:1.5; background:rgba(108, 92, 231, 0.05); padding:8px 12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(108, 92, 231, 0.1);">
                                     <div>
-                                        <span style="font-size:0.6rem; color:#6c5ce7; text-transform:uppercase; font-weight:700; display:block; margin-bottom:2px;">Meta Final</span>
+                                        <span
+                                            style="font-size:0.6rem; color:#6c5ce7; text-transform:uppercase; font-weight:700; display:block; margin-bottom:2px;">Meta
+                                            Final</span>
                                         <div style="display:flex; align-items:baseline; gap:4px;">
-                                            <input type="number" id="goalTotal" placeholder="---" 
-                                                   style="width:80px; font-size:1.4rem; font-weight:800; color:#6c5ce7; border:none; background:transparent; outline:none;">
-                                            <span style="font-size:0.8rem; color:#6c5ce7; font-weight:600;">kcal/día</span>
+                                            <input type="number" id="goalTotal" placeholder="---"
+                                                style="width:80px; font-size:1.4rem; font-weight:800; color:#6c5ce7; border:none; background:transparent; outline:none;">
+                                            <span
+                                                style="font-size:0.8rem; color:#6c5ce7; font-weight:600;">kcal/día</span>
                                         </div>
                                     </div>
-                                    <div id="valLastGoalDate" style="font-size:0.55rem; color:#bbb; text-align:right; font-style:italic;">19-04-2026</div>
+                                    <div id="valLastGoalDate"
+                                        style="font-size:0.55rem; color:#bbb; text-align:right; font-style:italic;">
+                                        19-04-2026</div>
                                     <input type="hidden" id="getSelector" value="factorial">
                                 </div>
                             </div>
-                            
+
                             <!-- Strategy Feedback Footer -->
-                            <div id="strategyFeedback" 
-                                 style="margin-top:12px; font-size:0.7rem; color:#555; display:flex; align-items:center; gap:8px; padding:6px 10px; background:white; border-radius:8px; border:1px solid #eee; transition: all 0.3s ease;">
+                            <div id="strategyFeedback"
+                                style="margin-top:12px; font-size:0.7rem; color:#555; display:flex; align-items:center; gap:8px; padding:6px 10px; background:white; border-radius:8px; border:1px solid #eee; transition: all 0.3s ease;">
                                 <span id="strategyIcon" style="font-size:0.8rem;">💡</span>
-                                <span id="strategyText">Selecciona un método o ingresa los kcal/kg para definir la meta.</span>
+                                <span id="strategyText">Selecciona un método o ingresa los kcal/kg para definir la
+                                    meta.</span>
                             </div>
                         </div>
 
@@ -465,28 +492,37 @@
                             style="margin-top:15px; padding:15px; background:white; border-radius:12px; border:1px solid rgba(52, 152, 219, 0.15); box-shadow:0 4px 12px rgba(0,0,0,0.03);">
                             <div
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                                <label style="font-size:0.85rem; font-weight:800; color:#3498db; margin:0;">Metas de Macronutrientes</label>
+                                <label style="font-size:0.85rem; font-weight:800; color:#3498db; margin:0;">Metas de
+                                    Macronutrientes</label>
                                 <div
                                     style="display:flex; gap:0; background:#f1f2f6; border-radius:10px; border:1px solid #ddd; overflow:hidden; padding:2px;">
                                     <button type="button" id="btnModeGkg" class="btn-micro active"
                                         style="border-radius:6px; border:none; padding:4px 10px; font-size:0.7rem; font-weight:700;">g/kg</button>
                                     <button type="button" id="btnModePct" class="btn-micro"
-                                        style="border-radius:6px; border:none; padding:4px 10px; font-size:0.7rem; font-weight:700;">Porcentaje %</button>
+                                        style="border-radius:6px; border:none; padding:4px 10px; font-size:0.7rem; font-weight:700;">Porcentaje
+                                        %</button>
                                 </div>
                             </div>
                             <div style="display:flex; gap:15px; align-items:flex-start;">
                                 <div style="flex:1; display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
                                     <!-- Prot Column with Presets -->
                                     <div class="mini-input">
-                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                            <label id="lblProtGoal" style="font-size:0.65rem; color:#888; font-weight:600; margin-bottom:0;">Prot (g/kg)</label>
+                                        <div
+                                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                            <label id="lblProtGoal"
+                                                style="font-size:0.65rem; color:#888; font-weight:600; margin-bottom:0;">Prot
+                                                (g/kg)</label>
                                             <div id="protPresets" style="display:flex; gap:2px;">
-                                                <button type="button" onclick="window.applyMacroPreset('prot', 1.2)" style="font-size:0.55rem; padding:1px 3px; border-radius:3px; border:1px solid #eee; background:white; cursor:pointer; color:#888;">1.2</button>
-                                                <button type="button" onclick="window.applyMacroPreset('prot', 1.5)" style="font-size:0.55rem; padding:1px 3px; border-radius:3px; border:1px solid #eee; background:white; cursor:pointer; color:#888;">1.5</button>
-                                                <button type="button" onclick="window.applyMacroPreset('prot', 2.0)" style="font-size:0.55rem; padding:1px 3px; border-radius:3px; border:1px solid #eee; background:white; cursor:pointer; color:#888;">2.0</button>
+                                                <button type="button" onclick="window.applyMacroPreset('prot', 1.2)"
+                                                    style="font-size:0.55rem; padding:1px 3px; border-radius:3px; border:1px solid #eee; background:white; cursor:pointer; color:#888;">1.2</button>
+                                                <button type="button" onclick="window.applyMacroPreset('prot', 1.5)"
+                                                    style="font-size:0.55rem; padding:1px 3px; border-radius:3px; border:1px solid #eee; background:white; cursor:pointer; color:#888;">1.5</button>
+                                                <button type="button" onclick="window.applyMacroPreset('prot', 2.0)"
+                                                    style="font-size:0.55rem; padding:1px 3px; border-radius:3px; border:1px solid #eee; background:white; cursor:pointer; color:#888;">2.0</button>
                                             </div>
                                         </div>
-                                        <input type="number" id="goalProtKg" placeholder="1.2" step="0.1" style="font-size:1.1rem; font-weight:700; text-align:center; padding:5px;">
+                                        <input type="number" id="goalProtKg" placeholder="1.2" step="0.1"
+                                            style="font-size:1.1rem; font-weight:700; text-align:center; padding:5px;">
                                         <div id="goalProt" data-val="0"
                                             style="font-size:0.7rem; color:#666; font-weight:700; text-align:center; margin-top:4px;">
                                             0.0 g/día</div>
@@ -496,7 +532,8 @@
                                     </div>
                                     <div class="mini-input">
                                         <label id="lblCHOGoal" style="font-size:0.7rem; color:#888;">CHO (g/kg)</label>
-                                        <input type="number" id="goalCHOKg" placeholder="Ej. 5.0" step="0.1" style="font-size:1.1rem; font-weight:700; text-align:center;">
+                                        <input type="number" id="goalCHOKg" placeholder="Ej. 5.0" step="0.1"
+                                            style="font-size:1.1rem; font-weight:700; text-align:center;">
                                         <div id="goalCHO" data-val="0"
                                             style="font-size:0.7rem; color:#666; font-weight:700; text-align:center; margin-top:4px;">
                                             0.0 g/día</div>
@@ -506,7 +543,8 @@
                                     </div>
                                     <div class="mini-input">
                                         <label id="lblLipGoal" style="font-size:0.7rem; color:#888;">Líp (g/kg)</label>
-                                        <input type="number" id="goalLipKg" placeholder="Ej. 2.0" step="0.1" style="font-size:1.1rem; font-weight:700; text-align:center;">
+                                        <input type="number" id="goalLipKg" placeholder="Ej. 2.0" step="0.1"
+                                            style="font-size:1.1rem; font-weight:700; text-align:center;">
                                         <div id="goalLip" data-val="0"
                                             style="font-size:0.7rem; color:#666; font-weight:700; text-align:center; margin-top:4px;">
                                             0.0 g/día</div>
@@ -522,10 +560,14 @@
                             </div>
                             <div
                                 style="text-align:right; font-size:0.7rem; color:#555; background:#f8f9fa; margin: 10px -15px -15px -15px; padding:10px 15px; border-top:1px solid #eee; display:flex; justify-content:space-between; align-items:center; border-radius: 0 0 12px 12px;">
-                                <span>Total macros: <strong id="goalMacroKcal" style="font-size:0.9rem; color:#333;">0</strong> kcal</span>
-                                <div id="pctTotalWarning" style="display:flex; align-items:center; gap:5px; background:rgba(39, 174, 96, 0.05); padding:3px 10px; border-radius:20px; border:1px solid rgba(39, 174, 96, 0.1);">
-                                    <span style="font-size:0.55rem; color:#999; text-transform:uppercase; font-weight:700;">Adecuación:</span>
-                                    <span id="pctTotalCheck" style="font-size:0.8rem; font-weight:800; color:#27ae60;">0%</span>
+                                <span>Total macros: <strong id="goalMacroKcal"
+                                        style="font-size:0.9rem; color:#333;">0</strong> kcal</span>
+                                <div id="pctTotalWarning"
+                                    style="display:flex; align-items:center; gap:5px; background:rgba(39, 174, 96, 0.05); padding:3px 10px; border-radius:20px; border:1px solid rgba(39, 174, 96, 0.1);">
+                                    <span
+                                        style="font-size:0.55rem; color:#999; text-transform:uppercase; font-weight:700;">Adecuación:</span>
+                                    <span id="pctTotalCheck"
+                                        style="font-size:0.8rem; font-weight:800; color:#27ae60;">0%</span>
                                 </div>
                             </div>
                         </section>
@@ -547,11 +589,12 @@
                         <div style="position: relative; height: 100px; width: 100%;">
                             <canvas id="evolutionChart"></canvas>
                         </div>
-                        <p style="text-align:center; font-size:0.6rem; color:#999; font-style:italic; margin-top:2px; margin-bottom:5px;">
+                        <p
+                            style="text-align:center; font-size:0.6rem; color:#999; font-style:italic; margin-top:2px; margin-bottom:5px;">
                             Peso: <strong id="lblChartPatientName">--</strong>
                         </p>
-                        <button type="button" id="btnLogEvolution" 
-                                style="width:100%; background:#f39c12; color:white; border:none; border-radius:8px; padding:8px; font-size:0.75rem; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(243, 156, 18, 0.2);">
+                        <button type="button" id="btnLogEvolution"
+                            style="width:100%; background:#f39c12; color:white; border:none; border-radius:8px; padding:8px; font-size:0.75rem; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(243, 156, 18, 0.2);">
                             Actualizar Gráfico con Peso
                         </button>
                     </div>
@@ -622,13 +665,15 @@
 
 
                 <!-- GESTIÓN DE TRASLAPE DE VÍAS -->
-                <section class="card" id="traslapeCard" style="border-left: 4px solid #e67e22; background: rgba(230, 126, 34, 0.02); margin-bottom: 20px;">
+                <section class="card" id="traslapeCard"
+                    style="border-left: 4px solid #e67e22; background: rgba(230, 126, 34, 0.02); margin-bottom: 20px;">
                     <details class="folds-accordion" id="traslapeAccordion">
                         <summary style="font-weight:700; color:#d35400;">🔄 Gestión de Traslape de Vías</summary>
-                        
+
                         <div style="padding-top:12px;">
                             <!-- Mode Toggle -->
-                            <div style="display:flex; gap:5px; margin-bottom:15px; background:#eee; padding:3px; border-radius:10px;">
+                            <div
+                                style="display:flex; gap:5px; margin-bottom:15px; background:#eee; padding:3px; border-radius:10px;">
                                 <button type="button" id="btnModeNPNE" onclick="window.setTraslapeMode('np-ne')"
                                     style="flex:1; padding:6px; border:none; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:#e67e22; color:white; transition:all 0.2s;">
                                     NP ➔ NE
@@ -639,37 +684,36 @@
                                 </button>
                             </div>
 
-                            <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                                <label style="font-size:0.8rem; font-weight: 700; margin-bottom: 8px; display:block; color:#2c3e50;">
+                            <div
+                                style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                                <label
+                                    style="font-size:0.8rem; font-weight: 700; margin-bottom: 8px; display:block; color:#2c3e50;">
                                     Progreso del Traslape
                                 </label>
                                 <div style="display:flex; align-items:center; gap: 10px;">
                                     <div class="mini-input" style="flex:1; margin-bottom:0;">
-                                        <label id="traslapeLabel" style="font-size:0.65rem; color:#e67e22; font-weight:700;">% Vía de Salida (NP)</label>
+                                        <label id="traslapeLabel"
+                                            style="font-size:0.65rem; color:#e67e22; font-weight:700;">% Vía de Salida
+                                            (NP)</label>
                                         <div style="display:flex; align-items:center; gap:5px;">
-                                            <input type="number" id="trasPercentage" placeholder="Ej: 40" oninput="window.updateTraslapeConfig()"
+                                            <input type="number" id="trasPercentage" placeholder="Ej: 40"
+                                                oninput="window.updateTraslapeConfig()"
                                                 style="font-size: 1.2rem; font-weight: 800; text-align: center; color: #e67e22; padding: 8px;">
                                             <span style="font-weight:800; color:#888; font-size:1.1rem;">%</span>
                                         </div>
                                     </div>
                                     <div style="flex:1; text-align:center;">
-                                        <div style="font-size:0.65rem; color:#3498db; font-weight:700; margin-bottom: 5px;">% Vía Principal</div>
-                                        <div id="traslapeMainPct" style="font-size:1.2rem; font-weight:800; color:#3498db;">100%</div>
+                                        <div
+                                            style="font-size:0.65rem; color:#3498db; font-weight:700; margin-bottom: 5px;">
+                                            % Vía Principal</div>
+                                        <div id="traslapeMainPct"
+                                            style="font-size:1.2rem; font-weight:800; color:#3498db;">100%</div>
                                     </div>
                                 </div>
-                                <div id="traslapeMacroBreakdown" style="display:none; justify-content:space-between; margin-top:12px; font-size:0.75rem; background:#fdfefe; padding:10px; border-radius:6px; border:1px solid #eee;">
-                                    <div style="text-align:center; flex:1;">
-                                        <span id="lblTrasSalidaDesc" style="color:#e67e22; font-weight:700; display:block; margin-bottom:4px;">Aporte Vía Salida</span>
-                                        <div id="valTrasSalida" style="color:#555; font-weight:600;">0 kcal | 0g P</div>
-                                    </div>
-                                    <div style="width:1px; background:#eee;"></div>
-                                    <div style="text-align:center; flex:1;">
-                                        <span id="lblTrasPrincipalDesc" style="color:#3498db; font-weight:700; display:block; margin-bottom:4px;">Meta Vía Principal</span>
-                                        <div id="valTrasPrincipal" style="color:#555; font-weight:600;">0 kcal | 0g P</div>
-                                    </div>
-                                </div>
-                                <small style="display:block; margin-top:8px; font-size:0.65rem; color:#7f8c8d; line-height: 1.3;">
-                                    Ingresa qué porcentaje de la meta total (GET) está siendo cubierto por la vía de salida. El sistema calculará y sumará Kcal, Prot, CHO y Líp automáticamente.
+                                <small
+                                    style="display:block; margin-top:8px; font-size:0.65rem; color:#7f8c8d; line-height: 1.3;">
+                                    Ingresa qué porcentaje de la meta total (GET) está siendo cubierto por la vía de
+                                    salida. El sistema calculará y sumará Kcal, Prot, CHO y Líp automáticamente.
                                 </small>
                             </div>
                         </div>
@@ -719,10 +763,10 @@
                             <div class="mini-input">
                                 <label style="display:flex; justify-content:space-between; align-items:center;">
                                     Velocidad (ml/hr)
-                                    <span id="infusionSuggestionLabel" 
-                                          style="font-size:0.55rem; color:#3498db; cursor:pointer; background:#eaf2f8; padding:1px 4px; border-radius:3px; border:1px solid #d4e6f1;" 
-                                          title="Hacer clic para aplicar sugerencia clínica"
-                                          onclick="window.applyInfusionSuggestion()">Sug: 80</span>
+                                    <span id="infusionSuggestionLabel"
+                                        style="font-size:0.55rem; color:#3498db; cursor:pointer; background:#eaf2f8; padding:1px 4px; border-radius:3px; border:1px solid #d4e6f1;"
+                                        title="Hacer clic para aplicar sugerencia clínica"
+                                        onclick="window.applyInfusionSuggestion()">Sug: 80</span>
                                 </label>
                                 <input type="number" id="infusionRate" placeholder="Ej. 60"
                                     oninput="window.calcInfusion()">
@@ -875,12 +919,15 @@
                         <summary style="font-weight:700; color:var(--primary);">🏥 Ingesta Oral y Sueroterapia</summary>
 
                         <!-- Sueroterapia (IV Fluids) -->
-                        <h4 style="font-size: 0.8rem; color: #555; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                        <h4
+                            style="font-size: 0.8rem; color: #555; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
                             💧 Sueroterapia (Fluidos IV)</h4>
-                        <div class="modules-grid" style="display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap:10px; padding-top:10px;">
+                        <div class="modules-grid"
+                            style="display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap:10px; padding-top:10px;">
                             <div class="mini-input">
                                 <label>Tipo de Suero</label>
-                                <select id="ivType" style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); width:100%; font-size:0.85rem;">
+                                <select id="ivType"
+                                    style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); width:100%; font-size:0.85rem;">
                                     <option value="none">Ninguno</option>
                                     <option value="sg5">Suero Glucosado 5%</option>
                                     <option value="sg10">Suero Glucosado 10%</option>
@@ -895,9 +942,11 @@
                         </div>
 
                         <!-- Ingesta Oral -->
-                        <h4 style="font-size: 0.8rem; color: #555; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                        <h4
+                            style="font-size: 0.8rem; color: #555; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
                             🍲 Ingesta Oral / Bandeja</h4>
-                        <div class="modules-grid" style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
+                        <div class="modules-grid"
+                            style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
                             <div class="mini-input">
                                 <label>Energía (kcal)</label>
                                 <input type="number" id="oralKcal" class="input-oral" placeholder="kcal">
@@ -919,7 +968,8 @@
                                 <input type="number" id="oralWater" class="input-oral" placeholder="ml">
                             </div>
                         </div>
-                        <small style="display:block; margin-top:10px; opacity:0.6; font-size:0.65rem;">El suero y la vía oral se suman automáticamente al total de aportes contra los requerimientos.</small>
+                        <small style="display:block; margin-top:10px; opacity:0.6; font-size:0.65rem;">El suero y la vía
+                            oral se suman automáticamente al total de aportes contra los requerimientos.</small>
                     </details>
                 </section>
 
@@ -1019,29 +1069,37 @@
             <!-- NEW V4.25: Tarjeta de Eficiencia Metabólica -->
             <div id="metabolicEfficiencyCard"
                 style="margin-top:20px; background:linear-gradient(135deg, #1a2a3a, #2c3e50); color:white; padding:15px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1); border-bottom:4px solid #f1c40f;">
-                <h4 style="margin:0 0 10px 0; font-size:0.8rem; color:#f1c40f; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:8px;">
+                <h4
+                    style="margin:0 0 10px 0; font-size:0.8rem; color:#f1c40f; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:8px;">
                     <span>⚡ Eficiencia Metabólica</span>
                 </h4>
-                
+
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                     <!-- Nitrogen Balance -->
-                    <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
-                        <span style="font-size:0.6rem; color:#bdc3c7; display:block; margin-bottom:4px;">Balance Nitrogenado (BN)</span>
+                    <div
+                        style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
+                        <span style="font-size:0.6rem; color:#bdc3c7; display:block; margin-bottom:4px;">Balance
+                            Nitrogenado (BN)</span>
                         <div style="display:flex; justify-content:space-between; align-items:baseline;">
                             <strong id="valBN" style="font-size:1.3rem;">--</strong>
-                            <span id="labelBN" style="font-size:0.55rem; background:#7f8c8d; padding:2px 5px; border-radius:4px; font-weight:800;">PENDIENTE</span>
+                            <span id="labelBN"
+                                style="font-size:0.55rem; background:#7f8c8d; padding:2px 5px; border-radius:4px; font-weight:800;">PENDIENTE</span>
                         </div>
                     </div>
                     <!-- NPC:N Ratio -->
-                    <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
-                        <span style="font-size:0.6rem; color:#bdc3c7; display:block; margin-bottom:4px;">Relación NPC:N</span>
+                    <div
+                        style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
+                        <span style="font-size:0.6rem; color:#bdc3c7; display:block; margin-bottom:4px;">Relación
+                            NPC:N</span>
                         <div style="display:flex; justify-content:space-between; align-items:baseline;">
                             <strong id="valNPCN" style="font-size:1.3rem;">--</strong>
-                            <span id="labelNPCN" style="font-size:0.55rem; background:#7f8c8d; padding:2px 5px; border-radius:4px; font-weight:800;">NPC/N</span>
+                            <span id="labelNPCN"
+                                style="font-size:0.55rem; background:#7f8c8d; padding:2px 5px; border-radius:4px; font-weight:800;">NPC/N</span>
                         </div>
                     </div>
                 </div>
-                <div id="metabolicAdvice" style="margin-top:10px; font-size:0.6rem; color:#ecf0f1; font-style:italic; opacity:0.8;">
+                <div id="metabolicAdvice"
+                    style="margin-top:10px; font-size:0.6rem; color:#ecf0f1; font-style:italic; opacity:0.8;">
                     Ingresa datos de proteína y calorías para habilitar el monitoreo metabólico.
                 </div>
             </div>
@@ -1357,58 +1415,87 @@
                     <div class="module-head" style="margin-bottom:10px;">
                         <h3 style="color:#27ae60;">⚖️ Justificación Proteica (CNP:N)</h3>
                     </div>
-                    
+
                     <div style="display:flex; gap:15px; flex-wrap:wrap;">
                         <!-- Goal Ratio -->
-                        <div style="flex:1; background:var(--bg); border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center;">
-                            <div style="font-size:0.7rem; color:#7f8c8d; font-weight:700; text-transform:uppercase; margin-bottom:5px;">Según Meta (GET)</div>
-                            <div id="ratioGoalVal" style="font-size:1.5rem; font-weight:800; color:#34495e; line-height:1;">-- : 1</div>
-                            <div id="ratioGoalDiag" style="font-size:0.65rem; color:#888; font-style:italic; margin-top:4px;">Esperando datos...</div>
+                        <div
+                            style="flex:1; background:var(--bg); border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center;">
+                            <div
+                                style="font-size:0.7rem; color:#7f8c8d; font-weight:700; text-transform:uppercase; margin-bottom:5px;">
+                                Según Meta (GET)</div>
+                            <div id="ratioGoalVal"
+                                style="font-size:1.5rem; font-weight:800; color:#34495e; line-height:1;">-- : 1</div>
+                            <div id="ratioGoalDiag"
+                                style="font-size:0.65rem; color:#888; font-style:italic; margin-top:4px;">Esperando
+                                datos...</div>
                         </div>
-                        
+
                         <!-- Actual Prescription Ratio -->
-                        <div style="flex:1; background:rgba(39, 174, 96, 0.05); border:1px solid #27ae60; border-radius:8px; padding:10px; text-align:center;">
-                            <div style="font-size:0.7rem; color:#27ae60; font-weight:800; text-transform:uppercase; margin-bottom:5px;">Aporte Real (Simulador)</div>
-                            <div id="ratioActualVal" style="font-size:1.6rem; font-weight:900; color:#27ae60; line-height:1;">-- : 1</div>
-                            <div id="ratioActualDiag" style="font-size:0.75rem; color:#1e8449; font-weight:700; margin-top:4px;">Esperando datos...</div>
+                        <div
+                            style="flex:1; background:rgba(39, 174, 96, 0.05); border:1px solid #27ae60; border-radius:8px; padding:10px; text-align:center;">
+                            <div
+                                style="font-size:0.7rem; color:#27ae60; font-weight:800; text-transform:uppercase; margin-bottom:5px;">
+                                Aporte Real (Simulador)</div>
+                            <div id="ratioActualVal"
+                                style="font-size:1.6rem; font-weight:900; color:#27ae60; line-height:1;">-- : 1</div>
+                            <div id="ratioActualDiag"
+                                style="font-size:0.75rem; color:#1e8449; font-weight:700; margin-top:4px;">Esperando
+                                datos...</div>
                         </div>
                     </div>
-                    
-                    <small style="display:block; margin-top:10px; font-size:0.65rem; color:#95a5a6; line-height:1.3; text-align:center;">
-                        *El diagnóstico metabólico de la fórmula se ajusta automáticamente si el paciente es pediátrico (Crecimiento) o Adulto (Estrés). Ratios de 90-150:1 son ideales para rápido crecimiento/estrés.
+
+                    <small
+                        style="display:block; margin-top:10px; font-size:0.65rem; color:#95a5a6; line-height:1.3; text-align:center;">
+                        *El diagnóstico metabólico de la fórmula se ajusta automáticamente si el paciente es pediátrico
+                        (Crecimiento) o Adulto (Estrés). Ratios de 90-150:1 son ideales para rápido crecimiento/estrés.
                     </small>
                 </section>
             </div>
 
             <!-- GENERADOR DE EVOLUCIÓN (ADIME - CYCLOPE) -->
             <div style="margin: 25px 15px; border-top: 1px solid #eee; padding-top: 15px;">
-                <h3 style="color:#2c3e50; font-size:1.1rem; margin-bottom:15px; font-weight:600;">Registro de Evolución Quirúrgica/Clínica</h3>
-                
+                <h3 style="color:#2c3e50; font-size:1.1rem; margin-bottom:15px; font-weight:600;">Registro de Evolución
+                    Quirúrgica/Clínica</h3>
+
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
                     <div style="flex:1;">
-                        <label style="font-size:0.75rem; color:#7f8c8d; font-weight:600; display:block; margin-bottom:4px;">Parámetros Bioquímicos / Exámenes</label>
-                        <input type="text" id="evoExamenes" placeholder="Ej: PCR 45, Albúmina 2.8, BUN 20..." style="width:100%; padding:8px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem;">
+                        <label
+                            style="font-size:0.75rem; color:#7f8c8d; font-weight:600; display:block; margin-bottom:4px;">Parámetros
+                            Bioquímicos / Exámenes</label>
+                        <input type="text" id="evoExamenes" placeholder="Ej: PCR 45, Albúmina 2.8, BUN 20..."
+                            style="width:100%; padding:8px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem;">
                     </div>
                     <div style="flex:1;">
-                        <label style="font-size:0.75rem; color:#7f8c8d; font-weight:600; display:block; margin-bottom:4px;">Tolerancia y Clínica Subjetiva</label>
-                        <input type="text" id="evoTolerancia" placeholder="Ej: Buena tolerancia V.O, deposiciones (-)..." style="width:100%; padding:8px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem;">
+                        <label
+                            style="font-size:0.75rem; color:#7f8c8d; font-weight:600; display:block; margin-bottom:4px;">Tolerancia
+                            y Clínica Subjetiva</label>
+                        <input type="text" id="evoTolerancia"
+                            placeholder="Ej: Buena tolerancia V.O, deposiciones (-)..."
+                            style="width:100%; padding:8px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem;">
                     </div>
                 </div>
 
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <button id="btnGenerateNote" style="flex:1; background: #2c3e50; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:600; cursor:pointer; font-size:0.9rem;">
+                    <button id="btnGenerateNote"
+                        style="flex:1; background: #2c3e50; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:600; cursor:pointer; font-size:0.9rem;">
                         Evolución ADIME
                     </button>
-                    <button id="btnGenerateVGO" style="flex:1; background: #27ae60; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:600; cursor:pointer; font-size:0.9rem;">
+                    <button id="btnGenerateVGO"
+                        style="flex:1; background: #27ae60; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:600; cursor:pointer; font-size:0.9rem;">
                         Generar VGO
                     </button>
                 </div>
-                <div id="clinicalNoteContainer" class="card" style="display:none; padding:15px; border: 1px solid #bdc3c7; background: #fafbfc;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <div id="clinicalNoteContainer" class="card"
+                    style="display:none; padding:15px; border: 1px solid #bdc3c7; background: #fafbfc;">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
                         <h4 style="margin:0; color:#34495e; font-size:0.9rem;">Vista Previa de Evolución (ADIME)</h4>
-                        <button id="btnCopyNote" style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:600;">Copiar Texto</button>
+                        <button id="btnCopyNote"
+                            style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:600;">Copiar
+                            Texto</button>
                     </div>
-                    <div id="noteContent" style="font-size:0.8rem; line-height:1.6; color:#2c3e50; white-space:pre-wrap; font-family:monospace; background:white; padding:10px; border:1px solid #eee; border-radius:4px;">
+                    <div id="noteContent"
+                        style="font-size:0.8rem; line-height:1.6; color:#2c3e50; white-space:pre-wrap; font-family:monospace; background:white; padding:10px; border:1px solid #eee; border-radius:4px;">
                         <!-- Generated ADIME Content -->
                     </div>
                 </div>
