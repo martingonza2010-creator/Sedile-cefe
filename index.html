@@ -143,8 +143,8 @@
                                 </select>
                             </div>
                             <div class="mini-input">
-                                <label>Peso (kg)</label>
-                                <input type="number" step="0.1" id="peso" placeholder="0">
+                                <label>Peso (kg) <span id="btnEdemaDrop" onclick="window.toggleEdemaPanel()" style="cursor:pointer; font-size:0.7rem; color:#3498db; text-decoration:underline;">💧Ajustar</span></label>
+                                <input type="number" step="0.1" id="peso" placeholder="0" oninput="window.updateDryWeight()">
                             </div>
                             <div class="mini-input">
                                 <label>Talla (m o cm)</label>
@@ -168,9 +168,40 @@
                                 style="padding:4px; font-size:0.75rem; border-radius:6px; border:1px solid #e59866; background:#fdf2e9; color:#b9770e; outline:none;"
                                 onchange="calculateRequirements()">
                                 <option value="real">Peso real</option>
+                                <option value="dry">Peso seco (Ajustado)</option>
                                 <option value="ideal">Peso ideal</option>
                                 <option value="ajustado">Peso ajustado</option>
                             </select>
+                        </div>
+
+                        <!-- NEW V4.50: EDEMA / ASCITES ADJUSTMENT PANEL (SUBTLE) -->
+                        <div id="edemaPanel" style="display:none; margin: 10px 0; background:#f0f7ff; border:1px solid #cde4ff; border-radius:12px; padding:15px;">
+                            <h4 style="margin:0 0 10px 0; color:#2980b9; font-size:0.75rem;">💧 Ajuste Metabólico (Edema/Ascitis)</h4>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                                <div class="mini-input" style="margin-bottom:0;">
+                                    <label style="font-size:0.65rem;">Grado Edema</label>
+                                    <select id="edemaGrade" onchange="window.updateDryWeight()" style="font-size:0.7rem; padding:4px;">
+                                        <option value="0">Ninguno (0 kg)</option>
+                                        <option value="1">+ Tobillo (-1.0 kg)</option>
+                                        <option value="3.5">++ Rodilla (-3.5 kg)</option>
+                                        <option value="5.5">+++ Pierna (-5.5 kg)</option>
+                                        <option value="11">++++ Anasarca (-11.0 kg)</option>
+                                    </select>
+                                </div>
+                                <div class="mini-input" style="margin-bottom:0;">
+                                    <label style="font-size:0.65rem;">Grado Ascitis</label>
+                                    <select id="ascitesGrade" onchange="window.updateDryWeight()" style="font-size:0.7rem; padding:4px;">
+                                        <option value="0">Ninguna (0 kg)</option>
+                                        <option value="2.2">Leve (-2.2 kg)</option>
+                                        <option value="6">Moderada (-6.0 kg)</option>
+                                        <option value="14">Grave (-14.0 kg)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #cde4ff; display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-size:0.65rem; color:#666; font-weight:700;">PESO SECO ESTIMADO:</span>
+                                <strong id="dryWeightOut" style="color:#2980b9; font-size:0.9rem;">0 kg</strong>
+                            </div>
                         </div>
 
                         <!-- V3.80: Pediatric & Neonatal Specific Rows -->

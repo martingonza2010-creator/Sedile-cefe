@@ -4931,3 +4931,25 @@ window.initTabNavigation = function() {
         });
     });
 };
+
+// --- NEW V4.50: Edema & Ascites Logic ---
+window.toggleEdemaPanel = () => {
+    const p = document.getElementById('edemaPanel');
+    if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
+};
+
+window.updateDryWeight = () => {
+    const rawPeso = parseFloat(document.getElementById('peso')?.value) || 0;
+    const edemaKg = parseFloat(document.getElementById('edemaGrade')?.value) || 0;
+    const ascitisKg = parseFloat(document.getElementById('ascitesGrade')?.value) || 0;
+    
+    const dryWeight = Math.max(0, rawPeso - (edemaKg + ascitisKg));
+    const out = document.getElementById('dryWeightOut');
+    if (out) out.innerText = dryWeight.toFixed(1) + " kg";
+    
+    // Sincronizar con AppState si el modo es 'dry'
+    const mode = document.getElementById('pesoCalculoSelect')?.value;
+    if (mode === 'dry') {
+        calculateRequirements();
+    }
+};
