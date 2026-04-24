@@ -3925,6 +3925,105 @@ I - INTERVENCIÓN Y PRESCRIPCIÓN:
 ${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
 
         content.innerText = adimeText;
+        const titleH4 = document.querySelector('#clinicalNoteContainer h4');
+        if (titleH4) titleH4.innerText = "Vista Previa de Evolución (ADIME)";
+        container.style.display = 'block';
+        container.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // VGO Generator
+    const btnVGO = document.getElementById('btnGenerateVGO');
+    if (btnVGO) btnVGO.onclick = function () {
+        const container = document.getElementById('clinicalNoteContainer');
+        const content = document.getElementById('noteContent');
+        if (!container || !content) return;
+
+        const p = AppState.patient;
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        
+        let ageStr = '--';
+        if (p.ageParts) {
+            ageStr = `${p.ageParts.y} años ${p.ageParts.m} meses`;
+        }
+
+        const sexStr = p.sexo === 'm' ? 'Masculino' : (p.sexo === 'f' ? 'Femenino' : 'No especificado');
+
+        const pesoFisico = p.peso || 0;
+        const cm = (document.getElementById('tallaCM')?.value || (p.estatura * 100)) || 0;
+        const tallaMt = (cm / 100).toFixed(3);
+        const cCintura = document.getElementById('cCintura')?.value || '--';
+        
+        const imcVal = document.getElementById('valIMC')?.innerText || '--';
+        const zImcVal = document.getElementById('valZBMI')?.innerText || '--';
+        const zTallaVal = document.getElementById('valZHFA')?.innerText || '--';
+
+        const des = document.getElementById('diagnosticoPES')?.value || "Sin diagnóstico ingresado";
+        
+        const goal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
+        const pTotal = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
+        const cTotal = parseFloat(document.getElementById('goalCHO')?.dataset.val) || 0;
+        const lTotal = parseFloat(document.getElementById('goalLip')?.dataset.val) || 0;
+
+        const pPct = goal > 0 ? ((pTotal * 4) / goal * 100).toFixed(0) : 0;
+        const cPct = goal > 0 ? ((cTotal * 4) / goal * 100).toFixed(0) : 0;
+        const lPct = goal > 0 ? ((lTotal * 9) / goal * 100).toFixed(0) : 0;
+
+        const userName = AppState.user?.user_metadata?.full_name || "[Nombre del Profesional]";
+
+        const vgoText = `VALORACION GLOBAL OBJETIVA POR NUTRICIONISTA
+
+o Fecha de evaluación: ${dateStr}
+
+Fecha de nacimiento: [Completar]
+Edad: ${ageStr}
+Sexo: ${sexStr}
+
+Diagnóstico:
+o 1. [Completar diagnóstico médico]
+
+Antropometría: (Evaluación en bipedestación por nutricionista del servicio)
+o Peso ciego: ${pesoFisico} kg
+o Talla: ${tallaMt} mt
+o C. braquial: [Completar] cm
+o C. cintura: ${cCintura} cm
+
+Indicadores nutricionales: (WHO Antrho)
+o IMC: ${imcVal} kg/m2
+o Zscore IMC/E: ${zImcVal} DE
+o Zscore T/E: ${zTallaVal} DE
+o C. Cintura /E: [Completar si aplica]
+
+Anamnesis:
+o Síntomas gastrointestinales: Nauseas ( ) Vómitos ( ) Reflujo gastroesofágico ( ) Deposiciones ( ) Distensión abdominal ( ) Gases ( ).
+o Anamnesis alimentaria: Dentadura ( ) Alergias/intolerancias alimentarias ( ) Trastorno de deglución ( ) Apetito ( ).
+
+Tamizaje: (STRONG KIDS)
+o Puntaje: [Completar] pts
+o Interpretación: [Completar]
+
+Diagnóstico Nutricional Integrado:
+o ${des}
+
+Requerimientos nutricionales:
+o Calorías: ${Math.round(goal)} kcal
+o Proteínas: ${pTotal.toFixed(1)} gr -> VCT ${pPct} %
+o Carbohidratos: ${cTotal.toFixed(1)} gr -> VCT ${cPct} %
+o Lípidos: ${lTotal.toFixed(1)} gr -> VCT ${lPct} %
+
+Dietoterapia actual: [Completar]
+
+Observaciones/Plan/Sugerencias:
+o [Completar]
+
+${userName}
+Nutricionista clínica pediatría - psiquiatría infantojuvenil
+Unidad de nutrición y alimentación
+Hospital Regional de Antofagasta`;
+
+        content.innerText = vgoText;
+        const titleH4 = document.querySelector('#clinicalNoteContainer h4');
+        if (titleH4) titleH4.innerText = "Vista Previa de Evolución (VGO)";
         container.style.display = 'block';
         container.scrollIntoView({ behavior: 'smooth' });
     };
