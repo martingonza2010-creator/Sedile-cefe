@@ -3402,6 +3402,9 @@ function initAssessmentLogic() {
     window.updateTraslapeConfig = () => {
         const inputPct = parseFloat(document.getElementById('trasPercentage')?.value) || 0;
         const mainPctEl = document.getElementById('traslapeMainPct');
+        const breakdownPanel = document.getElementById('traslapeMacroBreakdown');
+        const breakdownOut = document.getElementById('trasBreakdownOut');
+        const breakdownMain = document.getElementById('trasBreakdownMain');
 
         let pct = inputPct;
         if (pct < 0) pct = 0;
@@ -3409,25 +3412,87 @@ function initAssessmentLogic() {
 
         if (mainPctEl) mainPctEl.innerText = (100 - pct) + '%';
 
-        // Use active macro goal dataset values
+        // Use active macro goal dataset values (the baseline requirement)
         const goalTotal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
         const goalP = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
-        const goalC = parseFloat(document.getElementById('goalCHO')?.dataset.val) || 0;
-        const goalL = parseFloat(document.getElementById('goalLip')?.dataset.val) || 0;
 
-        const k = goalTotal * (pct / 100);
-        const p = goalP * (pct / 100);
-        const c = goalC * (pct / 100);
-        const l = goalL * (pct / 100);
+        // CALCULATE BREAKDOWN
+        const kcalOut = goalTotal * (pct / 100);
+        const protOut = goalP * (pct / 100);
+        const kcalMain = goalTotal * ((100 - pct) / 100);
+        const protMain = goalP * ((100 - pct) / 100);
 
-        AppState.traslape.sourceKcal = k;
-        AppState.traslape.sourceProt = p;
-        AppState.traslape.sourceCHO = c;
-        AppState.traslape.sourceLip = l;
+        if (breakdownPanel) breakdownPanel.style.display = (pct > 0) ? 'block' : 'none';
+        if (breakdownOut) breakdownOut.innerText = `${Math.round(kcalOut)} Kcal | ${protOut.toFixed(1)}g P`;
+        if (breakdownMain) breakdownMain.innerText = `${Math.round(kcalMain)} Kcal | ${protMain.toFixed(1)}g P`;
+
+        // Update AppState for Simulation
+        AppState.traslape.sourceKcal = kcalOut;
+        AppState.traslape.sourceProt = protOut;
         AppState.traslape.pct = pct;
         AppState.traslape.active = (pct > 0);
 
         window.runSimulation();
+    };
+
+    // --- NEW V4.60: Advanced NPT Calculator Logic ---
+    window.updateNPTCalculator = () => {
+        const vol = parseFloat(document.getElementById('nptVol')?.value) || 0;
+        const dex = parseFloat(document.getElementById('nptDex')?.value) || 0;
+        const aa = parseFloat(document.getElementById('nptAA')?.value) || 0;
+        const lip = parseFloat(document.getElementById('nptLip')?.value) || 0;
+        const na = parseFloat(document.getElementById('nptNa')?.value) || 0;
+        const k = parseFloat(document.getElementById('nptK')?.value) || 0;
+        const weight = AppState.patient?.peso_calculo || AppState.patient?.peso || 0;
+
+        if (document.getElementById('nptWeight')) {
+            document.getElementById('nptWeight').value = weight;
+        }
+
+        // 1. Kcal No Proteicas (KcalNP)
+        const kcalDex = dex * 3.4;
+        const kcalLip = lip * 2.0; // 20% lipids = 2 kcal/ml
+        const kcalNP = kcalDex + kcalLip;
+
+        // 2. GIR (Carga Glucosa) - mg/kg/min
+        let gir = 0;
+        if (weight > 0) {
+            gir = (dex * 1000) / (weight * 1440);
+        }
+
+        // 3. Nitrogen (g)
+        const nitro = aa / 6.25;
+
+        // 4. Osmolarity (approx mOsm/L)
+        let osm = 0;
+        if (vol > 0) {
+            const dexL = (dex / vol) * 1000;
+            const aaL = (aa / vol) * 1000;
+            const naL = (na / vol) * 1000;
+            const kL = (k / vol) * 1000;
+            osm = (dexL * 5) + (aaL * 10) + (naL * 2) + (kL * 2);
+        }
+
+        // Update UI Results
+        if (document.getElementById('nptOsm')) document.getElementById('nptOsm').innerText = Math.round(osm);
+        if (document.getElementById('nptGIR')) document.getElementById('nptGIR').innerText = gir.toFixed(1);
+        if (document.getElementById('nptKcalNP')) document.getElementById('nptKcalNP').innerText = Math.round(kcalNP);
+        if (document.getElementById('nptKcalGN')) {
+            const ratio = nitro > 0 ? (kcalNP / nitro) : 0;
+            document.getElementById('nptKcalGN').innerText = Math.round(ratio);
+        }
+
+        // Osmolarity Status (Central vs Peripheral)
+        const statusEl = document.getElementById('nptStatus');
+        if (statusEl) {
+            if (osm > 800) {
+                statusEl.innerText = "Central";
+                statusEl.style.background = "#e74c3c";
+            } else {
+                statusEl.innerText = "Periférica";
+                statusEl.style.background = "#27ae60";
+            }
+        }
     };
 
     // --- NEW V4.24: Adequacy Mode Control ---
