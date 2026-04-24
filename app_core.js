@@ -381,19 +381,21 @@ function initProtocolModal() {
 // Global scope to ensure it's available early
 window.switchProtocolTab = (idx) => {
     console.log("🔄 switchProtocolTab called with index:", idx);
-    const tabInfusion = document.getElementById('tab-infusion');
-    const tabDelivery = document.getElementById('tab-delivery');
-    
-    if (tabInfusion) tabInfusion.style.display = idx === 0 ? 'block' : 'none';
-    if (tabDelivery) tabDelivery.style.display = idx === 1 ? 'block' : 'none';
+    const btnRTH = document.getElementById('btnTabRTH');
+    const btnDeliv = document.getElementById('btnTabDelivery');
+    const tabInf = document.getElementById('tab-infusion');
+    const tabDel = document.getElementById('tab-delivery');
 
-    const modalEl = document.getElementById('protocolModal');
-    if (modalEl) {
-        const btns = modalEl.querySelectorAll('.tab-nav .tab-btn');
-        btns.forEach((b, i) => {
-            if (i === idx) b.classList.add('active');
-            else b.classList.remove('active');
-        });
+    if (idx === 0) {
+        if (btnRTH) btnRTH.classList.add('active');
+        if (btnDeliv) btnDeliv.classList.remove('active');
+        if (tabInf) tabInf.style.display = 'block';
+        if (tabDel) tabDel.style.display = 'none';
+    } else {
+        if (btnRTH) btnRTH.classList.remove('active');
+        if (btnDeliv) btnDeliv.classList.add('active');
+        if (tabInf) tabInf.style.display = 'none';
+        if (tabDel) tabDel.style.display = 'block';
     }
 };
 

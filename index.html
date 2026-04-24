@@ -1619,9 +1619,9 @@
                     <h2>Protocolos Institucionales HRA</h2>
                     <button class="btn-close" id="btnProtocolClose">&times;</button>
                 </div>
-                <div class="tab-nav">
-                    <button class="tab-btn active" onclick="switchProtocolTab(0)">Velocidades RTH</button>
-                    <button class="tab-btn" onclick="switchProtocolTab(1)">Horarios de Entrega</button>
+                <div class="tab-nav" style="display:flex; gap:12px; margin-bottom:20px; background:none; border:none; padding:0;">
+                    <button id="btnTabRTH" class="tab-btn active" onclick="switchProtocolTab(0)" style="flex:1; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">Velocidades RTH</button>
+                    <button id="btnTabDelivery" class="tab-btn" onclick="switchProtocolTab(1)" style="flex:1; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">Horarios de Entrega</button>
                 </div>
                 <div class="tab-content" id="tab-infusion" style="display:block;">
                     <h3 class="table-title">Enterales en ml y su duración</h3>
@@ -1753,7 +1753,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.31"></script>
+        <script src="app_core.js?v=4.32"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
