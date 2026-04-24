@@ -3749,7 +3749,7 @@ function updateAnthropometry() {
 
 // --- 16. TAB NAVIGATION (NEW V3.7) ---
 function initTabNavigation() {
-    const tabs = document.querySelectorAll('.tab-btn');
+    const tabs = document.querySelectorAll('.app-tabs .tab-btn');
     const views = document.querySelectorAll('.view-section');
 
     window.switchAppView = (targetView) => {
