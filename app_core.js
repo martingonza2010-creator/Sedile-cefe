@@ -362,13 +362,27 @@ function updateInputLabels() {
 // --- 6. MODALS ---
 function initProtocolModal() {
     const modal = document.getElementById('protocolModal');
-    const btnOpen = document.getElementById('btnProtocolOpen');
+    const btnOpenFab = document.getElementById('btnProtocolOpen');
+    const btnOpenPurpose = document.getElementById('btnOpenPurpose');
     const btnClose = document.getElementById('btnProtocolClose');
-    if (btnOpen) btnOpen.onclick = () => modal.classList.add('active');
-    if (btnClose) btnClose.onclick = () => modal.classList.remove('active');
+    
+    if (btnOpenFab && modal) btnOpenFab.onclick = () => modal.classList.add('active');
+    
+    if (btnOpenPurpose && modal) {
+        btnOpenPurpose.onclick = (e) => {
+            e.preventDefault();
+            modal.classList.add('active');
+        };
+    }
+    
+    if (btnClose && modal) btnClose.onclick = () => modal.classList.remove('active');
 
     window.switchProtocolTab = (idx) => {
-        document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+        // Only target buttons inside protocolModal to avoid affecting other modals (like History)
+        const modalEl = document.getElementById('protocolModal');
+        if (modalEl) {
+            modalEl.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+        }
         document.getElementById('tab-infusion').style.display = idx === 0 ? 'block' : 'none';
         document.getElementById('tab-delivery').style.display = idx === 1 ? 'block' : 'none';
     };
@@ -1170,40 +1184,6 @@ function initEvolutionLogic() {
     }
 }
 
-// Ensure initProtocolModal exists
-function initProtocolModal() {
-    const modal = document.getElementById('protocolModal');
-    const btnOpen = document.getElementById('btnOpenPurpose'); // FIXED BUTTON REF
-    const btnClose = document.getElementById('btnProtocolClose');
-
-    if (btnOpen && modal) {
-        btnOpen.onclick = (e) => {
-            e.preventDefault();
-            modal.classList.add('active');
-        };
-    }
-    if (btnClose && modal) {
-        btnClose.onclick = () => {
-            modal.classList.remove('active');
-        };
-    }
-
-    // Modal tabs
-    window.switchProtocolTab = (index) => {
-        const tabs = modal.querySelectorAll('.tab-btn');
-        const contents = modal.querySelectorAll('.tab-content');
-
-        tabs.forEach((t, i) => {
-            if (i === index) t.classList.add('active');
-            else t.classList.remove('active');
-        });
-
-        contents.forEach((c, i) => {
-            if (i === index) c.style.display = 'block';
-            else c.style.display = 'none';
-        });
-    };
-}
 
 window.loadPatient = async (id) => {
     const { data } = await supabaseClient.from('pacientes').select('*').eq('id', id).single();
