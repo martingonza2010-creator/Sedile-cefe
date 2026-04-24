@@ -376,20 +376,26 @@ function initProtocolModal() {
     }
     
     if (btnClose && modal) btnClose.onclick = () => modal.classList.remove('active');
-
-    window.switchProtocolTab = (idx) => {
-        const tabInfusion = document.getElementById('tab-infusion');
-        const tabDelivery = document.getElementById('tab-delivery');
-        if (tabInfusion) tabInfusion.style.display = idx === 0 ? 'block' : 'none';
-        if (tabDelivery) tabDelivery.style.display = idx === 1 ? 'block' : 'none';
-        // Update active class only on the two buttons inside protocolModal
-        const modalEl = document.getElementById('protocolModal');
-        if (modalEl) {
-            const btns = modalEl.querySelectorAll('.tab-nav .tab-btn');
-            btns.forEach((b, i) => b.classList.toggle('active', i === idx));
-        }
-    };
 }
+
+// Global scope to ensure it's available early
+window.switchProtocolTab = (idx) => {
+    console.log("🔄 switchProtocolTab called with index:", idx);
+    const tabInfusion = document.getElementById('tab-infusion');
+    const tabDelivery = document.getElementById('tab-delivery');
+    
+    if (tabInfusion) tabInfusion.style.display = idx === 0 ? 'block' : 'none';
+    if (tabDelivery) tabDelivery.style.display = idx === 1 ? 'block' : 'none';
+
+    const modalEl = document.getElementById('protocolModal');
+    if (modalEl) {
+        const btns = modalEl.querySelectorAll('.tab-nav .tab-btn');
+        btns.forEach((b, i) => {
+            if (i === idx) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+    }
+};
 
 function initHistoryModal() {
     const modal = document.getElementById('historyModal');
