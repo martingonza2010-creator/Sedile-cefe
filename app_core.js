@@ -2318,30 +2318,11 @@ function renderFormulaInputs(formula) {
         return;
     }
 
-    if (formula.type === 'recipe') {
-        if (wrapper) wrapper.style.display = 'none';
-        if (container) {
-            container.style.display = 'flex';
-            container.style.flexWrap = 'wrap';
-
-            let html = '';
-            formula.recipe.forEach((rec) => {
-                html += `
-                    <div class="input-group" style="flex: 1; min-width: 100px; margin-bottom: 0;">
-                        <label style="font-size:0.75rem; color:#2c3e50; line-height:1.1;">${rec.name} (%)</label>
-                        <input type="number" id="rec_${rec.id}" value="${rec.defPct}" oninput="runSimulation()">
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-    } else {
-        if (wrapper) wrapper.style.display = 'block';
-        if (container) container.style.display = 'none';
-        // Auto-fill standard dilution if present
-        if (formula.stdDil && baseDilInput) {
-            baseDilInput.value = formula.stdDil;
-        }
+    if (wrapper) wrapper.style.display = 'block';
+    
+    // Auto-fill standard dilution if present
+    if (formula.stdDil && baseDilInput) {
+        baseDilInput.value = formula.stdDil;
     }
 
     // NEW V4.50: Botellines Logic for Volume Label
@@ -2371,11 +2352,9 @@ function runSimulation() {
     if (AppState.calcMode === 'vol') {
         const vol = formula.isBotellin ? (v1 * formula.volUnit) : v1;
         if (formula.type === 'recipe') {
-            // RECETAS DINÁMICAS (Dynamic Recipes)
+            // RECETAS ESTANDARIZADAS (Using default proportions)
             formula.recipe.forEach(rec => {
-                const el = document.getElementById('rec_' + rec.id);
-                const dil = el ? (parseFloat(el.value) || 0) : rec.defPct;
-                const grams = vol * (dil / 100);
+                const grams = vol * (rec.defPct / 100);
                 k += rec.k * (grams / 100);
                 p += rec.p * (grams / 100);
                 c += rec.c * (grams / 100);
