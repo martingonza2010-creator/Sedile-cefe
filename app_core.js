@@ -31,8 +31,6 @@ const LOCAL_FORMULAS = [
     { cat: "Leches HRA", id: "comfort", name: "Comfort", type: "l", stdDil: 13, k: 66.7, p: 1.3, c: 7.8, f: 3.4 },
     { cat: "Leches HRA", id: "pediasure", name: "Pediasure", type: "l", k: 92.8, p: 2.8, c: 12.1, f: 3.6 },
     { cat: "Leches HRA", id: "frebini", name: "Frebini", type: "l", k: 150.0, p: 3.8, c: 18.7, f: 6.7 },
-    { cat: "Leches HRA", id: "pediasure_drink", name: "Pediasure Drink", type: "l", k: 100.0, p: 3.0, c: 13.1, f: 3.9 },
-    { cat: "Leches HRA", id: "ensure_compact", name: "Ensure Compact", type: "l", k: 240.0, p: 10.2, c: 28.7, f: 9.4 },
     { cat: "Leches HRA", id: "e1", name: "E1", type: "l", stdDil: 22, k: 94.2, p: 3.5, c: 12.6, f: 3.1 },
     {
         cat: "Leches HRA", id: "e2", name: "E2", type: "recipe", recipe: [
@@ -65,9 +63,13 @@ const LOCAL_FORMULAS = [
     { cat: "Leches HRA", id: "ff2", name: "FF2", type: "l", k: 145.1, p: 6.3, c: 13.3, f: 3.4 },
     { cat: "Leches HRA", id: "ff3", name: "FF3", type: "l", k: 164.3, p: 6.3, c: 18.1, f: 3.4 },
     { cat: "Leches HRA", id: "clinical", name: "Clinical", type: "l", k: 150.0, p: 9.1, c: 17.0, f: 4.8 },
-    { cat: "Leches HRA", id: "glucerna_shake", name: "Glucerna Shake", type: "l", k: 93.0, p: 4.6, c: 11.0, f: 3.4 },
     { cat: "Leches HRA", id: "protical", name: "Protical", type: "l", k: 133.0, p: 8.3, c: 6.3, f: 8.3 },
-    { cat: "Leches HRA", id: "nut_inicio", name: "Nutrición de Inicio", type: "l", k: 196.1, p: 8.9, c: 11.5, f: 0.0 },
+    {
+        cat: "Leches HRA", id: "nut_inicio", name: "Nutrición de Inicio", type: "recipe", recipe: [
+            { id: "comp_proteinex", name: "Proteinex", defPct: 10, k: 357.0, p: 90.0, c: 0.0, f: 0.0 },
+            { id: "comp_nessucar", name: "Nessucar", defPct: 12, k: 380.0, p: 0.0, c: 96.0, f: 0.0 }
+        ]
+    },
     { cat: "Leches HRA", id: "nut_trofica", name: "Nutrición Trófica", type: "l", k: 46.1, p: 0.0, c: 11.5, f: 0.0 },
     { cat: "Leches HRA", id: "abintra", name: "Abintra", type: "l", k: 40.0, p: 9.0, c: 1.0, f: 0.0 },
     { cat: "Leches HRA", id: "glutapak", name: "Glutapak-R", type: "l", k: 60.0, p: 10.0, c: 5.0, f: 0.0 },
@@ -83,7 +85,12 @@ const LOCAL_FORMULAS = [
     { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", volBase: 1000, k: 149.2, p: 8.0, c: 18.0, f: 4.8 },
     { cat: "Fórmulas en Polvo", id: "nan_optipro", name: "Nan Optipro", type: "p", k: 522.0, p: 9.6, c: 58.0, f: 28.0 },
     { cat: "Fórmulas en Polvo", id: "nido_3", name: "Nido Etapa 3+", type: "p", k: 458.0, p: 17.0, c: 52.0, f: 20.2 },
-    { cat: "Fórmulas en Polvo", id: "purita_pro2", name: "Purita + Pro2", type: "p", k: 439.0, p: 29.9, c: 45.7, f: 15.2 }
+    { cat: "Fórmulas en Polvo", id: "purita_pro2", name: "Purita + Pro2", type: "p", k: 439.0, p: 29.9, c: 45.7, f: 15.2 },
+    { cat: "Botellines", id: "ensure_clinical_bot", name: "Ensure Clinical", type: "l", isBotellin: true, volUnit: 220, k: 149.2, p: 8.0, c: 18.0, f: 4.8 },
+    { cat: "Botellines", id: "glucerna_shake", name: "Glucerna Shake", type: "l", isBotellin: true, volUnit: 237, k: 93.0, p: 4.6, c: 11.0, f: 3.4 },
+    { cat: "Botellines", id: "supportan_drink", name: "Supportan Drink", type: "l", isBotellin: true, volUnit: 200, k: 150.0, p: 10.0, c: 12.4, f: 6.7 },
+    { cat: "Botellines", id: "ensure_compact", name: "Ensure Compact", type: "l", isBotellin: true, volUnit: 125, k: 240.0, p: 10.2, c: 28.7, f: 9.4 },
+    { cat: "Botellines", id: "pediasure_drink", name: "Pediasure Drink", type: "l", isBotellin: true, volUnit: 200, k: 100.0, p: 3.0, c: 13.1, f: 3.9 }
 ];
 
 // --- 3. GLOBAL STATE ---
@@ -2344,6 +2351,19 @@ function renderFormulaInputs(formula) {
             baseDilInput.value = formula.stdDil;
         }
     }
+
+    // NEW V4.50: Botellines Logic for Volume Label
+    const lblVolume = document.getElementById('lblVolume');
+    const inputVolume = document.getElementById('volume');
+    if (lblVolume && inputVolume) {
+        if (formula.isBotellin) {
+            lblVolume.innerText = `Unidades (Botellín ${formula.volUnit}cc)`;
+            inputVolume.placeholder = 'Ej: 1, 2...';
+        } else {
+            lblVolume.innerText = 'Volumen (ml)';
+            inputVolume.placeholder = 'ml';
+        }
+    }
 }
 
 function runSimulation() {
@@ -2357,7 +2377,7 @@ function runSimulation() {
     let k = 0, p = 0, c = 0, l = 0;
 
     if (AppState.calcMode === 'vol') {
-        const vol = v1;
+        const vol = formula.isBotellin ? (v1 * formula.volUnit) : v1;
         if (formula.type === 'recipe') {
             // RECETAS DINÁMICAS (Dynamic Recipes)
             formula.recipe.forEach(rec => {
@@ -3881,6 +3901,9 @@ function initGlobalEvents() {
         const cm = (document.getElementById('tallaCM')?.value || (p.estatura * 100)) || 0;
         const sctVal = document.getElementById('valSCT')?.innerText || '-- m²';
 
+        const isBotellin = formula && formula.isBotellin;
+        const volText = isBotellin ? `${vol} Unidad(es) (${vol * formula.volUnit} ml totales)` : `${vol} ml`;
+
         // Build ADIME Text
         const adimeText = `A - ANTROPOMETRÍA Y REQUERIMIENTOS:
 - Peso Real: ${pesoFisico} kg | Talla: ${cm} cm
@@ -3898,7 +3921,7 @@ D - DIAGNÓSTICO NUTRICIONAL INTEGRADO:
 
 I - INTERVENCIÓN Y PRESCRIPCIÓN:
 - Fórmula Indicada: ${formula ? formula.name : 'N/A'}
-- Volumen Prescrito: ${vol} ml
+- Volumen Prescrito: ${volText}
 ${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
 
         content.innerText = adimeText;
