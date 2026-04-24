@@ -378,13 +378,16 @@ function initProtocolModal() {
     if (btnClose && modal) btnClose.onclick = () => modal.classList.remove('active');
 
     window.switchProtocolTab = (idx) => {
-        // Only target buttons inside protocolModal to avoid affecting other modals (like History)
+        const tabInfusion = document.getElementById('tab-infusion');
+        const tabDelivery = document.getElementById('tab-delivery');
+        if (tabInfusion) tabInfusion.style.display = idx === 0 ? 'block' : 'none';
+        if (tabDelivery) tabDelivery.style.display = idx === 1 ? 'block' : 'none';
+        // Update active class only on the two buttons inside protocolModal
         const modalEl = document.getElementById('protocolModal');
         if (modalEl) {
-            modalEl.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+            const btns = modalEl.querySelectorAll('.tab-nav .tab-btn');
+            btns.forEach((b, i) => b.classList.toggle('active', i === idx));
         }
-        document.getElementById('tab-infusion').style.display = idx === 0 ? 'block' : 'none';
-        document.getElementById('tab-delivery').style.display = idx === 1 ? 'block' : 'none';
     };
 }
 
