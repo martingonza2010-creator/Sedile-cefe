@@ -4445,6 +4445,8 @@ function initGoalMacroChart() {
             goalTotalEl.value = Math.round(parseFloat(boxVal) * peso);
             goalTotalEl.dispatchEvent(new Event('input'));
         }
+    };
+
     document.getElementById('goalKcalBox')?.addEventListener('input', updateFinalMeta);
     document.getElementById('peso')?.addEventListener('input', () => {
         updateFinalMeta();
