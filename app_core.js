@@ -4006,11 +4006,11 @@ function calcTMB_OMS() {
             else tmb = 10.5 * weight + 596;
         }
     } else if (method === 'hb') {
-        // Harris-Benedict revised
+        // Harris-Benedict (Original 1919 Clásica)
         if (sexo === 'm') {
-            tmb = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+            tmb = 66.47 + (13.75 * weight) + (5.0 * height) - (6.75 * age);
         } else {
-            tmb = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+            tmb = 655.09 + (9.56 * weight) + (1.84 * height) - (4.67 * age);
         }
     } else if (method === 'schofield') {
         if (sexo === 'm') {
@@ -4028,6 +4028,36 @@ function calcTMB_OMS() {
             else if (age < 60) tmb = 8.126 * weight + 845.6;
             else tmb = 9.082 * weight + 658.5;
         }
+    } else if (method === 'valencia') {
+        // Valencia (América Latina)
+        if (sexo === 'm') {
+            if (age < 30) tmb = (13.37 * weight) + 747;
+            else if (age < 60) tmb = (11.02 * weight) + 679;
+            else tmb = (10.92 * weight) + 510;
+        } else {
+            if (age < 30) tmb = (11.02 * weight) + 679;
+            else if (age < 60) tmb = (10.92 * weight) + 510;
+            else tmb = (10.98 * weight) + 520;
+        }
+    } else if (method === 'rozashizgal') {
+        // Roza y Shizgal (Harris-Benedict Revisada 1984)
+        if (sexo === 'm') {
+            tmb = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+        } else {
+            tmb = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+        }
+    } else if (method === 'owen') {
+        // Owen (1986)
+        if (sexo === 'm') {
+            tmb = 879 + (10.2 * weight);
+        } else {
+            tmb = 795 + (7.18 * weight);
+        }
+    } else if (method === 'holliday') {
+        // Holliday-Segar (Pediatría Hídrica/Metabólica)
+        if (weight <= 10) tmb = 100 * weight;
+        else if (weight <= 20) tmb = 1000 + (50 * (weight - 10));
+        else tmb = 1500 + (20 * (weight - 20));
     } else if (method === 'msj') {
         // Mifflin-St Jeor
         if (sexo === 'm') {
