@@ -1485,22 +1485,22 @@ function calculateRequirements() {
                 bmr = 655.09 + (9.56 * w) + (1.84 * cm) - (4.67 * p.edad);
             }
         }
-        // Schofield (1985)
+        // Schofield (1985) - Consistently synced with calcTMB_OMS
         else if (method === 'schofield') {
             if (sexo === 'm') {
-                if (p.edad < 3) bmr = (0.167 * w) + (15.174 * p.estatura) - 0.6176;
-                else if (p.edad < 10) bmr = (19.59 * w) + (130.3 * p.estatura) + 414.9;
-                else if (p.edad < 18) bmr = (16.25 * w) + (137.2 * p.estatura) + 515.5;
-                else if (p.edad < 30) bmr = (15.057 * w) + (692.6 * p.estatura) + 655.8;
-                else if (p.edad < 60) bmr = (11.472 * w) + (873.1 * p.estatura) + 864;
-                else bmr = (11.711 * w) + (587.7 * p.estatura) + 597;
+                if (p.edad < 3) bmr = 59.512 * w - 30.4;
+                else if (p.edad < 10) bmr = 22.706 * w + 504.3;
+                else if (p.edad < 18) bmr = 17.686 * w + 658.2;
+                else if (p.edad < 30) bmr = 15.057 * w + 692.2;
+                else if (p.edad < 60) bmr = 11.472 * w + 873.1;
+                else bmr = 11.711 * w + 587.7;
             } else {
-                if (p.edad < 3) bmr = (16.25 * w) + (1023.2 * p.estatura) - 413.5;
-                else if (p.edad < 10) bmr = (16.969 * w) + (161.8 * p.estatura) + 371.2;
-                else if (p.edad < 18) bmr = (8.365 * w) + (465 * p.estatura) + 200;
-                else if (p.edad < 30) bmr = (13.623 * w) + (283 * p.estatura) + 98;
-                else if (p.edad < 60) bmr = (10.996 * w) + (207.4 * p.estatura) + 795;
-                else bmr = (9.082 * w) + (305.6 * p.estatura) + 746;
+                if (p.edad < 3) bmr = 58.317 * w - 31.1;
+                else if (p.edad < 10) bmr = 20.315 * w + 485.9;
+                else if (p.edad < 18) bmr = 13.384 * w + 692.6;
+                else if (p.edad < 30) bmr = 14.818 * w + 486.6;
+                else if (p.edad < 60) bmr = 8.126 * w + 845.6;
+                else bmr = 9.082 * w + 658.5;
             }
         }
         // Valencia (América Latina)
