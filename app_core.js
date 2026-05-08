@@ -2260,7 +2260,7 @@ function updateFormulaSelect(filter = "") {
     const normalizedFilter = filter.toLowerCase().trim();
 
     const sortedFormulas = [...AppState.formulas]
-        .filter(f => f.cat !== "Fórmulas RTH")
+        .filter(f => !f.cat.includes("RTH"))
         .filter(f => !normalizedFilter || f.name.toLowerCase().includes(normalizedFilter) || f.cat.toLowerCase().includes(normalizedFilter))
         .sort((a, b) => {
             const aFav = AppState.favorites.includes(a.id);
@@ -2794,7 +2794,7 @@ function initInfusionLogic() {
     const rthSel = document.getElementById('infusionRTHSelect');
     if (rthSel) {
         let html = '<option value="">-- No usar fórmula RTH --</option>';
-        LOCAL_FORMULAS.filter(f => f.cat === "Fórmulas RTH").forEach(f => {
+        LOCAL_FORMULAS.filter(f => f.cat.includes("RTH")).forEach(f => {
             html += `<option value="${f.id}">${f.name}</option>`;
         });
         rthSel.innerHTML = html;
