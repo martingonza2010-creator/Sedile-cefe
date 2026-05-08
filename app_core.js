@@ -1512,6 +1512,7 @@ window.togglePatientMode = () => {
 
     calculateRequirements();
     if (typeof window.updateInfusionProposal === 'function') window.updateInfusionProposal();
+    if (typeof window.updateCurveButtons === 'function') window.updateCurveButtons();
 };
 
 window.toggleQuemado = () => {
@@ -4964,4 +4965,49 @@ window.updateDryWeight = () => {
 
 
 
+
+
+// --- CURVAS DE CRECIMIENTO DINÁMICAS ---
+window.showCurve = function(type) {
+    const area = document.getElementById('curveDisplayArea');
+    const placeholder = document.getElementById('curveImagePlaceholder');
+    const img = document.getElementById('curveImg');
+    
+    if(!area || !img || !placeholder) return;
+    
+    placeholder.style.display = 'none';
+    img.style.display = 'block';
+    
+    // Placeholder logic until user provides specific graphics
+    let color = "#3498db";
+    let title = "Curva";
+    if(type === 'pe') { color = "#3498db"; title = "Peso / Edad"; }
+    if(type === 'pt') { color = "#e67e22"; title = "Peso / Talla"; }
+    if(type === 'te') { color = "#27ae60"; title = "Talla / Edad"; }
+    if(type === 'pittaluga') { color = "#8e44ad"; title = "Curva de Pittaluga"; }
+    
+    // Using a high-quality placeholder for now
+    img.src = `https://placehold.co/800x600/${color.replace('#',',')}/ffffff?text=${encodeURIComponent(title)}`;
+};
+
+window.updateCurveButtons = function() {
+    const pType = document.querySelector('input[name="patientType"]:checked')?.value || 'adult';
+    const pedia = document.getElementById('pediaCurves');
+    const neo = document.getElementById('neoCurves');
+    const adult = document.getElementById('adultCurves');
+    
+    if(!pedia || !neo || !adult) return;
+    
+    pedia.style.display = 'none';
+    neo.style.display = 'none';
+    adult.style.display = 'none';
+    
+    if(pType === 'pediatric') {
+        pedia.style.display = 'flex';
+    } else if(pType === 'neonate') {
+        neo.style.display = 'flex';
+    } else {
+        adult.style.display = 'block';
+    }
+};
 
