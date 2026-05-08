@@ -2327,8 +2327,8 @@ function renderMinerals() {
     const fA = AppState.formulas.find(x => x.id === document.getElementById('formulaSelect').value);
     const fB = isComparing ? AppState.formulas.find(x => x.id === document.getElementById('formulaSelectB').value) : null;
 
-    if (!fA || !fA.minerals || Object.keys(fA.minerals).length === 0) {
-        gridA.innerHTML = "<div style='color:#7f8c8d; grid-column: 1 / -1; padding:10px;'>Sin datos de minerales</div>";
+    if (!fA) {
+        gridA.innerHTML = "<div style='color:#7f8c8d; grid-column: 1 / -1; padding:10px;'>Seleccione una fórmula para ver minerales</div>";
         if(gridB) gridB.style.display = 'none';
         return;
     }
@@ -2337,15 +2337,19 @@ function renderMinerals() {
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
 
     const getFactor = (f) => {
-        if (v1 <= 0) return 0;
-        if (f.type === 'p') {
-            const dil = v2 > 0 ? v2 : (f.stdDil || 15);
-            return (v1 * (dil / 100)) / 100;
-        } else if (f.type === 'l') {
+        if (AppState.calcMode === 'vol') {
             const vol = f.isBotellin ? (v1 * f.volUnit) : v1;
-            return vol / 100;
+            if (vol <= 0) return 0;
+            if (f.type === 'p') {
+                const dil = v2 > 0 ? v2 : (f.stdDil || 15);
+                return (vol * (dil / 100)) / 100;
+            } else {
+                return vol / 100;
+            }
+        } else {
+            // Grams mode: v2 is grams
+            return v2 / 100;
         }
-        return 1;
     };
 
     const factorA = getFactor(fA);
@@ -2366,23 +2370,27 @@ function renderMinerals() {
         { id: "se", name: "Selenio", icon: "🌾" }
     ];
 
-    gridA.innerHTML = items.map(i => {
-        const valA = fA.minerals[i.id];
-        if (valA === undefined) return "";
-        const finalA = (valA * factorA).toFixed(1).replace('.', ',');
-        
-        let displayVal = `${finalA} mg`;
-        if (fB && fB.minerals && fB.minerals[i.id] !== undefined) {
-            const finalB = (fB.minerals[i.id] * factorB).toFixed(1).replace('.', ',');
-            displayVal = `${finalA} / ${finalB} mg`;
-        }
+    if (!fA.minerals || Object.keys(fA.minerals).length === 0) {
+        gridA.innerHTML = "<div style='color:#7f8c8d; grid-column: 1 / -1; padding:10px;'>Sin datos de minerales para " + fA.name + "</div>";
+    } else {
+        gridA.innerHTML = items.map(i => {
+            const valA = fA.minerals[i.id];
+            if (valA === undefined) return "";
+            const finalA = (valA * factorA).toFixed(1).replace('.', ',');
+            
+            let displayVal = `${finalA} mg`;
+            if (fB && fB.minerals && fB.minerals[i.id] !== undefined) {
+                const finalB = (fB.minerals[i.id] * factorB).toFixed(1).replace('.', ',');
+                displayVal = `${finalA} / ${finalB} mg`;
+            }
 
-        return `<div style="background:#fff; border:1px solid #eee; border-radius:4px; padding:4px; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:50px;">
-            <span style="font-size:0.8rem;">${i.icon}</span>
-            <span style="font-weight:800; color:#2c3e50; margin:1px 0; font-size:0.7rem; white-space:nowrap;">${displayVal}</span>
-            <span style="font-size:0.55rem; color:#7f8c8d; text-transform:uppercase; font-weight:700;">${i.name}</span>
-        </div>`;
-    }).join('');
+            return `<div style="background:#fff; border:1px solid #eee; border-radius:4px; padding:4px; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:50px;">
+                <span style="font-size:0.8rem;">${i.icon}</span>
+                <span style="font-weight:800; color:#2c3e50; margin:1px 0; font-size:0.7rem; white-space:nowrap;">${displayVal}</span>
+                <span style="font-size:0.55rem; color:#7f8c8d; text-transform:uppercase; font-weight:700;">${i.name}</span>
+            </div>`;
+        }).join('');
+    }
 
     if (gridB) gridB.style.display = 'none';
 }
@@ -5056,6 +5064,7 @@ window.updateDryWeight = () => {
         calculateRequirements();
     }
 };
+
 
 
 
