@@ -2314,76 +2314,74 @@ function renderMinerals() {
     if (!gridA) return;
 
     const isCustomMix = document.getElementById('customMixContainer') && document.getElementById('customMixContainer').style.display === 'block';
-
-    const renderGrid = (gridEl, formulaId, labelPrefix) => {
-        const f = AppState.formulas.find(x => x.id === formulaId);
-        if (!f || !f.minerals || Object.keys(f.minerals).length === 0) {
-            gridEl.innerHTML = `<div style='color:#7f8c8d; grid-column: 1 / -1; display:flex; align-items:center; justify-content:center; height:100%;'>Sin datos de minerales para ${labelPrefix}</div>`;
-            return;
-        }
-
-        const v1 = parseFloat(document.getElementById('volume').value) || 0;
-        const v2 = parseFloat(document.getElementById('dilution').value) || 0;
-
-        let factor = 1;
-        if (v1 > 0) {
-            if (f.type === 'p') {
-                const dil = v2 > 0 ? v2 : (f.stdDil || 15);
-                const grams = v1 * (dil / 100);
-                factor = grams / 100;
-            } else if (f.type === 'l') {
-                const vol = f.isBotellin ? (v1 * f.volUnit) : v1;
-                factor = vol / 100;
-            }
-        } else {
-            factor = 1; // Default
-        }
-
-        const m = f.minerals;
-        const items = [
-            { name: "Sodio", val: m.na, unit: "mg", icon: "🧂" },
-            { name: "Potasio", val: m.k, unit: "mg", icon: "🍌" },
-            { name: "Cloro", val: m.cl, unit: "mg", icon: "🧪" },
-            { name: "Calcio", val: m.ca, unit: "mg", icon: "🦴" },
-            { name: "Fósforo", val: m.p, unit: "mg", icon: "🐟" },
-            { name: "Magnesio", val: m.mg, unit: "mg", icon: "🥬" },
-            { name: "Hierro", val: m.fe, unit: "mg", icon: "🩸" },
-            { name: "Zinc", val: m.zn, unit: "mg", icon: "🛡️" },
-            { name: "Cobre", val: m.cu, unit: "mg", icon: "⚡" },
-            { name: "Yodo", val: m.i, unit: "mg", icon: "🌊" },
-            { name: "Manganeso", val: m.mn, unit: "mg", icon: "🌰" },
-            { name: "Selenio", val: m.se, unit: "mg", icon: "🌾" }
-        ];
-
-        gridEl.innerHTML = `<div style='grid-column: 1 / -1; font-weight:bold; color:var(--primary); margin-bottom:5px;'>${f.name}</div>` + items.map(i => {
-            if(i.val === undefined) return "";
-            const finalVal = (i.val * factor).toFixed(2);
-            return `<div style="background:#fff; border:1px solid #eee; border-radius:4px; padding:4px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                <span style="font-size:0.9rem;">${i.icon}</span>
-                <span style="font-weight:bold; color:#2c3e50; margin:2px 0;">${finalVal} ${i.unit}</span>
-                <span style="font-size:0.6rem; color:#7f8c8d; text-transform:uppercase;">${i.name}</span>
-            </div>`;
-        }).join('');
-    };
-
     if (isCustomMix) {
-        gridA.innerHTML = "<div style='color:#7f8c8d; grid-column: 1 / -1;'>Minerales no disponibles en mezcla personalizada aún.</div>";
+        gridA.innerHTML = "<div style='color:#7f8c8d; grid-column: 1 / -1; font-size:0.75rem; padding:10px;'>Minerales no disponibles en mezcla personalizada aún.</div>";
         if(gridB) gridB.style.display = 'none';
         return;
     }
 
-    const fAId = document.getElementById('formulaSelect').value;
-    renderGrid(gridA, fAId, "Fórmula A");
-
     const isComparing = document.getElementById('compareRow').style.display === 'block' || document.getElementById('compareRow').style.display === 'flex';
-    const fBId = isComparing ? document.getElementById('formulaSelectB').value : null;
-    
-    if (isComparing && fBId && gridB) {
-        gridB.style.display = 'grid';
-        renderGrid(gridB, fBId, "Fórmula B");
-    } else if (gridB) {
-        gridB.style.display = 'none';
+    const fA = AppState.formulas.find(x => x.id === document.getElementById('formulaSelect').value);
+    const fB = isComparing ? AppState.formulas.find(x => x.id === document.getElementById('formulaSelectB').value) : null;
+
+    if (!fA || !fA.minerals || Object.keys(fA.minerals).length === 0) {
+        gridA.innerHTML = "<div style='color:#7f8c8d; grid-column: 1 / -1; padding:10px;'>Sin datos de minerales</div>";
+        if(gridB) gridB.style.display = 'none';
+        return;
     }
+
+    const v1 = parseFloat(document.getElementById('volume').value) || 0;
+    const v2 = parseFloat(document.getElementById('dilution').value) || 0;
+
+    const getFactor = (f) => {
+        if (v1 <= 0) return 0;
+        if (f.type === 'p') {
+            const dil = v2 > 0 ? v2 : (f.stdDil || 15);
+            return (v1 * (dil / 100)) / 100;
+        } else if (f.type === 'l') {
+            const vol = f.isBotellin ? (v1 * f.volUnit) : v1;
+            return vol / 100;
+        }
+        return 1;
+    };
+
+    const factorA = getFactor(fA);
+    const factorB = fB ? getFactor(fB) : 0;
+
+    const items = [
+        { id: "na", name: "Sodio", icon: "🧂" },
+        { id: "k", name: "Potasio", icon: "🍌" },
+        { id: "cl", name: "Cloro", icon: "🧪" },
+        { id: "ca", name: "Calcio", icon: "🦴" },
+        { id: "p", name: "Fósforo", icon: "🐟" },
+        { id: "mg", name: "Magnesio", icon: "🥬" },
+        { id: "fe", name: "Hierro", icon: "🩸" },
+        { id: "zn", name: "Zinc", icon: "🛡️" },
+        { id: "cu", name: "Cobre", icon: "⚡" },
+        { id: "i", name: "Yodo", icon: "🌊" },
+        { id: "mn", name: "Manganeso", icon: "🌰" },
+        { id: "se", name: "Selenio", icon: "🌾" }
+    ];
+
+    gridA.innerHTML = items.map(i => {
+        const valA = fA.minerals[i.id];
+        if (valA === undefined) return "";
+        const finalA = (valA * factorA).toFixed(1).replace('.', ',');
+        
+        let displayVal = `${finalA} mg`;
+        if (fB && fB.minerals && fB.minerals[i.id] !== undefined) {
+            const finalB = (fB.minerals[i.id] * factorB).toFixed(1).replace('.', ',');
+            displayVal = `${finalA} / ${finalB} mg`;
+        }
+
+        return `<div style="background:#fff; border:1px solid #eee; border-radius:4px; padding:4px; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:50px;">
+            <span style="font-size:0.8rem;">${i.icon}</span>
+            <span style="font-weight:800; color:#2c3e50; margin:1px 0; font-size:0.7rem; white-space:nowrap;">${displayVal}</span>
+            <span style="font-size:0.55rem; color:#7f8c8d; text-transform:uppercase; font-weight:700;">${i.name}</span>
+        </div>`;
+    }).join('');
+
+    if (gridB) gridB.style.display = 'none';
 }
 
 window.toggleCustomMix = function() {
@@ -5055,6 +5053,7 @@ window.updateDryWeight = () => {
         calculateRequirements();
     }
 };
+
 
 
 
