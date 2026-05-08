@@ -460,15 +460,15 @@ function initCompactLayout() {
                         }
                     },
                     assessment: {
-                        cintura: document.getElementById('ccintura').value,
-                        braquial: document.getElementById('cbraquial').value,
-                        pantorrilla: document.getElementById('cpantorrilla').value,
-                        atr: document.getElementById('altrodilla').value,
+                        cintura: document.getElementById('ccintura')?.value || "",
+                        braquial: document.getElementById('cbraquial')?.value || "",
+                        pantorrilla: document.getElementById('cpantorrilla')?.value || "",
+                        atr: document.getElementById('altrodilla')?.value || "",
                         pliegues: {
-                            pt: document.getElementById('ptricipital').value,
-                            pb: document.getElementById('pbicipital').value,
-                            ps: document.getElementById('piliaco').value,
-                            pa: document.getElementById('pabdominal').value
+                            pt: document.getElementById('ptricipital')?.value || "",
+                            pb: document.getElementById('pbicipital')?.value || "",
+                            ps: document.getElementById('piliaco')?.value || "",
+                            pa: document.getElementById('pabdominal')?.value || ""
                         },
                         talla: {
                             mediaenv: document.getElementById('mediaenv').value,
@@ -480,15 +480,15 @@ function initCompactLayout() {
                             return { date: inputs[0].value, type: inputs[1].value, res: inputs[2].value };
                         }),
                         cribaje: {
-                            nrs: document.getElementById('nrs2002').value,
-                            vgs: document.getElementById('vgs').value
+                            nrs: document.getElementById('nrs2002')?.value || "",
+                            vgs: document.getElementById('vgs')?.value || ""
                         },
                         gi: {
-                            residuo: document.getElementById('residuo').value,
-                            diarrea: document.getElementById('diarrea').value,
-                            distension: document.getElementById('distension').value
+                            residuo: document.getElementById('residuo')?.value || "",
+                            diarrea: document.getElementById('diarrea')?.value || "",
+                            distension: document.getElementById('distension')?.value || ""
                         },
-                        pes: document.getElementById('diagnosticoPES').value
+                        pes: document.getElementById('diagnosticoPES')?.value || ""
                     }
                 };
 
@@ -5091,6 +5091,7 @@ window.updateCurveButtons = function() {
         adult.style.display = 'block';
     }
 };
+
 
 
 
