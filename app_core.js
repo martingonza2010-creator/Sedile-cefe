@@ -2760,6 +2760,7 @@ function runSimulation() {
     };
 
     updateProteinJustification(k, p);
+    renderMinerals();
 
     // --- FINAL V4.25: Global update for Adequacy Strategy ---
     if (typeof window.updatePrescriptionStrategy === 'function') window.updatePrescriptionStrategy(k);
@@ -5091,6 +5092,7 @@ window.updateCurveButtons = function() {
         adult.style.display = 'block';
     }
 };
+
 
 
 
