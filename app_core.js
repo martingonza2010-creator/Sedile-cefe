@@ -6,12 +6,12 @@ const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // --- EMERGENCY ERROR HANDLER ---
 window.onerror = function (msg, url, line, col, error) {
-    alert("âš ï¸ Error de Script (V3.6): " + msg + "\nLÃ­nea: " + line);
+    alert("⚠️ Error de Script (V3.6): " + msg + "\nLínea: " + line);
     console.error(error);
     return false;
 };
 
-// --- 2. DATABASE (VademÃ©cum HRA & RTH) ---
+// --- 2. DATABASE (Vademécum HRA & RTH) ---
 const LOCAL_FORMULAS = [
     // --- FÓRMULAS EN POLVO ---
     { cat: "Fórmulas en Polvo", id: "nan_comfort", name: "NAN ExpertPro Comfort", type: "p", k: 511, p: 9.8, c: 59.1, f: 26.1, lipids_profile: { dha: 48, ara: 48, cholesterol: 35 }, minerals: { na: 190, k: 520, cl: 610, ca: 330, p: 180, mg: 50, mn: 0.09, se: 0.009, fe: 4.9, i: 0.065, cu: 0.40, zn: 4.8 } },
@@ -127,15 +127,15 @@ const MODULE_DATA = {
 };
 
 const DRUG_INTERACTIONS = {
-    "fenitoina": "âš ï¸ Separar de la nutriciÃ³n enteral (NE) al menos 1-2 horas antes y despuÃ©s para evitar reducciÃ³n en su absorciÃ³n. Monitorizar niveles sÃ©ricos.",
-    "propofol": "âš ï¸ Aporta 1.1 kcal/ml de lÃ­pidos. Considerar este aporte calÃ³rico graso dentro del balance calÃ³rico total para evitar sobrealimentaciÃ³n.",
-    "omeprazol": "âš ï¸ Administrar preferentemente en ayunas o 30-60 min antes de la NE para asegurar eficacia. No mezclar directamente con la fÃ³rmula.",
-    "furosemida": "âš ï¸ Puede causar hipopotasemia e hipomagnesemia. Monitorizar electrolitos periÃ³dicamente si se usa con NE a largo plazo.",
-    "levodopa": "âš ï¸ Las proteÃ­nas de la dieta pueden competir con su absorciÃ³n. Ajustar tiempos de toma si el control motor fluctÃºa.",
-    "warfarina": "âš ï¸ El contenido de Vitamina K de algunas fÃ³rmulas enterales puede interferir con el efecto anticoagulante. Mantener aporte constante.",
-    "metformina": "âš ï¸ Puede causar dÃ©ficit de B12 con uso prolongado. Considerar suplementaciÃ³n si existen signos clÃ­nicos.",
-    "cloroquina": "âš ï¸ Puede causar hipoglicemia severa. Monitorizar glicemia capilar.",
-    "ciprofloxacino": "âš ï¸ La absorciÃ³n se reduce significativamente con productos lÃ¡cteos o fÃ³rmulas enterales cÃ¡lcicas. Suspender NE 2h antes/despuÃ©s."
+    "fenitoina": "⚠️ Separar de la nutrición enteral (NE) al menos 1-2 horas antes y después para evitar reducción en su absorción. Monitorizar niveles séricos.",
+    "propofol": "⚠️ Aporta 1.1 kcal/ml de lípidos. Considerar este aporte calórico graso dentro del balance calórico total para evitar sobrealimentación.",
+    "omeprazol": "⚠️ Administrar preferentemente en ayunas o 30-60 min antes de la NE para asegurar eficacia. No mezclar directamente con la fórmula.",
+    "furosemida": "⚠️ Puede causar hipopotasemia e hipomagnesemia. Monitorizar electrolitos periódicamente si se usa con NE a largo plazo.",
+    "levodopa": "⚠️ Las proteínas de la dieta pueden competir con su absorción. Ajustar tiempos de toma si el control motor fluctúa.",
+    "warfarina": "⚠️ El contenido de Vitamina K de algunas fórmulas enterales puede interferir con el efecto anticoagulante. Mantener aporte constante.",
+    "metformina": "⚠️ Puede causar déficit de B12 con uso prolongado. Considerar suplementación si existen signos clínicos.",
+    "cloroquina": "⚠️ Puede causar hipoglicemia severa. Monitorizar glicemia capilar.",
+    "ciprofloxacino": "⚠️ La absorción se reduce significativamente con productos lácteos o fórmulas enterales cálcicas. Suspender NE 2h antes/después."
 };
 
 // Safely load favorites
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => {
         const sel = document.getElementById('formulaSelect');
         if (sel && sel.options.length <= 1) {
-            console.warn("âš ï¸ Dropdown empty, retrying updateFormulaSelect...");
+            console.warn("⚠️ Dropdown empty, retrying updateFormulaSelect...");
             updateFormulaSelect();
         }
     }, 1560);
@@ -262,12 +262,12 @@ window.login = async function () {
     console.log("Intentando login...");
 
     if (window.location.protocol === 'file:') {
-        alert("âš ï¸ Error: EstÃ¡s abriendo el archivo localmente (file://). Debes usar Vercel.");
+        alert("⚠️ Error: Estás abriendo el archivo localmente (file://). Debes usar Vercel.");
         return;
     }
 
     if (!supabaseClient) {
-        alert("ðŸ”´ Error CrÃ­tico: Supabase no se cargÃ³. Revisa tu conexiÃ³n a internet.");
+        alert("ðŸ”´ Error Crítico: Supabase no se cargó. Revisa tu conexión a internet.");
         return;
     }
 
@@ -355,7 +355,7 @@ function updateInputLabels() {
         lblDil.innerText = "Gramos Totales (g)";
         inputDil.placeholder = "Ej. 50";
     } else {
-        lblDil.innerText = "DiluciÃ³n (%)";
+        lblDil.innerText = "Dilución (%)";
         inputDil.placeholder = "Ej. 13.5";
     }
 }
@@ -539,7 +539,7 @@ function initPatientLogic() {
                         updatePatientEvolutionChart(nombre);
                     }
 
-                    btn.innerHTML = `<span>âœ”</span> Â¡Guardado!`;
+                    btn.innerHTML = `<span>âœ”</span> ¡Guardado!`;
                     setTimeout(() => {
                         btn.disabled = false;
                         btn.innerHTML = originalText;
@@ -549,7 +549,7 @@ function initPatientLogic() {
                 }
             } catch (err) {
                 console.error("Save Error:", err);
-                alert("Error al guardar (Verifica cachÃ© SQL): " + err.message);
+                alert("Error al guardar (Verifica caché SQL): " + err.message);
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
@@ -588,13 +588,13 @@ window.loadHistoryList = async (showPapelera = false) => {
 
     if (error) {
         let msg = error.message || "Error desconocido";
-        if (msg.includes("estado_sala")) msg = "Columna estado_sala inexistente. Â¡Corre el SQL!";
+        if (msg.includes("estado_sala")) msg = "Columna estado_sala inexistente. ¡Corre el SQL!";
         list.innerHTML = `<p style="text-align:center; color:#e74c3c;"><b>Error al cargar:</b> ${msg}</p>`;
         return;
     }
 
     if (!records || records.length === 0) {
-        list.innerHTML = '<p style="text-align:center; opacity:0.6;">NingÃºn registro guardado aÃºn.</p>';
+        list.innerHTML = '<p style="text-align:center; opacity:0.6;">Ningún registro guardado aún.</p>';
         return;
     }
 
@@ -617,7 +617,7 @@ window.loadHistoryList = async (showPapelera = false) => {
                 daysLeft = 30 - diffDays;
             } else {
                 // Si no hay fecha de borrado en la metadata, asumimos que se acaba de borrar
-                // (Para evitar que pacientes muy antiguos desaparezcan instantÃ¡neamente)
+                // (Para evitar que pacientes muy antiguos desaparezcan instantáneamente)
                 daysLeft = 30;
             }
 
@@ -650,7 +650,7 @@ window.loadHistoryList = async (showPapelera = false) => {
             const trashCount = validRecords.filter(r => r.estado_sala === 'eliminado').length;
             debugText = `<br><small style="font-size:0.7rem; color:#ccc;">Debug: Registros totales=${records.length}, Eliminados encontrados=${trashCount}</small>`;
         }
-        list.innerHTML = `<p style="text-align:center; opacity:0.6;">${showPapelera ? 'La papelera estÃ¡ vacÃ­a.' : 'NingÃºn registro guardado aÃºn.'}${debugText}</p>`;
+        list.innerHTML = `<p style="text-align:center; opacity:0.6;">${showPapelera ? 'La papelera está vacía.' : 'Ningún registro guardado aún.'}${debugText}</p>`;
         return;
     }
 
@@ -671,7 +671,7 @@ window.loadHistoryList = async (showPapelera = false) => {
                 <div style="background:#fff3ef; border:1px solid #ffcccb; border-radius:10px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <strong style="color:#c0392b; font-size:1.1rem; display:block; margin-bottom:3px;">${r.nombre}</strong>
-                        <span style="font-size:0.8rem; color:#666;">Se eliminarÃ¡ en ${r._daysLeft} dÃ­as</span>
+                        <span style="font-size:0.8rem; color:#666;">Se eliminará en ${r._daysLeft} días</span>
                     </div>
                     <div style="display:flex; gap:10px;">
                         <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background:#27ae60;" onclick="window.restorePatient('${r.id}')">â†©ï¸ Restaurar</button>
@@ -684,7 +684,7 @@ window.loadHistoryList = async (showPapelera = false) => {
                 <div style="background:#f8f9fa; border:1px solid #eee; border-radius:10px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <strong style="color:var(--primary); font-size:1.1rem; display:block; margin-bottom:3px;">${r.nombre}</strong>
-                        <span style="font-size:0.8rem; color:#666;">${dateStr} | ${r.edad} aÃ±os | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal</span>
+                        <span style="font-size:0.8rem; color:#666;">${dateStr} | ${r.edad} años | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal</span>
                     </div>
                     <div style="display:flex; gap:10px;">
                         <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">ðŸ“‚ Cargar</button>
@@ -763,13 +763,13 @@ async function loadWardKanban() {
             const diffTime = Math.abs(today - dateSNG);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             if (diffDays >= 30) {
-                alertBadge += `<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem; margin-right:5px;">âš ï¸ Sonda > 30d</span>`;
+                alertBadge += `<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem; margin-right:5px;">⚠️ Sonda > 30d</span>`;
             }
         }
 
         // Fast Check Weight drop (simulate if multiple histories exist but for now simple badge)
         if (p.requiere_atencion) {
-            alertBadge += `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem;">âš ï¸ Revisar Peso</span>`;
+            alertBadge += `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem;">⚠️ Revisar Peso</span>`;
         }
 
         const cardHTML = `
@@ -784,7 +784,7 @@ async function loadWardKanban() {
                     <button onclick="event.stopPropagation(); window.openQuickView('${p.id}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Resumen de Bolsillo">
                         ðŸ”
                     </button>
-                    <button onclick="event.stopPropagation(); window.togglePatientState('${p.id}', '${isCritico ? 'activo' : 'critico'}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Cambiar a ${isCritico ? 'En Curso' : 'CrÃ­tico'}">
+                    <button onclick="event.stopPropagation(); window.togglePatientState('${p.id}', '${isCritico ? 'activo' : 'critico'}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Cambiar a ${isCritico ? 'En Curso' : 'Crítico'}">
                         ${isCritico ? 'â†©ï¸' : 'ðŸš¨'}
                     </button>
                     <button onclick="event.stopPropagation(); window.dischargePatient('${p.id}')" style="background:none; border:none; color:#27ae60; cursor:pointer;" title="Dar de Alta">
@@ -803,7 +803,7 @@ async function loadWardKanban() {
     });
 
     colActivos.innerHTML = actHTML.join('') || '<p style="opacity:0.5; font-size:0.8rem;">No hay pacientes</p>';
-    colCriticos.innerHTML = critHTML.join('') || '<p style="opacity:0.5; font-size:0.8rem;">No hay pacientes crÃ­ticos</p>';
+    colCriticos.innerHTML = critHTML.join('') || '<p style="opacity:0.5; font-size:0.8rem;">No hay pacientes críticos</p>';
 
     if (cntActivos) cntActivos.innerText = actHTML.length;
     if (cntCriticos) cntCriticos.innerText = critHTML.length;
@@ -820,13 +820,13 @@ window.togglePatientState = async (id, newState) => {
 };
 
 window.dischargePatient = async (id) => {
-    if (!confirm("Â¿Dar de alta a este paciente de la sala? SeguirÃ¡ en tu historial, pero no en este Kanban.")) return;
+    if (!confirm("¿Dar de alta a este paciente de la sala? Seguirá en tu historial, pero no en este Kanban.")) return;
     const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', id);
     if (!error) loadWardKanban();
 };
 
 window.deletePatient = async (id) => {
-    if (!confirm("Â¿Mover este paciente a la papelera?")) return;
+    if (!confirm("¿Mover este paciente a la papelera?")) return;
 
     // Fetch the patient name to delete ALL their history snapshots
     const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre, metadata').eq('id', id).single();
@@ -842,13 +842,13 @@ window.deletePatient = async (id) => {
     if (error) {
         // If HTTP 400 triggers, it usually means 'estado_sala' column is completely missing from the DB
         if (error.code === "PGRST204" || (error.message && error.message.includes('estado_sala')) || status === 400) {
-            if (confirm("âš ï¸ Tu base de datos no tiene la columna 'estado_sala' para la papelera.\nDebes correr el cÃ³digo SQL que te pasÃ©.\n\nÂ¿Deseas ELIMINAR al paciente de todas formas (definitivo)?")) {
+            if (confirm("⚠️ Tu base de datos no tiene la columna 'estado_sala' para la papelera.\nDebes correr el código SQL que te pasé.\n\n¿Deseas ELIMINAR al paciente de todas formas (definitivo)?")) {
                 window.hardDeletePatient(id, true);
             }
             return;
         }
         console.error("Error API:", error);
-        alert("Falla de conexiÃ³n o base de datos (" + status + "). " + (error.message || JSON.stringify(error)));
+        alert("Falla de conexión o base de datos (" + status + "). " + (error.message || JSON.stringify(error)));
     } else {
         showToast("ðŸ—‘ï¸ Paciente movido a la papelera");
         if (typeof window.loadHistoryList === 'function') window.loadHistoryList(false);
@@ -869,7 +869,7 @@ window.deletePatient = async (id) => {
 };
 
 window.hardDeletePatient = async (id, skipConfirm = false) => {
-    if (!skipConfirm && !confirm("Â¿Eliminar PERMANENTEMENTE a este paciente de la base de datos?")) return;
+    if (!skipConfirm && !confirm("¿Eliminar PERMANENTEMENTE a este paciente de la base de dato⚠️")) return;
 
     // Fetch the patient name to delete all grouped rows
     const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
@@ -893,7 +893,7 @@ window.hardDeletePatient = async (id, skipConfirm = false) => {
             if (document.getElementById('valBMI')) document.getElementById('valBMI').innerText = "--";
         }
     } else {
-        alert("Error de Supabase al Eliminar (probablemente te falta la PolÃ­tica RLS de DELETE): " + error.message);
+        alert("Error de Supabase al Eliminar (probablemente te falta la Política RLS de DELETE): " + error.message);
     }
 };
 
@@ -930,7 +930,7 @@ window.openQuickView = async (id) => {
     }
 
     // Try to extract prescribed formula name from metadata if possible, otherwise generic
-    let formulaDesc = "FÃ³rmula Enteral";
+    let formulaDesc = "Fórmula Enteral";
     let volDesc = "--";
     let velDesc = "--";
 
@@ -949,7 +949,7 @@ window.openQuickView = async (id) => {
         </div>
         
         <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
-            <tr><td style="padding:6px; border-bottom:1px solid #eee; color:#666;">Edad/GÃ©nero</td><td style="padding:6px; border-bottom:1px solid #eee; font-weight:600; text-align:right;">${p.edad}a / ${p.sexo === 'm' ? 'Masc' : 'Fem'}</td></tr>
+            <tr><td style="padding:6px; border-bottom:1px solid #eee; color:#666;">Edad/Género</td><td style="padding:6px; border-bottom:1px solid #eee; font-weight:600; text-align:right;">${p.edad}a / ${p.sexo === 'm' ? 'Masc' : 'Fem'}</td></tr>
             <tr><td style="padding:6px; border-bottom:1px solid #eee; color:#666;">Peso Actual</td><td style="padding:6px; border-bottom:1px solid #eee; font-weight:600; text-align:right;">${p.peso_kg} kg</td></tr>
             <tr><td style="padding:6px; border-bottom:1px solid #eee; color:#666;">Meta (TMT)</td><td style="padding:6px; border-bottom:1px solid #eee; font-weight:600; text-align:right; color:var(--primary);">${p.tmt ? Math.round(p.tmt) + ' kcal' : '--'}</td></tr>
         </table>
@@ -961,9 +961,9 @@ window.openQuickView = async (id) => {
         </div>
 
         <div>
-            <p style="margin:0 0 5px 0; font-size:0.75rem; color:#888; text-transform:uppercase;">DiagnÃ³stico / EvoluciÃ³n</p>
+            <p style="margin:0 0 5px 0; font-size:0.75rem; color:#888; text-transform:uppercase;">Diagnóstico / Evolución</p>
             <div style="font-size:0.85rem; color:#444; background:#fdfdfd; padding:10px; border-radius:8px; border:1px solid #eee;">
-                ${p.diagnostico || 'Sin diagnÃ³stico ingresado.'}
+                ${p.diagnostico || 'Sin diagnóstico ingresado.'}
             </div>
         </div>
     `;
@@ -1005,7 +1005,7 @@ async function generateShiftHandoff() {
                 <td><b>${p.nombre}</b><br><span style="font-size:0.75rem; color:#555;">${p.edad}a | ${p.peso_kg}kg</span></td>
                 <td>${p.diagnostico || '--'}</td>
                 <td>${p.tmt ? Math.round(p.tmt) : '--'} kcal</td>
-                <td>${p.estado_sala === 'critico' ? 'âš ï¸ CRÃTICO' : 'En Curso'}</td>
+                <td>${p.estado_sala === 'critico' ? '⚠️ CRÍTICO' : 'En Curso'}</td>
             </tr>
         `;
     });
@@ -1020,7 +1020,7 @@ async function generateShiftHandoff() {
                 <tr>
                     <th style="width:10%;">Cama</th>
                     <th style="width:25%;">Paciente</th>
-                    <th style="width:40%;">DiagnÃ³stico / EvoluciÃ³n</th>
+                    <th style="width:40%;">Diagnóstico / Evolución</th>
                     <th style="width:10%;">Meta</th>
                     <th style="width:15%;">Estado</th>
                 </tr>
@@ -1030,7 +1030,7 @@ async function generateShiftHandoff() {
             </tbody>
         </table>
         <div style="margin-top:30px; font-size:0.8rem; color:#888; text-align:center; font-family:'Poppins', sans-serif;">
-            "La nutriciÃ³n adecuada es vital para la recuperaciÃ³n."
+            "La nutrición adecuada es vital para la recuperación."
         </div>
     `;
 
@@ -1056,7 +1056,7 @@ function renderEvolutionChart(history) {
         ctx.fillStyle = '#aaa';
         ctx.font = 'italic 10px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('Sin registros de evoluciÃ³n', width / 2, height / 2);
+        ctx.fillText('Sin registros de evolución', width / 2, height / 2);
         return;
     }
 
@@ -1157,7 +1157,7 @@ function initEvolutionLogic() {
             const peso = parseFloat(document.getElementById('peso')?.value) || 0;
 
             if (!nombre || peso <= 0) {
-                showToast("âš ï¸ Ingresa nombre y peso para registrar");
+                showToast("⚠️ Ingresa nombre y peso para registrar");
                 return;
             }
 
@@ -1183,14 +1183,14 @@ function initEvolutionLogic() {
                 const { error } = await supabaseClient.from('pacientes').insert([data]);
                 if (error) throw error;
 
-                showToast("ðŸ“ˆ Punto de evoluciÃ³n registrado");
+                showToast("ðŸ“ˆ Punto de evolución registrado");
                 updatePatientEvolutionChart(nombre);
             } catch (err) {
                 console.error("Error logging evolution:", err);
                 showToast("âŒ Error al registrar punto");
             } finally {
                 btnLog.disabled = false;
-                btnLog.innerText = "Actualizar GrÃ¡fico con Peso";
+                btnLog.innerText = "Actualizar Gráfico con Peso";
             }
         };
     }
@@ -1241,7 +1241,7 @@ window.loadPatient = async (id) => {
 
         document.getElementById('historyModal').classList.remove('active');
 
-        // Update Chart for loaded patient (nuevo panel en cÃ¡lculo)
+        // Update Chart for loaded patient (nuevo panel en cálculo)
         if (typeof updatePatientEvolutionChart === 'function') {
             updatePatientEvolutionChart(data.nombre);
         }
@@ -1332,16 +1332,16 @@ function calculateRequirements() {
         }
 
         if (y > 5 || (y === 5 && m >= 1)) {
-            // NiÃ±os mayores > 5 aÃ±os y Adolescentes: Mediana del IMC/E
+            // Niños mayores > 5 años y Adolescentes: Mediana del IMC/E
             const medianBMI = getLMSMedian('bmi', m, p.sexo);
             if (medianBMI && p.estatura > 0) {
                 rawPesoIdeal = medianBMI * (p.estatura * p.estatura);
             }
         } else if (!isUnderOne || (isUnderOne && zWFH !== null && zWFH >= 1.0)) {
-            // ExcepciÃ³n P/T: Preescolares (1-5) o lactantes con Sobrepeso/Obesidad (P/T >= 1)
+            // Excepción P/T: Preescolares (1-5) o lactantes con Sobrepeso/Obesidad (P/T >= 1)
             if (cm > 0) rawPesoIdeal = getLMSMedian('wfh', cm, p.sexo);
         } else {
-            // Lactantes regulares (< 1 aÃ±o)
+            // Lactantes regulares (< 1 año)
             rawPesoIdeal = getLMSMedian('wfa', m, p.sexo);
         }
 
@@ -1414,17 +1414,17 @@ function calculateRequirements() {
 
                 if (age > 18) {
                     // Adults
-                    if (ipt < 75) status = "DesnutriciÃ³n Severa";
-                    else if (ipt <= 84) status = "DesnutriciÃ³n Moderada";
-                    else if (ipt <= 89) status = "DesnutriciÃ³n Leve";
+                    if (ipt < 75) status = "Desnutrición Severa";
+                    else if (ipt <= 84) status = "Desnutrición Moderada";
+                    else if (ipt <= 89) status = "Desnutrición Leve";
                     else if (ipt <= 110) status = "Normal";
                     else status = "Sobrepeso/Obesidad";
                 } else {
                     // Pediatrics / Adolescents (> 70% cutoff seems like Severe type III?)
                     // User criteria: 80-90 (Leve I), 70-79 (Mod II), <70 (Sev III)
-                    if (ipt < 70) status = "DesnutriciÃ³n Severa (G. III)";
-                    else if (ipt <= 79) status = "DesnutriciÃ³n Moderada (G. II)";
-                    else if (ipt <= 90) status = "DesnutriciÃ³n Leve (G. I)";
+                    if (ipt < 70) status = "Desnutrición Severa (G. III)";
+                    else if (ipt <= 79) status = "Desnutrición Moderada (G. II)";
+                    else if (ipt <= 90) status = "Desnutrición Leve (G. I)";
                     else if (ipt <= 110) status = "Normal";
                     else status = "Sobrepeso";
                 }
@@ -1443,7 +1443,7 @@ function calculateRequirements() {
     if (window.evaluateWaist) window.evaluateWaist();
 
     if (p.peso > 0 && p.edad > 0) {
-        // --- Peso de CÃ¡lculo MetabÃ³lico ---
+        // --- Peso de Cálculo Metabólico ---
         let w = p.peso;
         const selCalculo = document.getElementById('pesoCalculoSelect')?.value;
         if (selCalculo === 'ideal' && p.peso_ideal > 0) {
@@ -1476,7 +1476,7 @@ function calculateRequirements() {
                 else bmr = (10.5 * w) + 596;
             }
         }
-        // Harris-Benedict (Original 1919 ClÃ¡sica)
+        // Harris-Benedict (Original 1919 Clásica)
         else if (method === 'hb') {
             if (sexo === 'm') {
                 bmr = 66.47 + (13.75 * w) + (5.0 * cm) - (6.75 * p.edad);
@@ -1502,7 +1502,7 @@ function calculateRequirements() {
                 else bmr = 9.082 * w + 658.5;
             }
         }
-        // Valencia (AmÃ©rica Latina)
+        // Valencia (América Latina)
         else if (method === 'valencia') {
             if (sexo === 'm') {
                 if (p.edad < 30) bmr = (13.37 * w) + 747;
@@ -1672,9 +1672,9 @@ window.calculatePediatricAge = () => {
     document.getElementById('edad').value = ageInYears.toFixed(2);
 
     let ageStr = "";
-    if (years > 0) ageStr += `${years} aÃ±o${years > 1 ? 's' : ''}, `;
+    if (years > 0) ageStr += `${years} año${years > 1 ? 's' : ''}, `;
     if (months > 0 || years > 0) ageStr += `${months} mes${months !== 1 ? 'es' : ''}, `;
-    ageStr += `${days} dÃ­a${days !== 1 ? 's' : ''}`;
+    ageStr += `${days} día${days !== 1 ? 's' : ''}`;
 
     document.getElementById('lblExactAge').innerText = ageStr;
 
@@ -1812,7 +1812,7 @@ function getZScore(indicator, keyVal, sexo, obs) {
     let L, M, S;
 
     if (isInterpolated) {
-        // InterpolaciÃ³n Algebraica para bases de datos dispersas (Hitos)
+        // Interpolación Algebraica para bases de datos dispersas (Hitos)
         let lower = table[0];
         let upper = table[table.length - 1];
 
@@ -1838,7 +1838,7 @@ function getZScore(indicator, keyVal, sexo, obs) {
             }
         }
     } else {
-        // BÃºsqueda de hito mÃ¡s cercano para MINSAL (base densa)
+        // Búsqueda de hito más cercano para MINSAL (base densa)
         let closest = table[0];
         let minDiff = 9999;
         for (let r of table) {
@@ -1878,9 +1878,9 @@ function renderPediatricZScores() {
 
     const specCond = document.getElementById('specialCondition')?.value || 'none';
     if (specCond === 'down') {
-        html += `<div style="grid-column:1/-1; background:rgba(211,84,0,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#d35400; font-size:0.65rem; text-align:center;">ðŸ“Š <b>Zemel (S. Down):</b> Evaluando curvas LMS vÃ­a InterpolaciÃ³n GeomÃ©trica (Hitos).</div>`;
+        html += `<div style="grid-column:1/-1; background:rgba(211,84,0,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#d35400; font-size:0.65rem; text-align:center;">ðŸ“Š <b>Zemel (S. Down):</b> Evaluando curvas LMS vía Interpolación Geométrica (Hitos).</div>`;
     } else if (specCond.startsWith('cp_')) {
-        html += `<div style="grid-column:1/-1; background:rgba(142,68,173,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#8e44ad; font-size:0.65rem; text-align:center;">ðŸ“Š <b>Brooks (ParÃ¡lisis Cerebral):</b> Evaluando curvas GMFCS vÃ­a InterpolaciÃ³n GeomÃ©trica.</div>`;
+        html += `<div style="grid-column:1/-1; background:rgba(142,68,173,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#8e44ad; font-size:0.65rem; text-align:center;">ðŸ“Š <b>Brooks (Parálisis Cerebral):</b> Evaluando curvas GMFCS vía Interpolación Geométrica.</div>`;
     }
 
     const makeBadge = (title, z, textOverride = null, colorOverride = null) => {
@@ -1946,13 +1946,13 @@ function renderPediatricZScores() {
                 const ipVal = (wGrams / Math.pow(cm, 3)) * 100;
 
                 if (ipVal >= 2.2) {
-                    ipDiag = `SimÃ©trico (IP: ${ipVal.toFixed(2)})`;
+                    ipDiag = `Simétrico (IP: ${ipVal.toFixed(2)})`;
                     clasColor = '#f39c12';
                 } else if (ipVal >= 2.0) {
-                    ipDiag = `AsimÃ©trico Leve (IP: ${ipVal.toFixed(2)})`;
+                    ipDiag = `Asimétrico Leve (IP: ${ipVal.toFixed(2)})`;
                     clasColor = '#d35400';
                 } else {
-                    ipDiag = `AsimÃ©trico Severo (IP: ${ipVal.toFixed(2)}) âš ï¸ Riesgo Hipoglicemia`;
+                    ipDiag = `Asimétrico Severo (IP: ${ipVal.toFixed(2)}) ⚠️ Riesgo Hipoglicemia`;
                     clasColor = '#c0392b';
                 }
             } else if (isPeg) {
@@ -2003,9 +2003,9 @@ function renderPediatricZScores() {
                     const finalDays = Math.floor(r % 30.4375);
 
                     if (cMonths === 0) {
-                        corrString = `${cYears} AÃ±o${finalDays > 0 ? `, ${finalDays}d` : ''}`;
+                        corrString = `${cYears} Año${finalDays > 0 ? `, ${finalDays}d` : ''}`;
                     } else {
-                        corrString = `${cYears} AÃ±o, ${cMonths}m, ${finalDays}d`;
+                        corrString = `${cYears} Año, ${cMonths}m, ${finalDays}d`;
                     }
                 }
 
@@ -2014,7 +2014,7 @@ function renderPediatricZScores() {
                 html += makeBadge('Edad Correg.', null, 'Falta Fecha', '#95a5a6');
             }
         } else if (sem >= 37) {
-            html += makeBadge('CondiciÃ³n', null, 'TÃ©rmino', '#2980b9');
+            html += makeBadge('Condición', null, 'Término', '#2980b9');
         }
     } else {
         const parts = AppState.patient.ageParts || { y: 0, m: 0, d: 0 };
@@ -2037,25 +2037,25 @@ function renderPediatricZScores() {
                 else { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
             } else {
                 evaluatedBy = ' [Evaluado por P/E]';
-                if (zWFA <= -2) { diagWeight = 'DesnutriciÃ³n'; diagWColor = '#c0392b'; }
+                if (zWFA <= -2) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
                 else if (zWFA <= -1) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
-                else { diagWeight = 'Normal o EutrÃ³fico'; diagWColor = '#27ae60'; }
+                else { diagWeight = 'Normal o Eutrófico'; diagWColor = '#27ae60'; }
             }
         } else if (isOneToFive) {
             evaluatedBy = ' [Evaluado por P/T]';
-            if (zWFH <= -2) { diagWeight = 'DesnutriciÃ³n'; diagWColor = '#c0392b'; }
+            if (zWFH <= -2) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
             else if (zWFH <= -1) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
             else if (zWFH >= +2) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
             else if (zWFH >= +1) { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
-            else { diagWeight = 'Normal o EutrÃ³fico'; diagWColor = '#27ae60'; }
+            else { diagWeight = 'Normal o Eutrófico'; diagWColor = '#27ae60'; }
         } else {
             evaluatedBy = ' [Evaluado por IMC/E]';
-            if (zBMI <= -2) { diagWeight = 'DesnutriciÃ³n'; diagWColor = '#c0392b'; }
+            if (zBMI <= -2) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
             else if (zBMI <= -1) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
             else if (zBMI >= +3) { diagWeight = 'Obesidad Severa'; diagWColor = '#8e44ad'; }
             else if (zBMI >= +2) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
             else if (zBMI >= +1) { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
-            else { diagWeight = 'Normal o EutrÃ³fico'; diagWColor = '#27ae60'; }
+            else { diagWeight = 'Normal o Eutrófico'; diagWColor = '#27ae60'; }
         }
 
         let diagHeight = '';
@@ -2087,7 +2087,7 @@ function renderPediatricZScores() {
             }
             if (diagHeight) {
                 html += `<div style="background:${diagHColor}15; border-left:4px solid ${diagHColor}; padding:8px; border-radius:4px; font-weight:700; color:${diagHColor}; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
-                            <span>ðŸ“ CalificaciÃ³n Estatural</span>
+                            <span>ðŸ“ Calificación Estatural</span>
                             <span style="font-size:0.9rem;">${diagHeight}</span>
                          </div>`;
             }
@@ -2105,7 +2105,7 @@ function renderPediatricZScores() {
                     else if (cInp >= ageData.p75) { diagWaist = 'Riesgo Obesidad Adb. (â‰¥ p75)'; waColor = '#f39c12'; }
 
                     html += `<div style="background:${waColor}15; border-left:4px solid ${waColor}; padding:8px; border-radius:4px; font-weight:700; color:${waColor}; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
-                                <span>â­• PerÃ­metro Cintura</span>
+                                <span>â­• Perímetro Cintura</span>
                                 <span style="font-size:0.9rem;">${diagWaist}</span>
                              </div>`;
                 }
@@ -2133,12 +2133,12 @@ function renderPediatricZScores() {
         if (zHC !== null && !isNaN(zHC)) {
             let diag = '';
             let color = '#27ae60';
-            if (zHC <= -2.0) { diag = '<br><span style="font-size:0.6rem">âš ï¸ Microcefalia</span>'; color = '#c0392b'; }
+            if (zHC <= -2.0) { diag = '<br><span style="font-size:0.6rem">⚠️ Microcefalia</span>'; color = '#c0392b'; }
             else if (zHC <= -1.0) { diag = '<br><span style="font-size:0.6rem">Riesgo Micro</span>'; color = '#e67e22'; }
-            else if (zHC >= +2.0) { diag = '<br><span style="font-size:0.6rem">âš ï¸ Macrocefalia</span>'; color = '#c0392b'; }
-            html += makeBadge('PerÃ­m. CefÃ¡lico', null, `Z: ${zHC > 0 ? '+' : ''}${zHC.toFixed(2)}${diag}`, color);
+            else if (zHC >= +2.0) { diag = '<br><span style="font-size:0.6rem">⚠️ Macrocefalia</span>'; color = '#c0392b'; }
+            html += makeBadge('Perím. Cefálico', null, `Z: ${zHC > 0 ? '+' : ''}${zHC.toFixed(2)}${diag}`, color);
         } else {
-            html += makeBadge('PerÃ­m. CefÃ¡lico', null, `${pcInput} cm (Sin Ref)`, '#95a5a6');
+            html += makeBadge('Perím. Cefálico', null, `${pcInput} cm (Sin Ref)`, '#95a5a6');
         }
     }
 
@@ -2240,7 +2240,7 @@ function initFormulaSearch() {
 function updateFormulaSelect(filter = "") {
     // AGGRESSIVE FALLBACK V3.21: Use LOCAL_FORMULAS if AppState is empty
     if (!AppState.formulas || AppState.formulas.length === 0) {
-        console.warn("âš ï¸ AppState.formulas empty, reloading from LOCAL_FORMULAS...");
+        console.warn("⚠️ AppState.formulas empty, reloading from LOCAL_FORMULAS...");
         AppState.formulas = [...LOCAL_FORMULAS];
     } else {
         // Ensure all local ones are present (V3.26 Force sync)
@@ -2272,7 +2272,7 @@ function updateFormulaSelect(filter = "") {
     selects.forEach(sel => {
         if (!sel) return;
         const currentVal = sel.value; // preserve value if possible (rare)
-        sel.innerHTML = '<option value="">Seleccione FÃ³rmula...</option>';
+        sel.innerHTML = '<option value="">Seleccione Fórmula...</option>';
 
         cats.forEach(cat => {
             const group = document.createElement('optgroup');
@@ -2308,39 +2308,82 @@ function updateFormulaSelect(filter = "") {
     }
 }
 
-function renderMinerals(formula) {
-    const grid = document.getElementById('mineralsGrid');
-    if (!grid) return;
-    
-    if (!formula || !formula.minerals || Object.keys(formula.minerals).length === 0) {
-        grid.innerHTML = "<div style='color:#7f8c8d; grid-column: 1 / -1;'>Sin datos de minerales para esta fórmula</div>";
+function renderMinerals() {
+    const gridA = document.getElementById('mineralsGrid');
+    const gridB = document.getElementById('mineralsGridB');
+    if (!gridA) return;
+
+    const isCustomMix = document.getElementById('customMixContainer') && document.getElementById('customMixContainer').style.display === 'block';
+
+    const renderGrid = (gridEl, formulaId, labelPrefix) => {
+        const f = AppState.formulas.find(x => x.id === formulaId);
+        if (!f || !f.minerals || Object.keys(f.minerals).length === 0) {
+            gridEl.innerHTML = `<div style='color:#7f8c8d; grid-column: 1 / -1; display:flex; align-items:center; justify-content:center; height:100%;'>Sin datos de minerales para ${labelPrefix}</div>`;
+            return;
+        }
+
+        const v1 = parseFloat(document.getElementById('volume').value) || 0;
+        const v2 = parseFloat(document.getElementById('dilution').value) || 0;
+
+        let factor = 1;
+        if (v1 > 0) {
+            if (f.type === 'p') {
+                const dil = v2 > 0 ? v2 : (f.stdDil || 15);
+                const grams = v1 * (dil / 100);
+                factor = grams / 100;
+            } else if (f.type === 'l') {
+                const vol = f.isBotellin ? (v1 * f.volUnit) : v1;
+                factor = vol / 100;
+            }
+        } else {
+            factor = 1; // Default
+        }
+
+        const m = f.minerals;
+        const items = [
+            { name: "Sodio", val: m.na, unit: "mg", icon: "🧂" },
+            { name: "Potasio", val: m.k, unit: "mg", icon: "🍌" },
+            { name: "Cloro", val: m.cl, unit: "mg", icon: "🧪" },
+            { name: "Calcio", val: m.ca, unit: "mg", icon: "🦴" },
+            { name: "Fósforo", val: m.p, unit: "mg", icon: "🐟" },
+            { name: "Magnesio", val: m.mg, unit: "mg", icon: "🥬" },
+            { name: "Hierro", val: m.fe, unit: "mg", icon: "🩸" },
+            { name: "Zinc", val: m.zn, unit: "mg", icon: "🛡️" },
+            { name: "Cobre", val: m.cu, unit: "mg", icon: "⚡" },
+            { name: "Yodo", val: m.i, unit: "mg", icon: "🌊" },
+            { name: "Manganeso", val: m.mn, unit: "mg", icon: "🌰" },
+            { name: "Selenio", val: m.se, unit: "mg", icon: "🌾" }
+        ];
+
+        gridEl.innerHTML = `<div style='grid-column: 1 / -1; font-weight:bold; color:var(--primary); margin-bottom:5px;'>${f.name}</div>` + items.map(i => {
+            if(i.val === undefined) return "";
+            const finalVal = (i.val * factor).toFixed(2);
+            return `<div style="background:#fff; border:1px solid #eee; border-radius:4px; padding:4px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                <span style="font-size:0.9rem;">${i.icon}</span>
+                <span style="font-weight:bold; color:#2c3e50; margin:2px 0;">${finalVal} ${i.unit}</span>
+                <span style="font-size:0.6rem; color:#7f8c8d; text-transform:uppercase;">${i.name}</span>
+            </div>`;
+        }).join('');
+    };
+
+    if (isCustomMix) {
+        gridA.innerHTML = "<div style='color:#7f8c8d; grid-column: 1 / -1;'>Minerales no disponibles en mezcla personalizada aún.</div>";
+        if(gridB) gridB.style.display = 'none';
         return;
     }
 
-    const m = formula.minerals;
-    const items = [
-        { name: "Sodio", val: m.na, unit: "mg", icon: "🧂" },
-        { name: "Potasio", val: m.k, unit: "mg", icon: "🍌" },
-        { name: "Cloro", val: m.cl, unit: "mg", icon: "🧪" },
-        { name: "Calcio", val: m.ca, unit: "mg", icon: "🦴" },
-        { name: "Fósforo", val: m.p, unit: "mg", icon: "🐟" },
-        { name: "Magnesio", val: m.mg, unit: "mg", icon: "🥬" },
-        { name: "Hierro", val: m.fe, unit: "mg", icon: "🩸" },
-        { name: "Zinc", val: m.zn, unit: "mg", icon: "🛡️" },
-        { name: "Cobre", val: m.cu, unit: "mg", icon: "⚡" },
-        { name: "Yodo", val: m.i, unit: "mg", icon: "🌊" },
-        { name: "Manganeso", val: m.mn, unit: "mg", icon: "🌰" },
-        { name: "Selenio", val: m.se, unit: "mg", icon: "🌾" }
-    ];
+    const fAId = document.getElementById('formulaSelect').value;
+    renderGrid(gridA, fAId, "Fórmula A");
 
-    grid.innerHTML = items.map(i => {
-        if(i.val === undefined) return "";
-        return `<div style="background:#fff; border:1px solid #eee; border-radius:4px; padding:4px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-            <span style="font-size:0.9rem;">${i.icon}</span>
-            <span style="font-weight:bold; color:#2c3e50; margin:2px 0;">${i.val} ${i.unit}</span>
-            <span style="font-size:0.6rem; color:#7f8c8d; text-transform:uppercase;">${i.name}</span>
-        </div>`;
-    }).join('');
+    const isComparing = document.getElementById('compareRow').style.display === 'block' || document.getElementById('compareRow').style.display === 'flex';
+    const fBId = isComparing ? document.getElementById('formulaSelectB').value : null;
+    
+    if (isComparing && fBId && gridB) {
+        gridB.style.display = 'grid';
+        renderGrid(gridB, fBId, "Fórmula B");
+    } else if (gridB) {
+        gridB.style.display = 'none';
+    }
 }
 
 window.toggleCustomMix = function() {
@@ -2388,7 +2431,7 @@ function renderFormulaInputs(formula) {
     const inputVolume = document.getElementById('volume');
     if (lblVolume && inputVolume) {
         if (formula.isBotellin) {
-            lblVolume.innerText = `Unidades (BotellÃ­n ${formula.volUnit}cc)`;
+            lblVolume.innerText = `Unidades (Botellín ${formula.volUnit}cc)`;
             inputVolume.placeholder = 'Ej: 1, 2...';
         } else {
             lblVolume.innerText = 'Volumen (ml)';
@@ -2427,9 +2470,9 @@ function runSimulation() {
             c = formula.c * (grams / 100);
             l = formula.f * (grams / 100);
         } else {
-            // LÃ­quidos o FÃ³rmulas SEDILE listas: Volumen base.
+            // Líquidos o Fórmulas SEDILE listas: Volumen base.
             let scl = 1;
-            // Si la fÃ³rmula tiene diluciÃ³n estÃ¡ndar (ej F1 al 13%), calculamos su escala comparado a la estÃ¡ndar
+            // Si la fórmula tiene dilución estándar (ej F1 al 13%), calculamos su escala comparado a la estándar
             if (formula.stdDil && v2 > 0) {
                 scl = v2 / formula.stdDil;
             }
@@ -2650,7 +2693,7 @@ function runSimulation() {
         AppState.chart.update();
     }
 
-    // NEW V3.95: EscÃ¡ner Proteico (Neonate g/kg/d)
+    // NEW V3.95: Escáner Proteico (Neonate g/kg/d)
     const proTracker = document.getElementById('proteinTrackerResult');
     if (proTracker) {
         if (AppState.patient.peso > 0 && AppState.patient.type === 'neonate') {
@@ -2658,16 +2701,16 @@ function runSimulation() {
             let ptColor = '#27ae60';
             let ptL = 'Ideal';
             // Neonatal protein brackets
-            if (pt < 2.5) { ptColor = '#c0392b'; ptL = 'âš ï¸ Peligro: DÃ©ficit Grave'; }
-            else if (pt < 3.2) { ptColor = '#f39c12'; ptL = 'SubÃ³ptimo'; }
-            else if (pt >= 3.2 && pt <= 4.2) { ptColor = '#27ae60'; ptL = 'Rango CrÃ­tico (UCIN)'; }
-            else if (pt > 4.5) { ptColor = '#c0392b'; ptL = 'âš ï¸ Sobrecarga Renal'; }
-            else { ptColor = '#2980b9'; ptL = 'LÃ­mite Superior'; }
+            if (pt < 2.5) { ptColor = '#c0392b'; ptL = '⚠️ Peligro: Déficit Grave'; }
+            else if (pt < 3.2) { ptColor = '#f39c12'; ptL = 'Subóptimo'; }
+            else if (pt >= 3.2 && pt <= 4.2) { ptColor = '#27ae60'; ptL = 'Rango Crítico (UCIN)'; }
+            else if (pt > 4.5) { ptColor = '#c0392b'; ptL = '⚠️ Sobrecarga Renal'; }
+            else { ptColor = '#2980b9'; ptL = 'Límite Superior'; }
 
             proTracker.innerHTML = `
                 <div style="margin-top:10px; margin-bottom:10px; background:${ptColor}10; border:2px dashed ${ptColor}; padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                     <div style="font-weight:700; color:${ptColor}; font-size:1rem;">
-                        ðŸ©¸ ProteÃ­na Diaria: <span style="font-size:1.2rem; font-weight:800;">${pt.toFixed(2)}</span> <span style="font-size:0.8rem;">g/kg/d</span>
+                        ðŸ©¸ Proteína Diaria: <span style="font-size:1.2rem; font-weight:800;">${pt.toFixed(2)}</span> <span style="font-size:0.8rem;">g/kg/d</span>
                     </div>
                     <div style="background:${ptColor}; color:#fff; font-size:0.7rem; padding:4px 8px; border-radius:6px; font-weight:800;">
                         ${ptL}
@@ -2692,15 +2735,15 @@ function runSimulation() {
 
         const getNPCDiagnosis = (ratio, isPed) => {
             if (isPed) {
-                if (ratio < 90) return 'âš ï¸ Â¡Demasiada ProteÃ­na! (Riesgo Renal)';
-                if (ratio <= 150) return 'âœ… Â¡Perfecto para Crecimiento RÃ¡pido!';
+                if (ratio < 90) return '⚠️ ¡Demasiada Proteína! (Riesgo Renal)';
+                if (ratio <= 150) return 'âœ… ¡Perfecto para Crecimiento Rápido!';
                 if (ratio <= 200) return 'ðŸ’¡ Mantenimiento (Sube prote si quieres anabolismo)';
-                return 'âš ï¸ Â¡Faltan ProteÃ­nas urgentemente! (Riesgo Nutricional)';
+                return '⚠️ ¡Faltan Proteínas urgentemente! (Riesgo Nutricional)';
             } else {
-                if (ratio < 100) return 'âœ… FÃ³rmula apta para EstrÃ©s Severo (UCI)';
-                if (ratio <= 130) return 'âœ… FÃ³rmula apta para EstrÃ©s Moderado';
+                if (ratio < 100) return 'âœ… Fórmula apta para Estrés Severo (UCI)';
+                if (ratio <= 130) return 'âœ… Fórmula apta para Estrés Moderado';
                 if (ratio <= 180) return 'âœ… Mantenimiento (Normal)';
-                return 'âš ï¸ Â¡Falta ProteÃ­na! (Exceso de EnergÃ­a / LipogÃ©nesis)';
+                return '⚠️ ¡Falta Proteína! (Exceso de Energía / Lipogénesis)';
             }
         };
 
@@ -2734,7 +2777,7 @@ function runSimulation() {
 
         } else {
             actualRatioVal.innerText = '-- : 1';
-            actualRatioDiag.innerText = 'Sin simulaciÃ³n';
+            actualRatioDiag.innerText = 'Sin simulación';
         }
     };
 
@@ -2749,8 +2792,8 @@ function initInfusionLogic() {
     // Populate RTH Selector
     const rthSel = document.getElementById('infusionRTHSelect');
     if (rthSel) {
-        let html = '<option value="">-- No usar fÃ³rmula RTH --</option>';
-        LOCAL_FORMULAS.filter(f => f.cat === "FÃ³rmulas RTH").forEach(f => {
+        let html = '<option value="">-- No usar fórmula RTH --</option>';
+        LOCAL_FORMULAS.filter(f => f.cat === "Fórmulas RTH").forEach(f => {
             html += `<option value="${f.id}">${f.name}</option>`;
         });
         rthSel.innerHTML = html;
@@ -2829,7 +2872,7 @@ function initInfusionLogic() {
             const endM = sachetEndDate.getMinutes().toString().padStart(2, '0');
 
             const dayDiff = sachetEndDate.getDate() - now.getDate();
-            const dayLabel = dayDiff > 0 ? " (+1 dÃ­a)" : "";
+            const dayLabel = dayDiff > 0 ? " (+1 día)" : "";
 
             sachetEndStrDisplay = `${endH}:${endM}${dayLabel}`;
             const hrs = Math.floor(durationHrs);
@@ -2855,12 +2898,12 @@ function initInfusionLogic() {
             if (sachetEndDate) {
                 const hourEnds = sachetEndDate.getHours();
                 if (hourEnds >= 18 || hourEnds < 8) {
-                    currentSachetWarningStr = `<div style="margin-top:6px; color:#c0392b;">âš ï¸ <b>Riesgo Quiebre Nocturno:</b> El RTH actual acaba a las ${sachetEndDate.getHours().toString().padStart(2, '0')}:${sachetEndDate.getMinutes().toString().padStart(2, '0')}. Analiza garantizar el stock de reemplazo hoy a las 18:00.</div>`;
+                    currentSachetWarningStr = `<div style="margin-top:6px; color:#c0392b;">⚠️ <b>Riesgo Quiebre Nocturno:</b> El RTH actual acaba a las ${sachetEndDate.getHours().toString().padStart(2, '0')}:${sachetEndDate.getMinutes().toString().padStart(2, '0')}. Analiza garantizar el stock de reemplazo hoy a las 18:00.</div>`;
                 }
             }
 
             let cycleStr = '';
-            let planesText = `<span style="opacity:0.8; font-style:italic;">(Ingresa una 'Hora de InstalaciÃ³n' y una 'Velocidad' para calcular la logÃ­stica SEDILE de 24 hrs)</span>`;
+            let planesText = `<span style="opacity:0.8; font-style:italic;">(Ingresa una 'Hora de Instalación' y una 'Velocidad' para calcular la logística SEDILE de 24 hrs)</span>`;
 
             if (sachetStartStr && rate > 0) {
                 const [cH, cM] = sachetStartStr.split(':').map(Number);
@@ -2882,7 +2925,7 @@ function initInfusionLogic() {
 
                 for (let i = 0; i < envasesNedded; i++) {
                     const connectTime = (cycleStartDecimal + (i * bottleDuration)) % 24;
-                    // SEDILE Safe Window (margen orgÃ¡nico prep.): 
+                    // SEDILE Safe Window (margen orgánico prep.): 
                     // Si se instala tarde (15:00 a 18:59) -> cabe para pedir a las 14:00 (hoy)
                     // Si se instala en cualquier otro horario -> pedir a las 18:00
                     if (connectTime >= 15 && connectTime < 19) {
@@ -2901,7 +2944,7 @@ function initInfusionLogic() {
                 `;
             }
 
-            const fallbackName = rthObj ? rthObj.name : "FÃ³rmula (" + bottleVol + "ml)";
+            const fallbackName = rthObj ? rthObj.name : "Fórmula (" + bottleVol + "ml)";
             logBox.style.display = 'block';
             logBox.innerHTML = `
                 <div style="font-size:0.8rem; margin-bottom:4px; color:#555;">ðŸ“Š Pauta 24hrs: <b>${calcTotalVol} ml</b> ${cycleStr}</div>
@@ -2909,7 +2952,7 @@ function initInfusionLogic() {
                 ðŸ“¦ Necesitas <b>${envasesNedded} producto(s) RTH diarios</b> de ${fallbackName}.<br>
                 ${planesText}
                 ${currentSachetWarningStr}
-                ${rate > limit ? `<div style="margin-top:6px; color:#e74c3c; font-weight:700; background:rgba(231,76,60,0.1); padding:5px; border-radius:4px; border:1px solid rgba(231,76,60,0.3);">âš ï¸ Alerta Velocidad: EstÃ¡s superando el lÃ­mite clÃ­nico sugerido (${limit} ml/hr) para esta poblaciÃ³n.</div>` : ''}
+                ${rate > limit ? `<div style="margin-top:6px; color:#e74c3c; font-weight:700; background:rgba(231,76,60,0.1); padding:5px; border-radius:4px; border:1px solid rgba(231,76,60,0.3);">⚠️ Alerta Velocidad: Estás superando el límite clínico sugerido (${limit} ml/hr) para esta población.</div>` : ''}
             `;
         } else {
             logBox.style.display = 'none';
@@ -2937,7 +2980,7 @@ function toggleHydMethod() {
 }
 
 function resetPatientForm() {
-    if (!confirm("Â¿Deseas limpiar todos los campos para un nuevo paciente?")) return;
+    if (!confirm("¿Deseas limpiar todos los campos para un nuevo paciente?")) return;
 
     // Reset Global State
     AppState.patient = { id: null, nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0, ia_report: null };
@@ -3045,7 +3088,7 @@ function calcHydration() {
     const elTotal = document.getElementById('valHydTotal');
     if (elTotal) elTotal.innerText = `${Math.round(realVol)} ml`;
 
-    // RelaciÃ³n ml/kcal
+    // Relación ml/kcal
     const elRatio = document.getElementById('valHydRatio');
     if (elRatio && currentKcal > 0) {
         elRatio.innerText = (realVol / currentKcal).toFixed(2);
@@ -3130,11 +3173,11 @@ function animateValue(id, end) {
 async function savePrescription() {
     const btn = document.getElementById('btnSaveHistory');
     const { error } = await supabaseClient.from('prescripciones').insert([{
-        paciente_nombre: document.getElementById('nombre').value || 'AnÃ³nimo',
+        paciente_nombre: document.getElementById('nombre').value || 'Anónimo',
         detalle: `Kcal: ${document.getElementById('valKcal').innerText}, Prot: ${document.getElementById('valProt').innerText}`,
         user_id: AppState.user.id
     }]);
-    btn.innerText = error ? "Error" : "Â¡PrescripciÃ³n Guardada!";
+    btn.innerText = error ? "Error" : "¡Prescripción Guardada!";
     setTimeout(() => btn.innerText = "Prescribir y Guardar Cloud", 2000);
 }
 
@@ -3229,7 +3272,7 @@ function initChartSim() {
     AppState.chart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Prot', 'Carb', 'LÃ­p'],
+            labels: ['Prot', 'Carb', 'Líp'],
             datasets: [{
                 data: [0, 0, 0],
                 backgroundColor: [
@@ -3317,7 +3360,7 @@ function updateCompareResults(k1, p1, c1, l1) {
     if (boardB) {
         boardB.style.display = 'grid';
         const labelB = document.getElementById('lblFormulaB');
-        if (labelB) labelB.innerText = `FÃ³rmula B: ${formulaB.name}`;
+        if (labelB) labelB.innerText = `Fórmula B: ${formulaB.name}`;
 
         // Factor in Modules V3.50
         let modK = 0, modP = 0, modC = 0, modL = 0;
@@ -3354,7 +3397,7 @@ function updateCompareResults(k1, p1, c1, l1) {
         document.getElementById('valLip').innerText = l1.toFixed(1);
 
         // FORMULA B Board Update
-        // Calculate B macros + same modules (since modules are added to the 'preparaciÃ³n')
+        // Calculate B macros + same modules (since modules are added to the 'preparación')
         k2 += modK; p2 += modP; c2 += modC; l2 += modL;
 
         document.getElementById('valKcalB').innerText = Math.round(k2);
@@ -3364,6 +3407,7 @@ function updateCompareResults(k1, p1, c1, l1) {
     }
 
     // --- differences ---
+    renderMinerals();
     const diffK = Math.round(k2 - k1);
     const getBadge = (val, unit) => {
         const isPos = parseFloat(val) >= 0;
@@ -3421,7 +3465,7 @@ function initAssessmentLogic() {
         const btnNEVO = document.getElementById('btnModeNEVO');
 
         if (label) {
-            label.innerText = mode === 'np-ne' ? 'Aporte de VÃ­a de Salida (NP):' : 'Aporte de VÃ­a de Salida (NE):';
+            label.innerText = mode === 'np-ne' ? 'Aporte de Vía de Salida (NP):' : 'Aporte de Vía de Salida (NE):';
         }
 
         if (btnNPNE && btnNEVO) {
@@ -3526,7 +3570,7 @@ function initAssessmentLogic() {
                 statusEl.innerText = "Central";
                 statusEl.style.background = "#e74c3c";
             } else {
-                statusEl.innerText = "PerifÃ©rica";
+                statusEl.innerText = "Periférica";
                 statusEl.style.background = "#27ae60";
             }
         }
@@ -3589,7 +3633,7 @@ function initAssessmentLogic() {
             badge.style.color = '#888';
             badge.style.background = '#eee';
             badge.style.borderColor = '#ddd';
-            if (fdbkText) fdbkText.innerText = `Ingresa volumen para medir adecuaciÃ³n vs ${labelBase}.`;
+            if (fdbkText) fdbkText.innerText = `Ingresa volumen para medir adecuación vs ${labelBase}.`;
             return;
         }
 
@@ -3605,10 +3649,10 @@ function initAssessmentLogic() {
         if (adequacy < 40) {
             label = 'Inicio / Refeeding';
             color = '#e67e22';
-            icon = 'âš ï¸';
+            icon = '⚠️';
             bgColor = 'rgba(230, 126, 34, 0.05)';
         } else if (adequacy < 85) {
-            label = 'ProgresiÃ³n';
+            label = 'Progresión';
             color = '#3498db';
             icon = 'ðŸ“ˆ';
             bgColor = 'rgba(52, 152, 219, 0.05)';
@@ -3618,7 +3662,7 @@ function initAssessmentLogic() {
             icon = 'âœ…';
             bgColor = 'rgba(39, 174, 96, 0.05)';
         } else {
-            label = 'SobrealimentaciÃ³n / SuperÃ¡vit';
+            label = 'Sobrealimentación / Superávit';
             color = '#e74c3c';
             icon = 'ðŸ”¥';
             bgColor = 'rgba(231, 76, 60, 0.05)';
@@ -3645,7 +3689,7 @@ function initAssessmentLogic() {
             const weight = parseFloat(document.getElementById('peso')?.value) || 0;
             const total = Math.round(val * weight);
             const resEvo = document.getElementById('evolutionResult');
-            if (resEvo) resEvo.innerText = `= ${total} kcal/dÃ­a`;
+            if (resEvo) resEvo.innerText = `= ${total} kcal/día`;
 
             if (inpGoalTotal && document.getElementById('getSelector')?.value === 'factorial') {
                 inpGoalTotal.value = total;
@@ -3955,7 +3999,7 @@ function initGlobalEvents() {
                     <strong>${drugKey.toUpperCase()}:</strong><br>${DRUG_INTERACTIONS[drugKey]}
                 </div>`;
             } else {
-                outDrug.innerHTML = '<span style="color:#888;">No se encontrÃ³ el fÃ¡rmaco. Intenta con una palabra clave.</span>';
+                outDrug.innerHTML = '<span style="color:#888;">No se encontró el fármaco. Intenta con una palabra clave.</span>';
             }
         };
     }
@@ -3987,7 +4031,7 @@ function initGlobalEvents() {
 
         const examenes = document.getElementById('evoExamenes')?.value || "Sin reportar";
         const tolerancia = document.getElementById('evoTolerancia')?.value || "Adecuada";
-        const des = document.getElementById('diagnosticoPES')?.value || "Sin diagnÃ³stico ingresado";
+        const des = document.getElementById('diagnosticoPES')?.value || "Sin diagnóstico ingresado";
 
         const pesoFisico = p.peso || 0;
         const pesoCalc = document.getElementById('pesoCalculoSelect')?.value === 'real' ? pesoFisico : (p.peso_calculo || pesoFisico);
@@ -3999,28 +4043,28 @@ function initGlobalEvents() {
         const volText = isBotellin ? `${vol} Unidad(es) (${vol * formula.volUnit} ml totales)` : `${vol} ml`;
 
         // Build ADIME Text
-        const adimeText = `A - ANTROPOMETRÃA Y REQUERIMIENTOS:
+        const adimeText = `A - ANTROPOMETRÍA Y REQUERIMIENTOS:
 - Peso Real: ${pesoFisico} kg | Talla: ${cm} cm
-- Peso de CÃ¡lculo: ${pesoCalc.toFixed(1)} kg | Superficie Corp: ${sctVal}
-- Meta EnergÃ©tica: ${Math.round(goal)} kcal/dÃ­a (${pesoCalc > 0 ? (goal / pesoCalc).toFixed(1) : 0} kcal/kg)
-- Meta ProteÃ­nas: ${Math.round(pTotal)} g/dÃ­a (${pesoCalc > 0 ? (pTotal / pesoCalc).toFixed(1) : 0} g/kg)
-- Meta CHOs: ${Math.round(cTotal)} g/dÃ­a | LÃ­p: ${Math.round(lTotal)} g/dÃ­a
+- Peso de Cálculo: ${pesoCalc.toFixed(1)} kg | Superficie Corp: ${sctVal}
+- Meta Energética: ${Math.round(goal)} kcal/día (${pesoCalc > 0 ? (goal / pesoCalc).toFixed(1) : 0} kcal/kg)
+- Meta Proteínas: ${Math.round(pTotal)} g/día (${pesoCalc > 0 ? (pTotal / pesoCalc).toFixed(1) : 0} g/kg)
+- Meta CHOs: ${Math.round(cTotal)} g/día | Líp: ${Math.round(lTotal)} g/día
 
-B - BIOQUÃMICA Y CLÃNICA (TOLERANCIA):
-- ExÃ¡menes Clave: ${examenes}
+B - BIOQUÍMICA Y CLÍNICA (TOLERANCIA):
+- Exámenes Clave: ${examenes}
 - Tolerancia Subjetiva: ${tolerancia}
 
 D - DIAGNÃ“STICO NUTRICIONAL INTEGRADO:
 - ${des}
 
 I - INTERVENCIÃ“N Y PRESCRIPCIÃ“N:
-- FÃ³rmula Indicada: ${formula ? formula.name : 'N/A'}
+- Fórmula Indicada: ${formula ? formula.name : 'N/A'}
 - Volumen Prescrito: ${volText}
-${modulesText ? `- MÃ³dulos AÃ±adidos: ${modulesText.slice(0, -2)}` : ''}`;
+${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
 
         content.innerText = adimeText;
         const titleH4 = document.querySelector('#clinicalNoteContainer h4');
-        if (titleH4) titleH4.innerText = "Vista Previa de EvoluciÃ³n (ADIME)";
+        if (titleH4) titleH4.innerText = "Vista Previa de Evolución (ADIME)";
         container.style.display = 'block';
         container.scrollIntoView({ behavior: 'smooth' });
     };
@@ -4038,7 +4082,7 @@ ${modulesText ? `- MÃ³dulos AÃ±adidos: ${modulesText.slice(0, -2)}` : ''}`;
 
         let ageStr = '--';
         if (p.ageParts) {
-            ageStr = `${p.ageParts.y} aÃ±os ${p.ageParts.m} meses`;
+            ageStr = `${p.ageParts.y} años ${p.ageParts.m} meses`;
         }
 
         const sexStr = p.sexo === 'm' ? 'Masculino' : (p.sexo === 'f' ? 'Femenino' : 'No especificado');
@@ -4052,7 +4096,7 @@ ${modulesText ? `- MÃ³dulos AÃ±adidos: ${modulesText.slice(0, -2)}` : ''}`;
         const zImcVal = document.getElementById('valZBMI')?.innerText || '--';
         const zTallaVal = document.getElementById('valZHFA')?.innerText || '--';
 
-        const des = document.getElementById('diagnosticoPES')?.value || "Sin diagnÃ³stico ingresado";
+        const des = document.getElementById('diagnosticoPES')?.value || "Sin diagnóstico ingresado";
 
         const goal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
         const pTotal = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
@@ -4067,16 +4111,16 @@ ${modulesText ? `- MÃ³dulos AÃ±adidos: ${modulesText.slice(0, -2)}` : ''}`;
 
         const vgoText = `VALORACION GLOBAL OBJETIVA POR NUTRICIONISTA
 
-o Fecha de evaluaciÃ³n: ${dateStr}
+o Fecha de evaluación: ${dateStr}
 
 Fecha de nacimiento: [Completar]
 Edad: ${ageStr}
 Sexo: ${sexStr}
 
-DiagnÃ³stico:
-o 1. [Completar diagnÃ³stico mÃ©dico]
+Diagnóstico:
+o 1. [Completar diagnóstico médico]
 
-AntropometrÃ­a: (EvaluaciÃ³n en bipedestaciÃ³n por nutricionista del servicio)
+Antropometría: (Evaluación en bipedestación por nutricionista del servicio)
 o Peso ciego: ${pesoFisico} kg
 o Talla: ${tallaMt} mt
 o C. braquial: [Completar] cm
@@ -4089,21 +4133,21 @@ o Zscore T/E: ${zTallaVal} DE
 o C. Cintura /E: [Completar si aplica]
 
 Anamnesis:
-o SÃ­ntomas gastrointestinales: Nauseas ( ) VÃ³mitos ( ) Reflujo gastroesofÃ¡gico ( ) Deposiciones ( ) DistensiÃ³n abdominal ( ) Gases ( ).
-o Anamnesis alimentaria: Dentadura ( ) Alergias/intolerancias alimentarias ( ) Trastorno de degluciÃ³n ( ) Apetito ( ).
+o Síntomas gastrointestinales: Nauseas ( ) Vómitos ( ) Reflujo gastroesofágico ( ) Deposiciones ( ) Distensión abdominal ( ) Gases ( ).
+o Anamnesis alimentaria: Dentadura ( ) Alergias/intolerancias alimentarias ( ) Trastorno de deglución ( ) Apetito ( ).
 
 Tamizaje: (STRONG KIDS)
 o Puntaje: [Completar] pts
-o InterpretaciÃ³n: [Completar]
+o Interpretación: [Completar]
 
-DiagnÃ³stico Nutricional Integrado:
+Diagnóstico Nutricional Integrado:
 o ${des}
 
 Requerimientos nutricionales:
-o CalorÃ­as: ${Math.round(goal)} kcal
-o ProteÃ­nas: ${pTotal.toFixed(1)} gr -> VCT ${pPct} %
+o Calorías: ${Math.round(goal)} kcal
+o Proteínas: ${pTotal.toFixed(1)} gr -> VCT ${pPct} %
 o Carbohidratos: ${cTotal.toFixed(1)} gr -> VCT ${cPct} %
-o LÃ­pidos: ${lTotal.toFixed(1)} gr -> VCT ${lPct} %
+o Lípidos: ${lTotal.toFixed(1)} gr -> VCT ${lPct} %
 
 Dietoterapia actual: [Completar]
 
@@ -4111,13 +4155,13 @@ Observaciones/Plan/Sugerencias:
 o [Completar]
 
 ${userName}
-Nutricionista clÃ­nica pediatrÃ­a - psiquiatrÃ­a infantojuvenil
-Unidad de nutriciÃ³n y alimentaciÃ³n
+Nutricionista clínica pediatría - psiquiatría infantojuvenil
+Unidad de nutrición y alimentación
 Hospital Regional de Antofagasta`;
 
         content.innerText = vgoText;
         const titleH4 = document.querySelector('#clinicalNoteContainer h4');
-        if (titleH4) titleH4.innerText = "Vista Previa de EvoluciÃ³n (VGO)";
+        if (titleH4) titleH4.innerText = "Vista Previa de Evolución (VGO)";
         container.style.display = 'block';
         container.scrollIntoView({ behavior: 'smooth' });
     };
@@ -4126,7 +4170,7 @@ Hospital Regional de Antofagasta`;
     const btnCopy = document.getElementById('btnCopyNote');
     if (btnCopy) btnCopy.onclick = () => {
         const text = document.getElementById('noteContent').innerText;
-        navigator.clipboard.writeText(text).then(() => alert("EvoluciÃ³n ClÃ­nica (ADIME) copiada al portapapeles."));
+        navigator.clipboard.writeText(text).then(() => alert("Evolución Clínica (ADIME) copiada al portapapeles."));
     };
 
     // Module Input Watcher
@@ -4217,7 +4261,7 @@ function calcTMB_OMS() {
             else tmb = 10.5 * weight + 596;
         }
     } else if (method === 'hb') {
-        // Harris-Benedict (Original 1919 ClÃ¡sica)
+        // Harris-Benedict (Original 1919 Clásica)
         if (sexo === 'm') {
             tmb = 66.47 + (13.75 * weight) + (5.0 * height) - (6.75 * age);
         } else {
@@ -4240,7 +4284,7 @@ function calcTMB_OMS() {
             else tmb = 9.082 * weight + 658.5;
         }
     } else if (method === 'valencia') {
-        // Valencia (AmÃ©rica Latina)
+        // Valencia (América Latina)
         if (sexo === 'm') {
             if (age < 30) tmb = (13.37 * weight) + 747;
             else if (age < 60) tmb = (11.02 * weight) + 679;
@@ -4302,7 +4346,7 @@ function addExamRow() {
     row.className = 'exam-row';
     row.innerHTML = `
         <input type="date">
-        <input type="text" placeholder="Examen (Ej: AlbÃºmina)">
+        <input type="text" placeholder="Examen (Ej: Albúmina)">
         <input type="text" placeholder="Resultado">
         <button class="btn-row-del" onclick="this.parentElement.remove()" title="Eliminar examen">ðŸ—‘ï¸</button>
     `;
@@ -4396,9 +4440,9 @@ async function generateNutriIAAnalysis() {
     } catch (err) {
         console.error("ðŸ”´ Error Nutri IA Detallado:", err);
         // Show more specific message if it's a known error type
-        let userMsg = "Error al conectar con la Nutri IA. Verifica tu conexiÃ³n.";
-        if (err.message && err.message.includes("403")) userMsg = "Error 403: Acceso denegado a la IA (API Key invÃ¡lida).";
-        if (err.message && err.message.includes("429")) userMsg = "Error 429: Se ha superado el lÃ­mite de uso de la IA.";
+        let userMsg = "Error al conectar con la Nutri IA. Verifica tu conexión.";
+        if (err.message && err.message.includes("403")) userMsg = "Error 403: Acceso denegado a la IA (API Key inválida).";
+        if (err.message && err.message.includes("429")) userMsg = "Error 429: Se ha superado el límite de uso de la IA.";
 
         alert(userMsg);
     } finally {
@@ -4439,21 +4483,21 @@ function constructNutriIAPrompt() {
         metas: { kcalKg: document.getElementById('goalKcalBox')?.value, kcalTotal: document.getElementById('goalTotal')?.value }
     };
 
-    return `ActÃºa como un Nutricionista ClÃ­nico experto del Hospital Regional de Antofagasta (HRA), Chile.
-Genera un informe clÃ­nico profesional fundamentado en estos datos:
-- Paciente: ${p.nombre || 'N/A'}, ${p.edad} aÃ±os, ${p.sexo === 'm' ? 'M' : 'F'}.
-- AntropometrÃ­a: IMC ${context.antropometria.bmi}, Peso Ideal ${context.antropometria.pesoIdeal}, IPT ${context.antropometria.ipt} (${context.antropometria.diagnosticoIPT}).
+    return `Actúa como un Nutricionista Clínico experto del Hospital Regional de Antofagasta (HRA), Chile.
+Genera un informe clínico profesional fundamentado en estos datos:
+- Paciente: ${p.nombre || 'N/A'}, ${p.edad} años, ${p.sexo === 'm' ? 'M' : 'F'}.
+- Antropometría: IMC ${context.antropometria.bmi}, Peso Ideal ${context.antropometria.pesoIdeal}, IPT ${context.antropometria.ipt} (${context.antropometria.diagnosticoIPT}).
 - Cribado: NRS-2002: ${context.riesgo.nrs2002}, VGS: ${context.riesgo.vgs}.
 - Laboratorio: ${JSON.stringify(context.bioquimica)}.
-- Tolerancia GI: Residuo ${context.tolerancia.residuo}, Diarrea ${context.tolerancia.diarrea}, DistensiÃ³n ${context.tolerancia.distension}.
-- DiagnÃ³stico PES: ${context.diagnosticoIntegrado}.
-- Meta actual: ${context.metas.kcalTotal} kcal/dÃ­a (${context.metas.kcalKg} kcal/kg).
+- Tolerancia GI: Residuo ${context.tolerancia.residuo}, Diarrea ${context.tolerancia.diarrea}, Distensión ${context.tolerancia.distension}.
+- Diagnóstico PES: ${context.diagnosticoIntegrado}.
+- Meta actual: ${context.metas.kcalTotal} kcal/día (${context.metas.kcalKg} kcal/kg).
 
 INFORME REQUERIDO:
-1. Resumen de Hallazgos ClÃ­nicos.
-2. AnÃ¡lisis de BioquÃ­mica y Tolerancia.
-3. Plan Nutricional Sugerido (EnergÃ­a, Prot, FÃ³rmulas).
-4. Recomendaciones segÃºn protocolos HRA Antofagasta.
+1. Resumen de Hallazgos Clínicos.
+2. Análisis de Bioquímica y Tolerancia.
+3. Plan Nutricional Sugerido (Energía, Prot, Fórmulas).
+4. Recomendaciones según protocolos HRA Antofagasta.
 
 Tono profesional y estructurado. Usa HTML (h3, p, ul, li).`;
 }
@@ -4472,14 +4516,14 @@ async function callGeminiAPI(prompt) {
     }
 
     const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al generar anÃ¡lisis.";
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al generar análisis.";
 }
 
 function formatIAResponse(text) {
     let formatted = text.replace(/```html/g, '').replace(/```/g, '').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
     return `<div class="ia-report-content">${formatted}</div>
             <div style="margin-top:20px; border-top:1px dashed #ccc; padding-top:10px; font-size:0.7rem; color:#666;">
-                <i>*Sugerencia clÃ­nica IA - Validar con profesional HRA.</i>
+                <i>*Sugerencia clínica IA - Validar con profesional HRA.</i>
             </div>`;
 }
 
@@ -4549,7 +4593,7 @@ function initVoiceDictation() {
     recognition.onerror = (event) => {
         console.error("Speech Recognition Error:", event.error);
         if (event.error === 'not-allowed') {
-            alert("Acceso al micrÃ³fono denegado. Por favor dale permiso al navegador.");
+            alert("Acceso al micrófono denegado. Por favor dale permiso al navegador.");
         }
         recognition.stop();
     };
@@ -4572,7 +4616,7 @@ function initGoalMacroChart() {
     goalChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['ProteÃ­nas', 'Carbohidratos', 'LÃ­pidos'],
+            labels: ['Proteínas', 'Carbohidratos', 'Lípidos'],
             datasets: [{
                 data: [0, 0, 0],
                 backgroundColor: ['#e74c3c', '#f1c40f', '#3498db'],
@@ -4610,7 +4654,7 @@ function initGoalMacroChart() {
             btnPct.classList.remove('active');
             document.getElementById('lblProtGoal').innerText = "Prot (g/kg)";
             document.getElementById('lblCHOGoal').innerText = "CHO (g/kg)";
-            document.getElementById('lblLipGoal').innerText = "LÃ­p (g/kg)";
+            document.getElementById('lblLipGoal').innerText = "Líp (g/kg)";
 
             // Update placeholders for g/kg
             document.getElementById('goalProtKg').placeholder = "Ej. 1.5";
@@ -4630,7 +4674,7 @@ function initGoalMacroChart() {
             btnGkg.classList.remove('active');
             document.getElementById('lblProtGoal').innerText = "Prot (%)";
             document.getElementById('lblCHOGoal').innerText = "CHO (%)";
-            document.getElementById('lblLipGoal').innerText = "LÃ­p (%)";
+            document.getElementById('lblLipGoal').innerText = "Líp (%)";
 
             // Update placeholders for pct
             document.getElementById('goalProtKg').placeholder = "Ej. 15%";
@@ -4677,7 +4721,7 @@ function initGoalMacroChart() {
             if (input) {
                 input.value = value;
                 input.dispatchEvent(new Event('input'));
-                showToast(`ðŸŽ¯ ProteÃ­na fijada en ${value} g/kg`);
+                showToast(`ðŸŽ¯ Proteína fijada en ${value} g/kg`);
             }
         }
     };
@@ -4729,11 +4773,11 @@ function updateMacroGoals() {
     const gkgL = peso > 0 ? (gLip / peso) : 0;
 
     const elP = document.getElementById('goalProt');
-    if (elP) { elP.dataset.val = gProt; elP.innerText = gProt.toFixed(1) + " g/dÃ­a"; }
+    if (elP) { elP.dataset.val = gProt; elP.innerText = gProt.toFixed(1) + " g/día"; }
     const elC = document.getElementById('goalCHO');
-    if (elC) { elC.dataset.val = gCHO; elC.innerText = gCHO.toFixed(1) + " g/dÃ­a"; }
+    if (elC) { elC.dataset.val = gCHO; elC.innerText = gCHO.toFixed(1) + " g/día"; }
     const elL = document.getElementById('goalLip');
-    if (elL) { elL.dataset.val = gLip; elL.innerText = gLip.toFixed(1) + " g/dÃ­a"; }
+    if (elL) { elL.dataset.val = gLip; elL.innerText = gLip.toFixed(1) + " g/día"; }
 
     // Update internal sub-labels
     if (macroGoalMode === 'pct') {
@@ -4781,7 +4825,7 @@ function updateMacroGoals() {
 
     if (goalChartInstance) {
         let chartData = [kcalProt, kcalCHO, kcalLip];
-        // Proporciones para el grÃ¡fico si las kcal absolutas son 0
+        // Proporciones para el gráfico si las kcal absolutas son 0
         if (totalKcal === 0 && (pctP || pctC || pctL)) {
             chartData = [pctP * 4, pctC * 4, pctL * 9];
         }
@@ -5011,6 +5055,9 @@ window.updateDryWeight = () => {
         calculateRequirements();
     }
 };
+
+
+
 
 
 
