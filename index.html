@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -850,8 +850,48 @@
                             </div>
                             <div style="display:flex; gap:10px; align-items:center;">
                                 <select id="formulaSelect" class="select-modern"></select>
+                                <button type="button" class="btn-micro" style="font-size:0.8rem; padding:5px 10px;" onclick="const p = document.getElementById('mineralsPanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none';">🔬 Minerales</button>
                                 <button id="btnToggleFav" class="btn-micro" style="font-size:1.2rem; padding: 5px 10px;"
                                     title="Marcar como Favorita">☆</button>
+                            </div>
+                        </div>
+
+                        <!-- NEW V4.60: Minerals Panel -->
+                        <div id="mineralsPanel" style="display:none; margin-top:10px; background:#f8f9fa; border:1px solid #e1e8ed; border-radius:8px; padding:10px;">
+                            <h4 style="margin:0 0 8px 0; color:#34495e; font-size:0.8rem; text-align:center; border-bottom:1px solid #d5dbdb; padding-bottom:4px;">Perfil Mineral (por 100g/ml)</h4>
+                            <div id="mineralsGrid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; font-size:0.75rem; text-align:center;">
+                                <div style="color:#7f8c8d; grid-column: 1 / -1;">Sin datos de minerales para esta fórmula</div>
+                            </div>
+                        </div>
+
+                        <!-- NEW V4.60: Custom Mix Feature -->
+                        <div style="margin-top: 10px; text-align: right;">
+                            <button type="button" id="btnToggleCustomMix" class="btn-micro" style="font-size:0.8rem; padding:6px 12px; background:var(--secondary); color:#fff; border:none; border-radius:15px;" onclick="window.toggleCustomMix()">🧪 Crear Mezcla Personalizada</button>
+                        </div>
+                        
+                        <div id="customMixContainer" style="display:none; margin-top:15px; padding:15px; background:rgba(255,255,255,0.9); border:2px dashed #bdc3c7; border-radius:12px;">
+                            <h4 style="margin:0 0 10px 0; color:var(--primary); font-size:0.9rem; border-bottom:1px solid #eee; padding-bottom:5px;">Mezcla Personalizada</h4>
+                            
+                            <div style="display:grid; grid-template-columns: 3fr 1fr; gap:10px; margin-bottom:10px;">
+                                <div>
+                                    <label style="font-size:0.75rem; color:#7f8c8d; font-weight:bold;">Fórmula Base (1)</label>
+                                    <select id="customF1" class="select-modern" style="padding:6px; font-size:0.8rem; height:32px;" onchange="window.runSimulation()"></select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.75rem; color:#7f8c8d; font-weight:bold;">Dilución (%)</label>
+                                    <input type="number" id="customPct1" value="10" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; height:32px; outline:none;" oninput="window.runSimulation()">
+                                </div>
+                            </div>
+
+                            <div style="display:grid; grid-template-columns: 3fr 1fr; gap:10px;">
+                                <div>
+                                    <label style="font-size:0.75rem; color:#7f8c8d; font-weight:bold;">Fórmula Secundaria (2)</label>
+                                    <select id="customF2" class="select-modern" style="padding:6px; font-size:0.8rem; height:32px;" onchange="window.runSimulation()"></select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.75rem; color:#7f8c8d; font-weight:bold;">Dilución (%)</label>
+                                    <input type="number" id="customPct2" value="5" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; height:32px; outline:none;" oninput="window.runSimulation()">
+                                </div>
                             </div>
                         </div>
 
@@ -931,28 +971,28 @@
                         <div class="modules-grid"
                             style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
                             <div class="mini-input">
-                                <label>Nessucar (g)</label>
-                                <input type="number" id="modNessucar" class="input-module" placeholder="g">
+                                <label>Nessucar (%)</label>
+                                <input type="number" id="modNessucar" class="input-module" placeholder="%">
                             </div>
                             <div class="mini-input">
-                                <label>MCT Oil (ml)</label>
-                                <input type="number" id="modMCT" class="input-module" placeholder="ml">
+                                <label>MCT Oil (%)</label>
+                                <input type="number" id="modMCT" class="input-module" placeholder="%">
                             </div>
                             <div class="mini-input">
-                                <label>Enterex Karb (g)</label>
-                                <input type="number" id="modEnterex" class="input-module" placeholder="g">
+                                <label>Enterex Karb (%)</label>
+                                <input type="number" id="modEnterex" class="input-module" placeholder="%">
                             </div>
                             <div class="mini-input">
-                                <label>Banatrol Plus (g)</label>
-                                <input type="number" id="modBanatrol" class="input-module" placeholder="g">
+                                <label>Banatrol Plus (%)</label>
+                                <input type="number" id="modBanatrol" class="input-module" placeholder="%">
                             </div>
                             <div class="mini-input">
-                                <label>Proteinex (g)</label>
-                                <input type="number" id="modProteinex" class="input-module" placeholder="g">
+                                <label>Proteinex (%)</label>
+                                <input type="number" id="modProteinex" class="input-module" placeholder="%">
                             </div>
                             <div class="mini-input">
-                                <label>Fresubin Powder (g)</label>
-                                <input type="number" id="modFresubin" class="input-module" placeholder="g">
+                                <label>Fresubin Powder (%)</label>
+                                <input type="number" id="modFresubin" class="input-module" placeholder="%">
                             </div>
                         </div>
                         <small style="display:block; margin-top:8px; opacity:0.6; font-size:0.65rem;">Los módulos se
@@ -1926,3 +1966,6 @@
 </body>
 
 </html>
+
+
+
