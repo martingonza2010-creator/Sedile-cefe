@@ -2251,13 +2251,16 @@ function updateFormulaSelect(filter = "") {
 
     const selects = [
         document.getElementById('formulaSelect'),
-        document.getElementById('formulaSelectB')
+        document.getElementById('formulaSelectB'),
+        document.getElementById('customF1'),
+        document.getElementById('customF2')
     ];
 
     // Sort logic: Favorites first, then by Category
     const normalizedFilter = filter.toLowerCase().trim();
 
     const sortedFormulas = [...AppState.formulas]
+        .filter(f => f.cat !== "Fórmulas RTH")
         .filter(f => !normalizedFilter || f.name.toLowerCase().includes(normalizedFilter) || f.cat.toLowerCase().includes(normalizedFilter))
         .sort((a, b) => {
             const aFav = AppState.favorites.includes(a.id);
