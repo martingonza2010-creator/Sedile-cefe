@@ -99,7 +99,7 @@ const AppState = {
     user: null,
     patient: { id: null, nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0, ia_report: null },
     formulas: LOCAL_FORMULAS,
-    calcMode: 'vol',
+    
     favorites: [], // Init empty first
     userOverridesGoal: false,
     compareMode: false,
@@ -336,109 +336,6 @@ function showLogin() {
 
 // --- 5. COMPACT UI LOGIC ---
 function initCompactLayout() {
-    const modeToggles = document.querySelectorAll('.mode-toggle');
-    modeToggles.forEach(btn => {
-        btn.onclick = () => {
-            modeToggles.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            AppState.calcMode = btn.dataset.mode;
-            updateInputLabels();
-            runSimulation();
-        };
-    });
-}
-
-function updateInputLabels() {
-    const lblDil = document.getElementById('lblDilution');
-    const inputDil = document.getElementById('dilution');
-    if (AppState.calcMode === 'grams') {
-        lblDil.innerText = "Gramos Totales (g)";
-        inputDil.placeholder = "Ej. 50";
-    } else {
-        lblDil.innerText = "Dilución (%)";
-        inputDil.placeholder = "Ej. 13.5";
-    }
-}
-
-// --- 6. MODALS ---
-function initProtocolModal() {
-    const modal = document.getElementById('protocolModal');
-    const btnOpenFab = document.getElementById('btnProtocolOpen');
-    const btnOpenPurpose = document.getElementById('btnOpenPurpose');
-    const btnClose = document.getElementById('btnProtocolClose');
-    
-    if (btnOpenFab && modal) btnOpenFab.onclick = () => modal.classList.add('active');
-    
-    if (btnOpenPurpose && modal) {
-        btnOpenPurpose.onclick = (e) => {
-            e.preventDefault();
-            modal.classList.add('active');
-        };
-    }
-    
-    if (btnClose && modal) btnClose.onclick = () => modal.classList.remove('active');
-}
-
-// Global scope to ensure it's available early
-window.switchProtocolTab = (idx) => {
-    console.log("ðŸ”„ switchProtocolTab called with index:", idx);
-    const btnRTH = document.getElementById('btnTabRTH');
-    const btnDeliv = document.getElementById('btnTabDelivery');
-    const tabInf = document.getElementById('tab-infusion');
-    const tabDel = document.getElementById('tab-delivery');
-
-    if (idx === 0) {
-        if (btnRTH) btnRTH.classList.add('active');
-        if (btnDeliv) btnDeliv.classList.remove('active');
-        if (tabInf) tabInf.style.display = 'block';
-        if (tabDel) tabDel.style.display = 'none';
-    } else {
-        if (btnRTH) btnRTH.classList.remove('active');
-        if (btnDeliv) btnDeliv.classList.add('active');
-        if (tabInf) tabInf.style.display = 'none';
-        if (tabDel) tabDel.style.display = 'block';
-    }
-};
-
-function initHistoryModal() {
-    const modal = document.getElementById('historyModal');
-    const btnOpen = document.getElementById('btnOpenHistory');
-    const btnClose = document.getElementById('btnHistoryClose');
-    if (btnOpen) btnOpen.onclick = () => {
-        modal.classList.add('active');
-        window.loadHistoryList(false); // Changed from loadHistory to loadHistoryList
-    };
-    if (btnClose) btnClose.onclick = () => modal.classList.remove('active');
-
-    // EXPLICIT UI FIX: attach directly to tabs to avoid iOS onclick bugs
-    const tabActivos = document.getElementById('tabHistActivos');
-    const tabPapelera = document.getElementById('tabHistPapelera');
-    if (tabActivos) tabActivos.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.loadHistoryList(false);
-    });
-    if (tabPapelera) tabPapelera.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.loadHistoryList(true);
-    });
-}
-
-// --- 7. PATIENT & HISTORY LOGIC ---
-function initPatientLogic() {
-    const fields = ['nombre', 'edad', 'sexo', 'peso', 'estatura', 'actividad'];
-    fields.forEach(f => {
-        const el = document.getElementById(f);
-        if (el) {
-            el.oninput = calculateRequirements;
-            if (f === 'nombre') {
-                el.addEventListener('change', (e) => {
-                    if (typeof window.updatePatientEvolutionChart === 'function') {
-                        window.updatePatientEvolutionChart(e.target.value);
-                    }
-                });
-            }
-        }
-    });
 
     const form = document.getElementById('form-paciente');
     if (form) {
@@ -2337,18 +2234,13 @@ function renderMinerals() {
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
 
     const getFactor = (f) => {
-        if (AppState.calcMode === 'vol') {
-            const vol = f.isBotellin ? (v1 * f.volUnit) : v1;
-            if (vol <= 0) return 0;
-            if (f.type === 'p') {
-                const dil = v2 > 0 ? v2 : (f.stdDil || 15);
-                return (vol * (dil / 100)) / 100;
-            } else {
-                return vol / 100;
-            }
+        const vol = f.isBotellin ? (v1 * f.volUnit) : v1;
+        if (vol <= 0) return 0;
+        if (f.type === 'p') {
+            const dil = v2 > 0 ? v2 : (f.stdDil || 15);
+            return (vol * (dil / 100)) / 100;
         } else {
-            // Grams mode: v2 is grams
-            return v2 / 100;
+            return vol / 100;
         }
     };
 
@@ -2459,7 +2351,7 @@ function runSimulation() {
 
     let k = 0, p = 0, c = 0, l = 0;
 
-    if (AppState.calcMode === 'vol') {
+    if(true){
         const vol = formula.isBotellin ? (v1 * formula.volUnit) : v1;
         if (formula.type === 'recipe') {
             // RECETAS ESTANDARIZADAS (Using default proportions)
@@ -2525,12 +2417,7 @@ function runSimulation() {
         const fortPct = parseFloat(document.getElementById('fortifierPercent')?.value) || 0;
         if (fortPct > 0) {
             let baseVolForFM85 = 0;
-            if (AppState.calcMode === 'vol') {
-                baseVolForFM85 = v1;
-            } else {
-                const dil = v2 || formula.stdDil || 15;
-                baseVolForFM85 = (v1 / dil) * 100;
-            }
+            baseVolForFM85 = v1;
             const fortGrams = baseVolForFM85 * (fortPct / 100);
             const fgInput = document.getElementById('fortifierGrams');
             if (fgInput) fgInput.value = fortGrams.toFixed(1);
@@ -3352,17 +3239,10 @@ function updateCompareResults(k1, p1, c1, l1) {
 
     let k2 = 0, p2 = 0, c2 = 0, l2 = 0;
 
-    if (AppState.calcMode === 'vol') {
-        k2 = formulaB.k * (v1 / 100);
-        p2 = formulaB.p * (v1 / 100);
-        c2 = formulaB.c * (v1 / 100);
-        l2 = formulaB.f * (v1 / 100);
-    } else {
-        k2 = formulaB.k * (v2 / 100);
-        p2 = formulaB.p * (v2 / 100);
-        c2 = formulaB.c * (v2 / 100);
-        l2 = formulaB.f * (v2 / 100);
-    }
+    k2 = formulaB.k * (v1 / 100);
+    p2 = formulaB.p * (v1 / 100);
+    c2 = formulaB.c * (v1 / 100);
+    l2 = formulaB.f * (v1 / 100);
 
     // Update Formula B Macro Board (shown below the comparison bar)
     const boardB = document.getElementById('macroBoardB');
@@ -3434,8 +3314,8 @@ function updateCompareResults(k1, p1, c1, l1) {
         setTimeout(() => { stackSec.style.opacity = '0.6'; stackSec.style.transform = 'translateY(18px)'; }, 50);
 
         // Distribution
-        const c2 = AppState.calcMode === 'vol' ? formulaB.c * (v1 / 100) : formulaB.c * (v2 / 100);
-        const l2 = AppState.calcMode === 'vol' ? formulaB.f * (v1 / 100) : formulaB.f * (v2 / 100);
+        const c2 =  formulaB.c * (v1 / 100) ;
+        const l2 =  formulaB.f * (v1 / 100) ;
 
         const calP = p2 * 4;
         const calC = c2 * 4;
@@ -5064,6 +4944,12 @@ window.updateDryWeight = () => {
         calculateRequirements();
     }
 };
+
+
+
+
+
+
 
 
 
