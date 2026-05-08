@@ -335,6 +335,87 @@ function showLogin() {
 }
 
 // --- 5. COMPACT UI LOGIC ---
+
+// --- 6. MODALS ---
+function initProtocolModal() {
+    const modal = document.getElementById('protocolModal');
+    const btnOpenFab = document.getElementById('btnProtocolOpen');
+    const btnOpenPurpose = document.getElementById('btnOpenPurpose');
+    const btnClose = document.getElementById('btnProtocolClose');
+    
+    if (btnOpenFab && modal) btnOpenFab.onclick = () => modal.classList.add('active');
+    
+    if (btnOpenPurpose && modal) {
+        btnOpenPurpose.onclick = (e) => {
+            e.preventDefault();
+            modal.classList.add('active');
+        };
+    }
+    
+    if (btnClose && modal) btnClose.onclick = () => modal.classList.remove('active');
+}
+
+// Global scope to ensure it's available early
+window.switchProtocolTab = (idx) => {
+    console.log("🔄 switchProtocolTab called with index:", idx);
+    const btnRTH = document.getElementById('btnTabRTH');
+    const btnDeliv = document.getElementById('btnTabDelivery');
+    const tabInf = document.getElementById('tab-infusion');
+    const tabDel = document.getElementById('tab-delivery');
+
+    if (idx === 0) {
+        if (btnRTH) btnRTH.classList.add('active');
+        if (btnDeliv) btnDeliv.classList.remove('active');
+        if (tabInf) tabInf.style.display = 'block';
+        if (tabDel) tabDel.style.display = 'none';
+    } else {
+        if (btnRTH) btnRTH.classList.remove('active');
+        if (btnDeliv) btnDeliv.classList.add('active');
+        if (tabInf) tabInf.style.display = 'none';
+        if (tabDel) tabDel.style.display = 'block';
+    }
+};
+
+function initHistoryModal() {
+    const modal = document.getElementById('historyModal');
+    const btnOpen = document.getElementById('btnOpenHistory');
+    const btnClose = document.getElementById('btnHistoryClose');
+    if (btnOpen) btnOpen.onclick = () => {
+        modal.classList.add('active');
+        window.loadHistoryList(false);
+    };
+    if (btnClose) btnClose.onclick = () => modal.classList.remove('active');
+
+    const tabActivos = document.getElementById('tabHistActivos');
+    const tabPapelera = document.getElementById('tabHistPapelera');
+    if (tabActivos) tabActivos.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.loadHistoryList(false);
+    });
+    if (tabPapelera) tabPapelera.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.loadHistoryList(true);
+    });
+}
+
+// --- 7. PATIENT & HISTORY LOGIC ---
+function initPatientLogic() {
+    const fields = ['nombre', 'edad', 'sexo', 'peso', 'estatura', 'actividad'];
+    fields.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) {
+            el.oninput = calculateRequirements;
+            if (f === 'nombre') {
+                el.addEventListener('change', (e) => {
+                    if (typeof window.updatePatientEvolutionChart === 'function') {
+                        window.updatePatientEvolutionChart(e.target.value);
+                    }
+                });
+            }
+        }
+    });
+}
+
 function initCompactLayout() {
 
     const form = document.getElementById('form-paciente');
@@ -5010,4 +5091,6 @@ window.updateCurveButtons = function() {
         adult.style.display = 'block';
     }
 };
+
+
 
