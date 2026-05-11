@@ -3322,10 +3322,30 @@ function updateCompareResults(k1, p1, c1, l1) {
 
     let k2 = 0, p2 = 0, c2 = 0, l2 = 0;
 
-    k2 = formulaB.k * (v1 / 100);
-    p2 = formulaB.p * (v1 / 100);
-    c2 = formulaB.c * (v1 / 100);
-    l2 = formulaB.f * (v1 / 100);
+    const volB = formulaB.isBotellin ? (v1 * formulaB.volUnit) : v1;
+    if (formulaB.type === 'recipe') {
+        formulaB.recipe.forEach(rec => {
+            const grams = volB * (rec.defPct / 100);
+            k2 += rec.k * (grams / 100);
+            p2 += rec.p * (grams / 100);
+            c2 += rec.c * (grams / 100);
+            l2 += rec.f * (grams / 100);
+        });
+    } else if (formulaB.type === 'p') {
+        const dil = v2 > 0 ? v2 : (formulaB.stdDil || 0);
+        const grams = volB * (dil / 100);
+        k2 = formulaB.k * (grams / 100);
+        p2 = formulaB.p * (grams / 100);
+        c2 = formulaB.c * (grams / 100);
+        l2 = formulaB.f * (grams / 100);
+    } else {
+        let scl = 1;
+        if (formulaB.stdDil && v2 > 0) scl = v2 / formulaB.stdDil;
+        k2 = formulaB.k * (volB / 100) * scl;
+        p2 = formulaB.p * (volB / 100) * scl;
+        c2 = formulaB.c * (volB / 100) * scl;
+        l2 = formulaB.f * (volB / 100) * scl;
+    }
 
     // Update Formula B Macro Board (shown below the comparison bar)
     const boardB = document.getElementById('macroBoardB');
@@ -3397,8 +3417,8 @@ function updateCompareResults(k1, p1, c1, l1) {
         setTimeout(() => { stackSec.style.opacity = '0.6'; stackSec.style.transform = 'translateY(18px)'; }, 50);
 
         // Distribution
-        const c2 =  formulaB.c * (v1 / 100) ;
-        const l2 =  formulaB.f * (v1 / 100) ;
+        // c2 and l2 are already calculated correctly above, no need to redefine them with the broken logic.
+        // We will just use the existing c2 and l2 variables.
 
         const calP = p2 * 4;
         const calC = c2 * 4;
@@ -5092,6 +5112,7 @@ window.updateCurveButtons = function() {
         adult.style.display = 'block';
     }
 };
+
 
 
 
