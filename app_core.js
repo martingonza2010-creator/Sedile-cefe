@@ -2424,63 +2424,65 @@ function renderFormulaInputs(formula) {
 }
 
 function runSimulation() {
-    const fId = document.getElementById('formulaSelect').value;
-    const formula = AppState.formulas.find(f => f.id === fId);
-    if (!formula) return;
+    const isCustomMix = document.getElementById('customMixContainer') && document.getElementById('customMixContainer').style.display === 'block';
 
     const v1 = parseFloat(document.getElementById('volume').value) || 0;
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
 
     let k = 0, p = 0, c = 0, l = 0;
 
-    if(true){
-        const vol = formula.isBotellin ? (v1 * formula.volUnit) : v1;
-        if (formula.type === 'recipe') {
-            // RECETAS ESTANDARIZADAS (Using default proportions)
-            formula.recipe.forEach(rec => {
-                const grams = vol * (rec.defPct / 100);
-                k += rec.k * (grams / 100);
-                p += rec.p * (grams / 100);
-                c += rec.c * (grams / 100);
-                l += rec.f * (grams / 100);
-            });
-        } else if (formula.type === 'p') {
-            // Polvos (Powders): Volumen * (Dilucion / 100) = Gramos
-            const dil = v2 > 0 ? v2 : (formula.stdDil || 0);
-            const grams = vol * (dil / 100);
-            k = formula.k * (grams / 100);
-            p = formula.p * (grams / 100);
-            c = formula.c * (grams / 100);
-            l = formula.f * (grams / 100);
-        } else {
-            // Líquidos o Fórmulas SEDILE listas: Volumen base.
-            let scl = 1;
-            // Si la fórmula tiene dilución estándar (ej F1 al 13%), calculamos su escala comparado a la estándar
-            if (formula.stdDil && v2 > 0) {
-                scl = v2 / formula.stdDil;
-            }
-            k = formula.k * (vol / 100) * scl;
-            p = formula.p * (vol / 100) * scl;
-            c = formula.c * (vol / 100) * scl;
-            l = formula.f * (vol / 100) * scl;
+    if (isCustomMix) {
+        const f1Id = document.getElementById('customF1')?.value;
+        const f2Id = document.getElementById('customF2')?.value;
+        const pct1 = parseFloat(document.getElementById('customPct1')?.value) || 0;
+        const pct2 = parseFloat(document.getElementById('customPct2')?.value) || 0;
+
+        const f1 = AppState.formulas.find(f => f.id === f1Id);
+        const f2 = AppState.formulas.find(f => f.id === f2Id);
+
+        if (f1) {
+            const grams1 = v1 * (pct1 / 100);
+            k += f1.k * (grams1 / 100);
+            p += f1.p * (grams1 / 100);
+            c += f1.c * (grams1 / 100);
+            l += f1.f * (grams1 / 100);
+        }
+        if (f2) {
+            const grams2 = v1 * (pct2 / 100);
+            k += f2.k * (grams2 / 100);
+            p += f2.p * (grams2 / 100);
+            c += f2.c * (grams2 / 100);
+            l += f2.f * (grams2 / 100);
         }
     } else {
-        const grams = v2;
-        if (formula.type === 'recipe') {
-            // Si usan modo gramos con una receta armada, distribuimos proporcionalmente
-            let totalDefPct = formula.recipe.reduce((sum, r) => sum + r.defPct, 0) || 1;
-            formula.recipe.forEach(rec => {
-                let compGrams = grams * (rec.defPct / totalDefPct);
-                k += rec.k * (compGrams / 100);
-                p += rec.p * (compGrams / 100);
-                c += rec.c * (compGrams / 100);
-                l += rec.f * (compGrams / 100);
-            });
-        } else {
-            k = formula.k * (grams / 100);
-            p = formula.p * (grams / 100);
-            c = formula.c * (grams / 100);
-            l = formula.f * (grams / 100);
+        const fId = document.getElementById('formulaSelect').value;
+        const formula = AppState.formulas.find(f => f.id === fId);
+
+        if (formula) {
+            const vol = formula.isBotellin ? (v1 * formula.volUnit) : v1;
+            if (formula.type === 'recipe') {
+                formula.recipe.forEach(rec => {
+                    const grams = vol * (rec.defPct / 100);
+                    k += rec.k * (grams / 100);
+                    p += rec.p * (grams / 100);
+                    c += rec.c * (grams / 100);
+                    l += rec.f * (grams / 100);
+                });
+            } else if (formula.type === 'p') {
+                const dil = v2 > 0 ? v2 : (formula.stdDil || 0);
+                const grams = vol * (dil / 100);
+                k = formula.k * (grams / 100);
+                p = formula.p * (grams / 100);
+                c = formula.c * (grams / 100);
+                l = formula.f * (grams / 100);
+            } else {
+                let scl = 1;
+                if (formula.stdDil && v2 > 0) scl = v2 / formula.stdDil;
+                k = formula.k * (vol / 100) * scl;
+                p = formula.p * (vol / 100) * scl;
+                c = formula.c * (vol / 100) * scl;
+                l = formula.f * (vol / 100) * scl;
+            }
         }
     }
 
@@ -5112,6 +5114,7 @@ window.updateCurveButtons = function() {
         adult.style.display = 'block';
     }
 };
+
 
 
 
