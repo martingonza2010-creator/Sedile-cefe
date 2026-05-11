@@ -1577,7 +1577,7 @@ window.togglePatientMode = () => {
     AppState.patient.type = mode;
 
     document.getElementById('colEdad').style.display = mode === 'adult' ? 'block' : 'none';
-    document.getElementById('colCintura').style.display = mode === 'adult' ? 'block' : 'none';
+    document.getElementById('colCintura').style.display = mode === 'neonate' ? 'none' : 'block';
     document.getElementById('colPcefalico').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
     document.getElementById('rowPediatric').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'flex' : 'none';
     document.getElementById('rowNeonate').style.display = mode === 'neonate' ? 'flex' : 'none';
@@ -5096,9 +5096,9 @@ window.showCurve = function(type) {
     const peso = parseFloat(document.getElementById('peso').value) || 0;
     const talla = parseFloat(document.getElementById('estatura').value) || 0; // en cm
     const pc = parseFloat(document.getElementById('pcefalico').value) || 0;
+    const sexo = document.getElementById('sexo').value || 'f';
     
-    // For pediatrics, age is typically months. If using the date picker, it might set something else. 
-    // We assume the doctor inputs/calculates exact months in the main age field or we derive it from birthdate.
+    // Age calculation
     let edadMeses = parseFloat(document.getElementById('edad').value) || 0; 
     const fn = document.getElementById('fechaNacimiento').value;
     if (fn) {
@@ -5112,43 +5112,62 @@ window.showCurve = function(type) {
         if (months >= 0) edadMeses = months;
     }
 
-    // --- MAPA DE CALIBRACIÓN DE IMÁGENES ---
-    // (Ajustar porcentajes pxLeft, pxRight, pxTop, pxBottom según el recorte exacto de tu PNG)
+    // IMC Calculation
+    let imc = 0;
+    if (talla > 0 && peso > 0) {
+        imc = peso / Math.pow(talla / 100, 2);
+    }
+
+    // --- MAPA DE CALIBRACIÓN AVANZADA ---
+    // Estructura: curveMeta[type][sexo] es un array de rangos
     const curveMeta = {
         'pe': {
-            url: 'https://i.imgur.com/vH9Z2W4.png', // Reemplazar con URL de la imagen del usuario
-            xValue: edadMeses, yValue: peso,
-            xMin: 0, xMax: 24, yMin: 2, yMax: 17,
-            pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0,
-            xName: 'Meses', yName: 'Peso (kg)'
+            'f': [
+                { minAge: 0, maxAge: 24, url: 'assets/curvas/pe_f_0_2.png', xValue: edadMeses, yValue: peso, xMin: 0, xMax: 24, yMin: 2, yMax: 17, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'Peso (kg)' }
+            ]
         },
         'te': {
-            url: 'https://i.imgur.com/KzYJm5V.png', // Reemplazar con URL de la imagen del usuario
-            xValue: edadMeses, yValue: talla,
-            xMin: 0, xMax: 24, yMin: 45, yMax: 95,
-            pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0,
-            xName: 'Meses', yName: 'Talla (cm)'
+            'f': [
+                { minAge: 0, maxAge: 24, url: 'assets/curvas/te_f_0_2.png', xValue: edadMeses, yValue: talla, xMin: 0, xMax: 24, yMin: 45, yMax: 95, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'Talla (cm)' },
+                { minAge: 60, maxAge: 228, url: 'assets/curvas/te_f_5_19.png', xValue: edadMeses, yValue: talla, xMin: 60, xMax: 228, yMin: 100, yMax: 180, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'Talla (cm)' }
+            ]
         },
         'pt': {
-            url: 'https://i.imgur.com/3q1jA4L.png', // Reemplazar con URL de la imagen del usuario
-            xValue: talla, yValue: peso,
-            xMin: 45, xMax: 110, yMin: 1, yMax: 23,
-            pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0,
-            xName: 'Talla (cm)', yName: 'Peso (kg)'
+            'f': [
+                { minTalla: 45, maxTalla: 110, url: 'assets/curvas/pt_f_0_2.png', xValue: talla, yValue: peso, xMin: 45, xMax: 110, yMin: 1, yMax: 23, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Talla (cm)', yName: 'Peso (kg)' },
+                { minTalla: 65, maxTalla: 120, url: 'assets/curvas/pt_f_2_5.png', xValue: talla, yValue: peso, xMin: 65, xMax: 120, yMin: 6, yMax: 29, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Talla (cm)', yName: 'Peso (kg)' }
+            ]
         },
         'pce': {
-            url: 'https://i.imgur.com/1Bq4G2K.png', // Reemplazar con URL de la imagen del usuario
-            xValue: edadMeses, yValue: pc,
-            xMin: 0, xMax: 24, yMin: 30, yMax: 51,
-            pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0,
-            xName: 'Meses', yName: 'PC (cm)'
+            'f': [
+                { minAge: 0, maxAge: 24, url: 'assets/curvas/pce_f_0_2.png', xValue: edadMeses, yValue: pc, xMin: 0, xMax: 24, yMin: 30, yMax: 51, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'PC (cm)' }
+            ]
+        },
+        'imc': {
+            'f': [
+                { minAge: 60, maxAge: 228, url: 'assets/curvas/imc_f_5_19.png', xValue: edadMeses, yValue: imc, xMin: 60, xMax: 228, yMin: 12, yMax: 38, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'IMC (kg/m2)' }
+            ]
         }
     };
 
-    const c = curveMeta[type];
+    // Find the correct chart configuration
+    let c = null;
+    if (curveMeta[type] && curveMeta[type][sexo]) {
+        const options = curveMeta[type][sexo];
+        for (let opt of options) {
+            if (opt.minAge !== undefined && edadMeses >= opt.minAge && edadMeses <= opt.maxAge) { c = opt; break; }
+            if (opt.minTalla !== undefined && talla >= opt.minTalla && talla <= opt.maxTalla) { c = opt; break; }
+        }
+        // Fallback to the first one if no exact match (so it at least shows something)
+        if (!c && options.length > 0) c = options[0];
+    }
     
     if (c) {
+        // En desarrollo: Mostrar un placeholder si la URL es local y no existe, o simplemente usarla.
+        // Aquí debes reemplazar las URLs 'assets/curvas/...' por los links de imgur o locales reales.
         img.src = c.url;
+        img.onerror = () => { img.src = `https://placehold.co/800x600/8e44ad/ffffff?text=Falta+Imagen:+${encodeURIComponent(c.url)}`; };
+        
         img.onload = () => {
             if (c.xValue > 0 && c.yValue > 0) {
                 // Limit to bounds for rendering
@@ -5164,15 +5183,15 @@ window.showCurve = function(type) {
 
                 // Auto-clasificación en el diagnóstico PES
                 let diag = document.getElementById('diagnosticoPES');
-                let interpStr = `\n[Gráfico ${type.toUpperCase()}] Punto graficado en ${c.xName}: ${c.xValue}, ${c.yName}: ${c.yValue}.`;
-                if (diag && !diag.value.includes(`[Gráfico ${type.toUpperCase()}]`)) {
+                let interpStr = `\n[Gráfico ${type.toUpperCase()} - ${sexo.toUpperCase()}] ${c.xName}: ${c.xValue.toFixed(1)}, ${c.yName}: ${c.yValue.toFixed(1)}.`;
+                if (diag && !diag.value.includes(`[Gráfico ${type.toUpperCase()} - ${sexo.toUpperCase()}]`)) {
                     diag.value += interpStr;
                 }
             }
         };
     } else {
         // Fallbacks (pittaluga, etc)
-        img.src = `https://placehold.co/800x600/8e44ad/ffffff?text=Curva+No+Definida`;
+        img.src = `https://placehold.co/800x600/8e44ad/ffffff?text=Curva+No+Definida+o+Fuera+de+Rango`;
     }
 };
 
