@@ -900,7 +900,10 @@
                             style="display:none; margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
                             <label style="color:var(--secondary); font-weight:700;">🆚 Comparar con:</label>
 
-                            <select id="formulaSelectB" class="select-modern"></select>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <select id="formulaSelectB" class="select-modern" style="flex:1;"></select>
+                                <input type="number" id="dilutionB" placeholder="Dil. %" style="width:70px; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; outline:none;" oninput="window.runSimulation()" title="Dilución Fórmula B (%)">
+                            </div>
 
                             <div id="compareResult"
                                 style="margin-top:10px; font-size:0.9rem; font-weight:800; display:flex; gap:10px; align-items:center; justify-content: flex-end; color:var(--primary);">
@@ -1200,9 +1203,43 @@
                 <h2>Evaluación Nutricional Completa</h2>
             </div>
 
-            <div class="assess-grid">
-                <!-- 1. Antropometría Avanzada -->
-                <section class="card assess-module">
+            <div class="assess-grid" id="curvesMainContainer">
+                <!-- 1. SECCIÓN DE CURVAS (DINÁMICA) -->
+                <section class="card assess-module" style="grid-column: 1 / -1; border-left: 5px solid var(--primary);">
+                    <div class="module-head">
+                        <h3>📈 Gráficos de Curvas de Crecimiento</h3>
+                    </div>
+                    <div style="padding:15px; text-align:center;">
+                        <p style="font-size:0.9rem; color:#7f8c8d; margin-bottom:10px;">
+                            Seleccione una curva para visualizar el patrón de crecimiento según la evaluación del paciente.
+                        </p>
+                        
+                        <div id="pediaCurves" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:15px;">
+                            <button class="btn-assess" onclick="window.showCurve('pe')" style="background:#3498db; min-width:130px;">📊 P/E</button>
+                            <button class="btn-assess" onclick="window.showCurve('pt')" style="background:#e67e22; min-width:130px;">📊 P/T</button>
+                            <button class="btn-assess" onclick="window.showCurve('te')" style="background:#27ae60; min-width:130px;">📊 T/E</button>
+                        </div>
+
+                        <div id="neoCurves" style="display:none; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:15px;">
+                            <button class="btn-assess" onclick="window.showCurve('pittaluga')" style="background:#8e44ad; min-width:200px;">📉 Curva de Pittaluga</button>
+                        </div>
+
+                        <div id="adultCurves" style="display:none;">
+                            <p style="color:#e74c3c; font-weight:bold;">No hay curvas de crecimiento disponibles para pacientes adultos.</p>
+                        </div>
+                    </div>
+
+                    <div id="curveDisplayArea" style="margin-top:10px; min-height:350px; background:#f9f9f9; border:2px dashed #ccc; border-radius:12px; display:flex; align-items:center; justify-content:center; position:relative;">
+                        <div id="curveImagePlaceholder" style="text-align:center; color:#95a5a6;">
+                            <span style="font-size:3rem; display:block; margin-bottom:10px;">🖼️</span>
+                            <p>El gráfico se mostrará aquí.</p>
+                        </div>
+                        <img id="curveImg" src="" style="display:none; max-width:100%; border-radius:8px;">
+                    </div>
+                </section>
+
+                <!-- 2. Antropometría Avanzada (RESTORED) -->
+                <section class="card assess-module" style="border-left-color: #f39c12;">
                     <div class="module-head">
                         <h3>📏 Antropometría Avanzada</h3>
                     </div>
@@ -1210,292 +1247,41 @@
                         <div class="mini-input">
                             <label>C. Braquial (cm)</label>
                             <input type="number" id="cbraquial" class="input-watch" placeholder="cm">
-                            <div class="interp-badge" id="valCBClass" style="margin-top:5px; min-height:1.5rem;">--
-                            </div>
                         </div>
                         <div class="mini-input">
                             <label>C. Pantorrilla (cm)</label>
                             <input type="number" id="cpantorrilla">
                         </div>
                     </div>
-
-
-                    <!-- Frisancho/NHANES Red Box -->
-                    <div class="ross-box-featured" id="frisanchoContainer"
-                        style="margin-bottom:20px; display:none; background:rgba(192, 57, 43, 0.05); padding:15px; border-radius:12px; border:1px solid rgba(192, 57, 43, 0.2);">
-                        <div
-                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h5 style="color:#c0392b; margin:0; font-size:0.8rem;">📊 Clasificación Frisancho / NHANES
-                            </h5>
-                            <div id="valAnthDate" style="font-size:0.6rem; color:#888; font-style:italic;">Última act:
-                                --</div>
-                        </div>
-
-                        <div class="anth-grid"
-                            style="display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap:10px; margin-bottom:12px;">
-                            <div style="border-right: 1px solid rgba(192,57,43,0.1); padding-right:10px;">
-                                <label
-                                    style="font-size:0.6rem; color:#666; text-transform:uppercase; display:block; margin-bottom:2px;">Circ.
-                                    Braquial (CB)</label>
-                                <div id="lblCBStatus"
-                                    style="font-weight:700; color:#c0392b; font-size:0.85rem; line-height:1.2;">--</div>
+                    
+                    <details class="folds-accordion" style="margin-top:10px;">
+                        <summary>Pliegues y Talla Estimada</summary>
+                        <div class="folds-grid" style="padding:10px; background:#f8f9fa; border-radius:8px;">
+                            <div class="grid-col-2">
+                                <div class="mini-input"><label>PT (mm)</label><input type="number" id="ptricipital"></div>
+                                <div class="mini-input"><label>PB (mm)</label><input type="number" id="pbicipital"></div>
                             </div>
-                            <div style="padding-left:10px;">
-                                <label
-                                    style="font-size:0.6rem; color:#666; text-transform:uppercase; display:block; margin-bottom:2px;">Área
-                                    Muscular (AG)</label>
-                                <div id="lblAGStatus"
-                                    style="font-weight:700; color:#c0392b; font-size:0.85rem; line-height:1.2;">--</div>
-                            </div>
-                        </div>
-
-                        <!-- Graphical Scale -->
-                        <div class="anth-scale-wrapper"
-                            style="margin-top:10px; border-top:1px solid rgba(192,57,43,0.1); padding-top:10px;">
-                            <div
-                                style="display:flex; justify-content:space-between; font-size:0.55rem; color:#888; margin-bottom:4px;">
-                                <span>Muy Bajo (p5)</span>
-                                <span>Normal</span>
-                                <span>Muy Alto (p95)</span>
-                            </div>
-                            <div class="anth-scale-bar"
-                                style="height:10px; background:#e0e0e0; border-radius:5px; position:relative; overflow:hidden; border:1px solid rgba(0,0,0,0.05);">
-                                <!-- Background zones -->
-                                <div style="position:absolute; left:0; width:5%; height:100%; background:rgba(192,57,43,0.4);"
-                                    title="< p5"></div>
-                                <div style="position:absolute; left:5%; width:5%; height:100%; background:rgba(192,57,43,0.2);"
-                                    title="p5 - p10"></div>
-                                <div style="position:absolute; left:10%; width:80%; height:100%; background:rgba(39,174,96,0.1);"
-                                    title="Normal"></div>
-                                <div style="position:absolute; left:90%; width:5%; height:100%; background:rgba(192,57,43,0.2);"
-                                    title="p90 - p95"></div>
-                                <div style="position:absolute; left:95%; width:5%; height:100%; background:rgba(192,57,43,0.4);"
-                                    title="> p95"></div>
-
-                                <!-- Indicator Dot -->
-                                <div id="anthIndicator"
-                                    style="position:absolute; top:0; left:50%; width:6px; height:100%; background:#c0392b; box-shadow:0 0 5px rgba(0,0,0,0.3); transition:left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index:2; border-radius:3px; transform: translateX(-50%);">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <details class="folds-accordion">
-                        <summary>Agregar otros parámetros (Pliegues y Perímetros)</summary>
-                        <div class="folds-grid">
-                            <h5>Pliegues Cutáneos</h5>
-                            <div class="grid-col-4">
-                                <div class="mini-input"><label>Tricipital (PT mm)</label><input type="number"
-                                        id="ptricipital" class="input-watch" placeholder="mm">
-                                    <div class="interp-badge" id="valAGClass"
-                                        style="margin-top:5px; min-height:1.5rem;">--</div>
-                                </div>
-                                <div class="mini-input"><label>Bicipital</label><input type="number" id="pbicipital">
-                                </div>
-                                <div class="mini-input"><label>Suprailíaco</label><input type="number" id="piliaco">
-                                </div>
-                                <div class="mini-input"><label>Abdominal</label><input type="number" id="pabdominal">
-                                </div>
-                            </div>
-                            <h5 style="margin-top:10px;">Talla/Otros</h5>
-                            <div class="grid-col-3">
-                                <div class="mini-input"><label>Media Env.</label><input type="number" id="mediaenv">
-                                </div>
-                                <div class="mini-input"><label>Env. Completa</label><input type="number" id="envcomp">
-                                </div>
-                                <div class="mini-input">
-                                    <label>Altura rodilla ATR (cm)</label>
-                                    <input type="number" id="altrodilla" class="input-watch-chumlea" placeholder="cm">
-                                    <div id="estContainerStacked"
-                                        style="display:none; margin-top:8px; flex-direction:column; gap:5px;">
-                                        <div id="valRossStatureBadge"
-                                            style="background:rgba(155, 89, 182, 0.1); color:#8e44ad; padding:5px; border-radius:10px; font-size:0.7rem; font-weight:700; border:1px solid rgba(155, 89, 182, 0.2); text-align:center;">
-                                            Talla Ross: --
-                                        </div>
-                                        <div id="valChumleaWeightBadge"
-                                            style="background:rgba(39, 174, 96, 0.1); color:#27ae60; padding:5px; border-radius:10px; font-size:0.7rem; font-weight:700; border:1px solid rgba(39, 174, 96, 0.2); text-align:center;">
-                                            Peso Chumlea: --
-                                        </div>
-                                        <input type="hidden" id="valChumleaWeight">
-                                        <input type="hidden" id="valRossStature">
-                                    </div>
-                                </div>
+                            <div class="mini-input" style="margin-top:10px;">
+                                <label>Alt. Rodilla (cm)</label>
+                                <input type="number" id="altrodilla">
                             </div>
                         </div>
                     </details>
                 </section>
 
-                <!-- 2. Examen Físico (Edema) -->
-                <section class="card assess-module">
-                    <div class="module-head">
-                        <h3>🩺 Examen Físico</h3>
-                    </div>
-                    <div class="input-group">
-                        <label>Grado de Edema</label>
-                        <select id="edemaGrade" class="select-modern">
-                            <option value="0">Ausente</option>
-                            <option value="1">Grado + (1kg)</option>
-                            <option value="3">Grado ++ (3kg)</option>
-                            <option value="7">Grado +++ (7kg)</option>
-                            <option value="10">Grado ++++ (10kg Anasarca)</option>
-                        </select>
-                    </div>
-                    <div class="dry-weight-box">
-                        Peso Seco Estimado: <strong id="valDryWeight">--</strong> kg
-                    </div>
-                </section>
-
-                <!-- 3. Exámenes Bioquímicos -->
-                <section class="card assess-module">
-                    <div class="module-head">
-                        <h3>🩸 Exámenes Bioquímicos</h3>
-                        <button class="btn-micro" id="btnAddExam">+</button>
-                    </div>
-                    <div class="exams-list" id="examsContainer">
-                        <!-- Dynamic Rows -->
-                    </div>
-                </section>
-
-                <!-- NEW V3.50: INTERACCIONES FÁRMACO-NUTRIENTE -->
-                <section class="card assess-module" style="border-left-color: #e74c3c;">
-                    <div class="module-head">
-                        <h3>💊 Interacciones Fármaco-Nutriente</h3>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="drugSearch" placeholder="🔍 Buscar fármaco (ej. Fenitoina, Propofol...)"
-                            style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; font-size:0.85rem;">
-                    </div>
-                    <div id="drugInteractionResult"
-                        style="margin-top:10px; font-size:0.8rem; line-height:1.4; min-height:40px;">
-                        <span style="opacity:0.5;">Busca un medicamento para ver recomendaciones nutricionales
-                            hospitalarias.</span>
-                    </div>
-                </section>
-
-                <!-- 4. Balance Nitrogenado -->
-                <section class="card assess-module">
-                    <div class="module-head">
-                        <h3>⚖️ Balance Nitrogenado</h3>
-                    </div>
-                    <div class="grid-col-2">
-                        <div class="mini-input">
-                            <label>NUU (g/24h)</label>
-                            <input type="number" id="valNUU" placeholder="Urea Urinaria">
-                        </div>
-                        <div class="mini-input">
-                            <label>Factor Pérdidas</label>
-                            <input type="number" id="valNFactor" value="4" placeholder="4">
-                        </div>
-                    </div>
-                    <small style="font-size:0.7rem; color:#666; display:block; margin-bottom:10px;">
-                        BN = (Prot/6.25) - (NUU + Factor)
-                    </small>
-                    <div class="bn-result" id="bnResult">
-                        Resultado: --
-                    </div>
-                </section>
-
-                <!-- 5. Cribaje de Riesgo -->
-                <section class="card assess-module" style="border-left-color: #f1c40f;">
-                    <div class="module-head">
-                        <h3>📋 Cribaje de Riesgo</h3>
-                    </div>
-                    <div class="grid-col-2">
-                        <div class="mini-input">
-                            <label>Riesgo NRS-2002</label>
-                            <select id="nrs2002" class="select-modern">
-                                <option value="bajo">Bajo (0-2 pts)</option>
-                                <option value="alto">Alto (≥ 3 pts)</option>
-                                <option value="riesgo">Paciente de Riesgo</option>
-                                <option value="sin_riesgo">Sin Riesgo Crítico</option>
-                            </select>
-                        </div>
-                        <div class="mini-input">
-                            <label>VGS (Valoración Global)</label>
-                            <select id="vgs" class="select-modern">
-                                <option value="A">A (Bien nutrido)</option>
-                                <option value="B">B (Desnutrición Moderada)</option>
-                                <option value="C">C (Desnutrición Severa)</option>
-                            </select>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 6. Tolerancia Gastrointestinal -->
-                <section class="card assess-module" style="border-left-color: #1abc9c;">
-                    <div class="module-head">
-                        <h3>🦠 Tolerancia GI</h3>
-                    </div>
-                    <div class="grid-col-3">
-                        <div class="mini-input">
-                            <label>Residuo Gástrico</label>
-                            <select id="residuo" class="select-modern">
-                                <option value="no">Ausente</option>
-                                <option value="si">Presente</option>
-                            </select>
-                        </div>
-                        <div class="mini-input">
-                            <label>Diarrea / Deposic.</label>
-                            <select id="diarrea" class="select-modern">
-                                <option value="no">Normal</option>
-                                <option value="si">Diarrea/Alt.</option>
-                            </select>
-                        </div>
-                        <div class="mini-input">
-                            <label>Distensión Abd.</label>
-                            <select id="distension" class="select-modern">
-                                <option value="no">No</option>
-                                <option value="si">Sí</option>
-                            </select>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 7. Vías de Acceso -->
-                <section class="card assess-module" style="border-left-color: #e67e22;">
-                    <div class="module-head">
-                        <h3>📍 Vías de Acceso</h3>
-                    </div>
-                    <div class="grid-col-2">
-                        <div class="mini-input">
-                            <label>Tipo de Acceso</label>
-                            <select id="accesoTipo" class="select-modern">
-                                <option value="oral">Vía Oral</option>
-                                <option value="sng">SNG (Nasogástrica)</option>
-                                <option value="snj">SNJ (Nasoyeyunal)</option>
-                                <option value="gtt">GTT (Gastrostomía)</option>
-                                <option value="yeyuno">Yeyunostomía</option>
-                            </select>
-                        </div>
-                        <div class="mini-input">
-                            <label>Fecha Instalación</label>
-                            <input type="date" id="accesoFecha">
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 8. Diagnóstico Nutricional -->
+                <!-- 3. Diagnóstico Nutricional Integrado (RESTORED) -->
                 <section class="card assess-module" style="border-left-color: #9b59b6;">
                     <div class="module-head">
-                        <h3>📑 Diagnóstico Nutricional Integrado</h3>
+                        <h3>📝 Diagnóstico Nutricional Integrado</h3>
                     </div>
                     <div class="input-group">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                            <label style="margin-bottom: 0;">Evolución / PES / Diagnóstico</label>
-                            <button id="btnMicPES" class="btn-micro"
-                                style="background: transparent; border: 1px solid var(--primary); color: var(--primary); display: flex; align-items: center; gap: 5px;"
-                                title="Dictado por Voz">
-                                🎙️ <span id="micStatus">Dictar</span>
-                            </button>
-                        </div>
-                        <textarea id="diagnosticoPES" rows="4"
+                        <textarea id="diagnosticoPES" rows="6"
                             style="width:100%; border-radius:10px; border:1px solid #ddd; padding:10px; font-size:0.85rem;"
-                            placeholder="Escriba el diagnóstico integrado aquí (o use el micrófono)..."></textarea>
+                            placeholder="Escriba el diagnóstico integrado o evolución aquí..."></textarea>
                     </div>
                 </section>
             </div>
-
+            
             <!-- NEW V4.42: JUSTIFICACIÓN PROTEICA (CNP:N) -->
             <div style="margin: 0 15px 15px 15px;">
                 <section class="card assess-module" style="border-left-color: #27ae60; background: #fdfefe;">
@@ -1966,6 +1752,8 @@
 </body>
 
 </html>
+
+
 
 
 

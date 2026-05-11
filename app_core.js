@@ -2314,6 +2314,8 @@ function renderMinerals() {
 
     const v1 = parseFloat(document.getElementById('volume').value) || 0;
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
+    const dilBInput = document.getElementById('dilutionB');
+    const v2B = dilBInput && dilBInput.value !== "" ? parseFloat(dilBInput.value) : v2;
 
     const getFactor = (f) => {
         const vol = f.isBotellin ? (v1 * f.volUnit) : v1;
@@ -2428,6 +2430,8 @@ function runSimulation() {
 
     const v1 = parseFloat(document.getElementById('volume').value) || 0;
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
+    const dilBInput = document.getElementById('dilutionB');
+    const v2B = dilBInput && dilBInput.value !== "" ? parseFloat(dilBInput.value) : v2;
 
     let k = 0, p = 0, c = 0, l = 0;
 
@@ -3321,6 +3325,8 @@ function updateCompareResults(k1, p1, c1, l1) {
 
     const v1 = parseFloat(document.getElementById('volume').value) || 0;
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
+    const dilBInput = document.getElementById('dilutionB');
+    const v2B = dilBInput && dilBInput.value !== "" ? parseFloat(dilBInput.value) : v2;
 
     let k2 = 0, p2 = 0, c2 = 0, l2 = 0;
 
@@ -3334,7 +3340,7 @@ function updateCompareResults(k1, p1, c1, l1) {
             l2 += rec.f * (grams / 100);
         });
     } else if (formulaB.type === 'p') {
-        const dil = v2 > 0 ? v2 : (formulaB.stdDil || 0);
+        const dil = v2B > 0 ? v2B : (formulaB.stdDil || 0);
         const grams = volB * (dil / 100);
         k2 = formulaB.k * (grams / 100);
         p2 = formulaB.p * (grams / 100);
@@ -3342,7 +3348,7 @@ function updateCompareResults(k1, p1, c1, l1) {
         l2 = formulaB.f * (grams / 100);
     } else {
         let scl = 1;
-        if (formulaB.stdDil && v2 > 0) scl = v2 / formulaB.stdDil;
+        if (formulaB.stdDil && v2B > 0) scl = v2B / formulaB.stdDil;
         k2 = formulaB.k * (volB / 100) * scl;
         p2 = formulaB.p * (volB / 100) * scl;
         c2 = formulaB.c * (volB / 100) * scl;
@@ -5114,6 +5120,7 @@ window.updateCurveButtons = function() {
         adult.style.display = 'block';
     }
 };
+
 
 
 
