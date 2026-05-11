@@ -1,4 +1,4 @@
-// --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
+﻿// --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
 // --- 1. SUPABASE CONFIGURATION ---
 const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
 const supabaseKey = 'sb_publishable_xCxGjcAngmfd0hJYv2uphg_yB-pF3Hp';
@@ -1662,7 +1662,7 @@ window.calculatePediatricAge = () => {
     let evalMonths = totalMonths;
     let evalY = years;
     let evalM = months;
-    if (days >= 15) {
+    if (days >= 16) {
         evalMonths += 1;
         evalM += 1;
         if (evalM >= 12) {
@@ -1875,8 +1875,9 @@ function renderPediatricZScores() {
             // Adjusting to match printed MINSAL tables rounding
             const absZ = Math.round(z * 100) / 100;
 
-            if (absZ >= 1.99) { color = '#e74c3c'; diag = '+2 DE'; }
-            else if (absZ >= 0.99) { color = '#f39c12'; diag = '+1 DE'; }
+            if (title.includes('IMC') && absZ >= 2.99) { color = '#8e44ad'; diag = '+3 DE'; }
+            else if (absZ >= 1.99) { color = '#c0392b'; diag = '+2 DE'; } // MINSAL Obesidad is >= +2
+            else if (absZ >= 0.99) { color = '#f39c12'; diag = '+1 DE'; } // MINSAL Sobrepeso is >= +1
             else if (absZ <= -1.99) { color = '#c0392b'; diag = '-2 DE'; }
             else if (absZ <= -0.99) { color = '#e67e22'; diag = '-1 DE'; }
 
@@ -2108,15 +2109,15 @@ function renderPediatricZScores() {
     }
 
     // NEW V3.95: Neuro Classifier (Head Circumference)
-    const pcInput = parseFloat(document.getElementById('perimetroCraneal')?.value) || 0;
+    const pcInput = parseFloat(document.getElementById('pcefalico')?.value) || 0;
     if (pcInput > 0) {
         const zHC = getZScore('hc', m, p.sexo, pcInput);
         if (zHC !== null && !isNaN(zHC)) {
             let diag = '';
             let color = '#27ae60';
-            if (zHC <= -2.0) { diag = '<br><span style="font-size:0.6rem">⚠️ Microcefalia</span>'; color = '#c0392b'; }
-            else if (zHC <= -1.0) { diag = '<br><span style="font-size:0.6rem">Riesgo Micro</span>'; color = '#e67e22'; }
-            else if (zHC >= +2.0) { diag = '<br><span style="font-size:0.6rem">⚠️ Macrocefalia</span>'; color = '#c0392b'; }
+            if (zHC <= -2.0) { diag = '<br><span style="font-size:0.6rem">Sosp. Microcefalia</span>'; color = '#c0392b'; }
+            
+            else if (zHC >= +2.0) { diag = '<br><span style="font-size:0.6rem">Sosp. Macrocefalia</span>'; color = '#c0392b'; }
             html += makeBadge('Perím. Cefálico', null, `Z: ${zHC > 0 ? '+' : ''}${zHC.toFixed(2)}${diag}`, color);
         } else {
             html += makeBadge('Perím. Cefálico', null, `${pcInput} cm (Sin Ref)`, '#95a5a6');
