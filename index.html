@@ -1,4 +1,148 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.jpg" type="image/jpeg">
+    <title>Nutri Apoyo Clínico HRA | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="libs/supabase.js"></script>
+    <script src="libs/chart.js"></script>
+    <link rel="stylesheet" href="style.css?v=3.43">
+    <link rel="manifest" href="manifest.json">
+</head>
+
+<body>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <!-- PANTALLA DE ACCESO (LOGIN) -->
+    <section id="auth-screen" class="auth-container">
+        <div class="login-card">
+            <img src="https://i.imgur.com/ugEhxa1.jpeg" alt="Logo NutriMartin" class="logo-entrance">
+            <h1>Nutri Apoyo Clínico HRA</h1>
+            <p>Dashboard Institucional</p>
+            <button id="btnLoginGoogle" class="btn-google" onclick="window.login()">
+                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="G">
+                Entrar con Google
+            </button>
+            <small>Creado por Nutricionista Martin E. Gonzalez</small>
+        </div>
+    </section>
+
+    <!-- APLICACIÓN PRINCIPAL (OCULTA HASTA LOGIN) -->
+    <div id="main-app" class="app-container compact-mode" style="display:none;">
+
+        <!-- Info Protocol Button (Hidden by default V3.43) -->
+        <button class="protocol-fab" id="btnProtocolOpen" title="Protocolos Institucionales" style="display:none;">
+            <span>i</span> Protocolos HRA
+        </button>
+
+        <!-- Botón Logout (Eliminado por redundancia y UI mobile) -->
+        <!-- <button class="logout-btn" id="btnLogout" title="Cerrar Sesión">Salir</button> -->
+
+        <header class="main-header">
+            <div class="brand-box">
+                <img src="https://i.imgur.com/ugEhxa1.jpeg" alt="Logo" class="logo-small">
+                <div>
+                    <h1>Nutri Apoyo Clínico</h1>
+                    <p id="userNameDisplay">HRA</p>
+                </div>
+            </div>
+
+            <div class="header-right-group">
+                <!-- Protocols & Logout -->
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; justify-content: flex-end;">
+                    <button class="btn-premium-toggle" id="btnOpenPurpose" title="Propósito y Protocolos">
+                        <span>📋 Protocolos V.Infusion</span>
+                    </button>
+                    <button class="btn-premium-toggle" id="btnOpenWard" title="Vista Kanban de Sala"
+                        style="background:var(--primary); color:white; border-color:white;">
+                        <span>🏥 Vista de Sala</span>
+                    </button>
+                    <button class="btn-icon-circle" id="btnLogoutHeader" title="Cerrar Sesión">🚪</button>
+                </div>
+
+                <div class="patient-quick-access" id="btnPatientToggle">
+                    <div class="p-avatar" id="currentPatientAvatar">P</div>
+                    <div class="p-info">
+                        <span id="currentPatientName">Nuevo Paciente</span>
+                        <small style="display:flex; align-items:center; gap:5px;">
+                            IMC: <b id="valBMI">--</b>
+                        </small>
+                    </div>
+                </div>
+                <button class="btn-assess" id="btnOpenAssessment" style="display:none;">
+                    <span>📋</span> Evaluación Completa
+                </button>
+            </div>
+        </header>
+
+        <!-- APP TABS NAVIGATION (NEW V3.7) -->
+        <nav class="app-tabs">
+            <button class="tab-btn active" data-view="dashboard">
+                <span class="tab-icon">📊</span> Cálculo Nutricional
+            </button>
+            <button class="tab-btn" data-view="assessment">
+                <span class="tab-icon">📋</span> Evaluación Completa
+            </button>
+            <button class="tab-btn" data-view="nutri-ia">
+                <span class="tab-icon">💉</span> NPT Avanzada
+            </button>
+        </nav>
+
+        <!-- VISTA DASHBOARD (PRINCIPAL) -->
+        <div id="view-dashboard" class="view-section active-view">
+            <main class="dashboard-grid">
+                <!-- SECCIÓN 1: EVALUACIÓN RÁPIDA -->
+                <section class="card assessment-card">
+                    <div class="card-header">
+                        <h3>Registro Evaluación</h3>
+                        <div class="header-actions">
+                            <button class="btn-micro" id="btnOpenHistory">📂 Historial</button>
+                            <button class="btn-micro" id="btnAddPatient">+ Nuevo</button>
+                        </div>
+                    </div>
+                    <form id="form-paciente" class="compact-form">
+                        <div class="input-row">
+                            <input type="text" id="nombre" placeholder="Nombre completo" required>
+                        </div>
+                        <!-- NEW: Diagnosis & Bed -->
+                        <div class="input-row grid-col-2">
+                            <input type="text" id="diagnostico" placeholder="Diagnóstico" style="font-size:0.85rem;">
+                            <input type="text" id="cama" placeholder="Cama / Sala" style="font-size:0.85rem;">
+                        </div>
+
+                        <!-- NEW V3.80: Patient Type Selector -->
+                        <div
+                            style="display:flex; gap:10px; margin-bottom:10px; justify-content:center; background:#f4f6f7; padding:8px; border-radius:8px;">
+                            <label style="cursor:pointer; font-size:0.8rem; font-weight:600;"><input type="radio"
+                                    name="patientType" id="ptAdult" value="adult" checked
+                                    onchange="togglePatientMode()"> Adulto</label>
+                            <label style="cursor:pointer; font-size:0.8rem; font-weight:600;"><input type="radio"
+                                    name="patientType" id="ptPediatric" value="pediatric"
+                                    onchange="togglePatientMode()"> Pediátrico (0-19A)</label>
+                            <label style="cursor:pointer; font-size:0.8rem; font-weight:600;"><input type="radio"
+                                    name="patientType" id="ptNeonate" value="neonate" onchange="togglePatientMode()">
+                                Neonato</label>
+                        </div>
+
+                        <div class="grid-col-4" id="rowAdultBase"
+                            style="grid-template-columns: repeat(5, minmax(0, 1fr));">
+                            <div class="mini-input" id="colEdad">
+                                <label>Edad</label>
+                                <input type="number" id="edad" placeholder="0">
+                            </div>
+                            <div class="mini-input" id="colSexo">
+                                <label>Sexo</label>
+                                <select id="sexo">
+                                    <option value="m">M</option>
+                                    <option value="f">F</option>
+                                </select>
+                            </div>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -156,6 +300,10 @@
                                     oninput="calculateRequirements()">
                                 <div id="valWaistClass" style="font-size:0.6rem; font-weight:700; margin-top:2px;">
                                 </div>
+                            </div>
+                            <div class="mini-input" id="colPcefalico" style="display:none;">
+                                <label>P. Cefálico (cm)</label>
+                                <input type="number" step="0.1" id="pcefalico" placeholder="0">
                             </div>
                         </div>
 
@@ -1218,6 +1366,7 @@
                             <button class="btn-assess" onclick="window.showCurve('pe')" style="background:#3498db; min-width:130px;">📊 P/E</button>
                             <button class="btn-assess" onclick="window.showCurve('pt')" style="background:#e67e22; min-width:130px;">📊 P/T</button>
                             <button class="btn-assess" onclick="window.showCurve('te')" style="background:#27ae60; min-width:130px;">📊 T/E</button>
+                            <button class="btn-assess" onclick="window.showCurve('pce')" style="background:#9b59b6; min-width:130px;">📊 PC/E</button>
                         </div>
 
                         <div id="neoCurves" style="display:none; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:15px;">
@@ -1229,12 +1378,13 @@
                         </div>
                     </div>
 
-                    <div id="curveDisplayArea" style="margin-top:10px; min-height:350px; background:#f9f9f9; border:2px dashed #ccc; border-radius:12px; display:flex; align-items:center; justify-content:center; position:relative;">
+                    <div id="curveDisplayArea" style="margin-top:10px; min-height:350px; background:#f9f9f9; border:2px dashed #ccc; border-radius:12px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
                         <div id="curveImagePlaceholder" style="text-align:center; color:#95a5a6;">
                             <span style="font-size:3rem; display:block; margin-bottom:10px;">🖼️</span>
                             <p>El gráfico se mostrará aquí.</p>
                         </div>
                         <img id="curveImg" src="" style="display:none; max-width:100%; border-radius:8px;">
+                        <div id="curveDot" style="display:none; position:absolute; width:12px; height:12px; background-color:red; border:2px solid white; border-radius:50%; transform:translate(-50%, 50%); z-index:10; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>
                     </div>
                 </section>
 

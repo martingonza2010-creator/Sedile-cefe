@@ -1,4 +1,4 @@
-﻿// --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
+// --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
 // --- 1. SUPABASE CONFIGURATION ---
 const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
 const supabaseKey = 'sb_publishable_xCxGjcAngmfd0hJYv2uphg_yB-pF3Hp';
@@ -1577,6 +1577,8 @@ window.togglePatientMode = () => {
     AppState.patient.type = mode;
 
     document.getElementById('colEdad').style.display = mode === 'adult' ? 'block' : 'none';
+    document.getElementById('colCintura').style.display = mode === 'adult' ? 'block' : 'none';
+    document.getElementById('colPcefalico').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
     document.getElementById('rowPediatric').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'flex' : 'none';
     document.getElementById('rowNeonate').style.display = mode === 'neonate' ? 'flex' : 'none';
 
@@ -5082,22 +5084,96 @@ window.showCurve = function(type) {
     const area = document.getElementById('curveDisplayArea');
     const placeholder = document.getElementById('curveImagePlaceholder');
     const img = document.getElementById('curveImg');
+    const dot = document.getElementById('curveDot');
     
-    if(!area || !img || !placeholder) return;
+    if(!area || !img || !placeholder || !dot) return;
     
     placeholder.style.display = 'none';
     img.style.display = 'block';
+    dot.style.display = 'none'; // hide until plotted
     
-    // Placeholder logic until user provides specific graphics
-    let color = "#3498db";
-    let title = "Curva";
-    if(type === 'pe') { color = "#3498db"; title = "Peso / Edad"; }
-    if(type === 'pt') { color = "#e67e22"; title = "Peso / Talla"; }
-    if(type === 'te') { color = "#27ae60"; title = "Talla / Edad"; }
-    if(type === 'pittaluga') { color = "#8e44ad"; title = "Curva de Pittaluga"; }
+    // Data extraction
+    const peso = parseFloat(document.getElementById('peso').value) || 0;
+    const talla = parseFloat(document.getElementById('estatura').value) || 0; // en cm
+    const pc = parseFloat(document.getElementById('pcefalico').value) || 0;
     
-    // Using a high-quality placeholder for now
-    img.src = `https://placehold.co/800x600/${color.replace('#',',')}/ffffff?text=${encodeURIComponent(title)}`;
+    // For pediatrics, age is typically months. If using the date picker, it might set something else. 
+    // We assume the doctor inputs/calculates exact months in the main age field or we derive it from birthdate.
+    let edadMeses = parseFloat(document.getElementById('edad').value) || 0; 
+    const fn = document.getElementById('fechaNacimiento').value;
+    if (fn) {
+        const [y, mm, d] = fn.split('-');
+        const birth = new Date(y, mm - 1, d);
+        const now = new Date();
+        let months = (now.getFullYear() - birth.getFullYear()) * 12;
+        months -= birth.getMonth();
+        months += now.getMonth();
+        if (now.getDate() < birth.getDate()) months--;
+        if (months >= 0) edadMeses = months;
+    }
+
+    // --- MAPA DE CALIBRACIÓN DE IMÁGENES ---
+    // (Ajustar porcentajes pxLeft, pxRight, pxTop, pxBottom según el recorte exacto de tu PNG)
+    const curveMeta = {
+        'pe': {
+            url: 'https://i.imgur.com/vH9Z2W4.png', // Reemplazar con URL de la imagen del usuario
+            xValue: edadMeses, yValue: peso,
+            xMin: 0, xMax: 24, yMin: 2, yMax: 17,
+            pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0,
+            xName: 'Meses', yName: 'Peso (kg)'
+        },
+        'te': {
+            url: 'https://i.imgur.com/KzYJm5V.png', // Reemplazar con URL de la imagen del usuario
+            xValue: edadMeses, yValue: talla,
+            xMin: 0, xMax: 24, yMin: 45, yMax: 95,
+            pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0,
+            xName: 'Meses', yName: 'Talla (cm)'
+        },
+        'pt': {
+            url: 'https://i.imgur.com/3q1jA4L.png', // Reemplazar con URL de la imagen del usuario
+            xValue: talla, yValue: peso,
+            xMin: 45, xMax: 110, yMin: 1, yMax: 23,
+            pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0,
+            xName: 'Talla (cm)', yName: 'Peso (kg)'
+        },
+        'pce': {
+            url: 'https://i.imgur.com/1Bq4G2K.png', // Reemplazar con URL de la imagen del usuario
+            xValue: edadMeses, yValue: pc,
+            xMin: 0, xMax: 24, yMin: 30, yMax: 51,
+            pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0,
+            xName: 'Meses', yName: 'PC (cm)'
+        }
+    };
+
+    const c = curveMeta[type];
+    
+    if (c) {
+        img.src = c.url;
+        img.onload = () => {
+            if (c.xValue > 0 && c.yValue > 0) {
+                // Limit to bounds for rendering
+                let x = Math.max(c.xMin, Math.min(c.xMax, c.xValue));
+                let y = Math.max(c.yMin, Math.min(c.yMax, c.yValue));
+                
+                let xPct = c.pxLeft + ((x - c.xMin) / (c.xMax - c.xMin)) * (c.pxRight - c.pxLeft);
+                let yPct = c.pxBottom + ((y - c.yMin) / (c.yMax - c.yMin)) * (c.pxTop - c.pxBottom);
+                
+                dot.style.left = `${xPct}%`;
+                dot.style.bottom = `${yPct}%`;
+                dot.style.display = 'block';
+
+                // Auto-clasificación en el diagnóstico PES
+                let diag = document.getElementById('diagnosticoPES');
+                let interpStr = `\n[Gráfico ${type.toUpperCase()}] Punto graficado en ${c.xName}: ${c.xValue}, ${c.yName}: ${c.yValue}.`;
+                if (diag && !diag.value.includes(`[Gráfico ${type.toUpperCase()}]`)) {
+                    diag.value += interpStr;
+                }
+            }
+        };
+    } else {
+        // Fallbacks (pittaluga, etc)
+        img.src = `https://placehold.co/800x600/8e44ad/ffffff?text=Curva+No+Definida`;
+    }
 };
 
 window.updateCurveButtons = function() {
