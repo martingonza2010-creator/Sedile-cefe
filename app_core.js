@@ -1,4 +1,4 @@
-﻿// --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
+// --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
 // --- 1. SUPABASE CONFIGURATION ---
 const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
 const supabaseKey = 'sb_publishable_xCxGjcAngmfd0hJYv2uphg_yB-pF3Hp';
@@ -1576,11 +1576,20 @@ window.togglePatientMode = () => {
     const mode = document.querySelector('input[name="patientType"]:checked').value;
     AppState.patient.type = mode;
 
-    document.getElementById('colEdad').style.display = mode === 'adult' ? 'block' : 'none';
-    document.getElementById('colCintura').style.display = mode === 'neonate' ? 'none' : 'block';
-    document.getElementById('colPcefalico').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
-    document.getElementById('rowPediatric').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'flex' : 'none';
-    document.getElementById('rowNeonate').style.display = mode === 'neonate' ? 'flex' : 'none';
+    const colEdad = document.getElementById('colEdad');
+    if (colEdad) colEdad.style.display = mode === 'adult' ? 'block' : 'none';
+    
+    const colCintura = document.getElementById('colCintura');
+    if (colCintura) colCintura.style.display = mode === 'neonate' ? 'none' : 'block';
+    
+    const colPcefalico = document.getElementById('colPcefalico');
+    if (colPcefalico) colPcefalico.style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
+    
+    const rowPediatric = document.getElementById('rowPediatric');
+    if (rowPediatric) rowPediatric.style.display = (mode === 'pediatric' || mode === 'neonate') ? 'flex' : 'none';
+    
+    const rowNeonate = document.getElementById('rowNeonate');
+    if (rowNeonate) rowNeonate.style.display = mode === 'neonate' ? 'flex' : 'none';
 
     const fortPanel = document.getElementById('fortifierNeonatePanel');
     if (fortPanel) fortPanel.style.display = mode === 'neonate' ? 'block' : 'none';
