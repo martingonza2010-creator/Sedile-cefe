@@ -457,6 +457,17 @@ function initCompactLayout() {
                             banatrol: document.getElementById('modBanatrol').value,
                             proteinex: document.getElementById('modProteinex').value,
                             fresubin: document.getElementById('modFresubin').value
+                        },
+                        oral: {
+                            kcal: document.getElementById('oralKcal').value,
+                            prot: document.getElementById('oralProt').value,
+                            cho: document.getElementById('oralCHO').value,
+                            lip: document.getElementById('oralLip').value,
+                            water: document.getElementById('oralWater').value
+                        },
+                        iv: {
+                            type: document.getElementById('ivType').value,
+                            volume: document.getElementById('ivVolume').value
                         }
                     },
                     assessment: {
@@ -1218,6 +1229,11 @@ window.loadPatient = async (id) => {
         // Restore goals if exist
         if (data.metadata && data.metadata.simulator) {
             const sim = data.metadata.simulator;
+            // Clear current simulator inputs first
+            const simInputs = ['formulaSelect', 'volume', 'dilution', 'modNessucar', 'modMCT', 'modEnterex', 'modBanatrol', 'modProteinex', 'modFresubin', 'oralKcal', 'oralProt', 'oralCHO', 'oralLip', 'oralWater', 'ivVolume'];
+            simInputs.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+            if(document.getElementById('ivType')) document.getElementById('ivType').value = 'none';
+
             if (sim.macro_mode) {
                 if (sim.macro_mode === 'pct') {
                     document.getElementById('btnModePct')?.click();
@@ -1228,7 +1244,42 @@ window.loadPatient = async (id) => {
             if (sim.goal_prot) document.getElementById('goalProtKg').value = sim.goal_prot;
             if (sim.goal_cho) document.getElementById('goalCHOKg').value = sim.goal_cho;
             if (sim.goal_lip) document.getElementById('goalLipKg').value = sim.goal_lip;
+            
+            // Restore simulator values
+            if (sim.formula) {
+                document.getElementById('formulaSelect').value = sim.formula;
+                const formulaObj = AppState.formulas.find(f => f.id === sim.formula);
+                renderFormulaInputs(formulaObj);
+            }
+            if (sim.volume) document.getElementById('volume').value = sim.volume;
+            if (sim.dilution) document.getElementById('dilution').value = sim.dilution;
+            
+            if (sim.modules) {
+                Object.keys(sim.modules).forEach(m => {
+                    const el = document.getElementById('mod' + m.charAt(0).toUpperCase() + m.slice(1));
+                    if (el) el.value = sim.modules[m];
+                });
+            }
+            if (sim.oral) {
+                document.getElementById('oralKcal').value = sim.oral.kcal || '';
+                document.getElementById('oralProt').value = sim.oral.prot || '';
+                document.getElementById('oralCHO').value = sim.oral.cho || '';
+                document.getElementById('oralLip').value = sim.oral.lip || '';
+                document.getElementById('oralWater').value = sim.oral.water || '';
+            }
+            if (sim.iv) {
+                document.getElementById('ivType').value = sim.iv.type || 'none';
+                document.getElementById('ivVolume').value = sim.iv.volume || '';
+            }
+
             if (typeof updateMacroGoals === 'function') updateMacroGoals();
+            runSimulation(); 
+        } else {
+            // If no simulator metadata, clear inputs anyway
+            const simInputs = ['formulaSelect', 'volume', 'dilution', 'modNessucar', 'modMCT', 'modEnterex', 'modBanatrol', 'modProteinex', 'modFresubin', 'oralKcal', 'oralProt', 'oralCHO', 'oralLip', 'oralWater', 'ivVolume'];
+            simInputs.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+            if(document.getElementById('ivType')) document.getElementById('ivType').value = 'none';
+            runSimulation();
         }
 
         document.getElementById('historyModal').classList.remove('active');
@@ -2660,29 +2711,29 @@ function runSimulation() {
 
         // Kcal Adequacy
         if (officialKcalGoal > 0) {
-            const pctK = (k / officialKcalGoal) * 100;
-            adeqKcal.innerText = Math.round(pctK) + "%";
+            const pctK = Math.round((k / officialKcalGoal) * 100);
+            adeqKcal.innerText = pctK + "%";
             adeqKcal.style.color = (pctK < 90 || pctK > 110) ? '#e74c3c' : '#27ae60';
         } else { adeqKcal.innerText = "--"; adeqKcal.style.color = '#888'; }
 
         // Prot Adequacy
         if (goalP > 0) {
-            const pctP = (p / goalP) * 100;
-            adeqProt.innerText = Math.round(pctP) + "%";
+            const pctP = Math.round((p / goalP) * 100);
+            adeqProt.innerText = pctP + "%";
             adeqProt.style.color = (pctP < 90 || pctP > 110) ? '#e74c3c' : '#27ae60';
         } else { adeqProt.innerText = "--"; adeqProt.style.color = '#888'; }
 
         // CHO Adequacy
         if (goalC > 0) {
-            const pctC = (c / goalC) * 100;
-            adeqCHO.innerText = Math.round(pctC) + "%";
+            const pctC = Math.round((c / goalC) * 100);
+            adeqCHO.innerText = pctC + "%";
             adeqCHO.style.color = (pctC < 90 || pctC > 110) ? '#e74c3c' : '#27ae60';
         } else { adeqCHO.innerText = "--"; adeqCHO.style.color = '#888'; }
 
         // Lip Adequacy
         if (goalL > 0) {
-            const pctL = (l / goalL) * 100;
-            adeqLip.innerText = Math.round(pctL) + "%";
+            const pctL = Math.round((l / goalL) * 100);
+            adeqLip.innerText = pctL + "%";
             adeqLip.style.color = (pctL < 90 || pctL > 110) ? '#e74c3c' : '#27ae60';
         } else { adeqLip.innerText = "--"; adeqLip.style.color = '#888'; }
 
