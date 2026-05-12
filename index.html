@@ -698,17 +698,45 @@
                         en Peso Actual</small>
                 </section>
 
+                <!-- SECCIÓN 2: RTH E INFUSIÓN (COMPACTA) -->
+                <section class="card infusion-card" style="margin-bottom: 15px; border-left: 4px solid var(--accent); padding: 12px 20px;">
+                    <div class="infusion-box-compact">
+                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:15px;">
+                            <div style="display:flex; align-items:center; gap:8px; min-width:200px;">
+                                <span style="font-size:1.1rem;">⏱️</span>
+                                <h4 style="margin:0; font-size:0.85rem; color:var(--secondary); white-space:nowrap;">RTH e Infusión</h4>
+                                <select id="infusionRTHSelect" class="select-modern" onchange="window.calcInfusion()" style="padding:4px 8px; font-size:0.75rem; min-width:180px;">
+                                    <option value="">-- Sin RTH --</option>
+                                </select>
+                            </div>
+                            
+                            <div style="display:flex; gap:15px; align-items:center; flex:1; justify-content:flex-end;">
+                                <div class="mini-input-compact">
+                                    <label>Instalación</label>
+                                    <input type="time" id="infusionStart" onchange="window.calcInfusion()" style="padding:4px; font-size:0.75rem; width:100px;">
+                                </div>
+                                <div class="mini-input-compact">
+                                    <label>Vel. (ml/hr) <span id="infusionSuggestionLabel" onclick="window.applyInfusionSuggestion()" style="cursor:pointer; color:var(--primary); text-decoration:underline;">Sug: 80</span></label>
+                                    <input type="number" id="infusionRate" placeholder="Ej. 60" oninput="window.calcInfusion()" style="padding:4px; font-size:0.8rem; width:80px; font-weight:700;">
+                                </div>
+                                <div id="infusionResultBox" style="display:none; background:rgba(231, 76, 60, 0.05); padding:4px 10px; border-radius:8px; border:1px solid rgba(231, 76, 60, 0.1);">
+                                    <span style="font-size:0.7rem; color:#666;">Fin:</span>
+                                    <strong id="valEndTime" style="color:var(--accent); font-size:0.9rem;">--:--</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="valLogisticsBox" style="display:none; margin-top:8px; font-size:0.65rem; color:#b7950b; background:#fef9e7; padding:4px 10px; border-radius:6px; border:1px solid #f9e79f;"></div>
+                    </div>
+                </section>
 
-                <!-- SECCIÓN 2: SIMULADOR INTEGRADO -->
+                <!-- SECCIÓN 3: SIMULADOR INTEGRADO -->
                 <section class="card simulator-card">
                     <div class="sim-header-dashboard">
                         <div class="mode-selector">
                             <button class="mode-toggle active" data-mode="vol">Vol / Dil</button>
-                            <button class="mode-toggle" data-mode="grams">Gramaje</button>
                         </div>
                         <button id="btnToggleCompare" class="btn-micro" style="margin-left:auto; font-weight:700;">🆚
                             Comparar</button>
-
 
                         <div class="progress-container-mini">
                             <div class="prog-label">Meta: <span id="simGoal">--</span> kcal</div>
@@ -716,53 +744,6 @@
                                 <div class="prog-fill" id="simBar"></div>
                             </div>
                             <div class="prog-label">Cons: <span id="simCurrent">0</span> kcal</div>
-                        </div>
-                    </div>
-
-                    <!-- NEW V3.95: Escáner Proteico (Neonato) -->
-                    <div id="proteinTrackerResult"></div>
-
-                    <!-- NEW: Infusion Calculator & Logistics -->
-                    <div class="infusion-box">
-                        <div class="infusion-title" style="display:flex; align-items:center; gap:8px;">
-                            <span>⏱️ RTH e Infusión (SEDILE)</span>
-                        </div>
-                        <div class="grid-col-2" style="margin-bottom:8px;">
-                            <div class="mini-input" style="grid-column: span 2;">
-                                <label>Fórmula Instalada (Selección RTH)</label>
-                                <select id="infusionRTHSelect" class="select-modern" onchange="window.calcInfusion()">
-                                    <option value="">-- Seleccionar producto RTH --</option>
-                                </select>
-                            </div>
-                            <div class="mini-input">
-                                <label>Instal. Producto RTH Actual</label>
-                                <input type="time" title="Hora en que se colgó el envase actual" id="infusionStart"
-                                    onchange="window.calcInfusion()">
-                            </div>
-                            <div class="mini-input">
-                                <label style="display:flex; justify-content:space-between; align-items:center;">
-                                    Velocidad (ml/hr)
-                                    <span id="infusionSuggestionLabel"
-                                        style="font-size:0.55rem; color:#3498db; cursor:pointer; background:#eaf2f8; padding:1px 4px; border-radius:3px; border:1px solid #d4e6f1;"
-                                        title="Hacer clic para aplicar sugerencia clínica"
-                                        onclick="window.applyInfusionSuggestion()">Sug: 80</span>
-                                </label>
-                                <input type="number" id="infusionRate" placeholder="Ej. 60"
-                                    oninput="window.calcInfusion()">
-                            </div>
-                        </div>
-                        <div class="infusion-result" id="infusionResultBox"
-                            style="display:none; flex-direction:column; gap:5px;">
-                            <div style="font-size:0.85rem;">
-                                El envase se acabará a las: <strong id="valEndTime"
-                                    style="color:#d35400; font-size:1.1rem;">--:--</strong>
-                                <span id="valDuration" style="font-size:0.75rem; opacity:0.8; font-weight:500;">(0
-                                    hrs)</span>
-                            </div>
-                            <div id="valLogisticsBox"
-                                style="margin-top:2px; font-size:0.7rem; background:#fef9e7; color:#b7950b; padding:6px; border-radius:6px; border:1px solid rgba(241, 196, 15, 0.4); font-weight:600; text-align:left; line-height:1.4; display:none;">
-                                <!-- SEDILE Logistics string -->
-                            </div>
                         </div>
                     </div>
 
@@ -1678,7 +1659,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.44"></script>
+        <script src="app_core.js?v=4.45"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

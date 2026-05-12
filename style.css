@@ -137,7 +137,7 @@ body {
 
 /* APP LAYOUT */
 .app-container {
-    max-width: 1250px;
+    max-width: 1400px;
     margin: 40px auto;
     padding: 0 20px;
     animation: fadeIn 0.5s ease-out;
@@ -208,7 +208,7 @@ header.main-header {
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
     gap: 25px;
 }
 
@@ -925,7 +925,35 @@ body::before {
     font-size: 0.9rem;
     color: #555;
     display: none;
-    /* Initially hidden */
+}
+
+/* Compact Infusion Styles */
+.infusion-box-compact {
+    width: 100%;
+}
+
+.mini-input-compact {
+    display: flex;
+    flex-direction: column;
+}
+
+.mini-input-compact label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.mini-input-compact input {
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 6px;
+    outline: none;
+    transition: 0.3s;
+}
+
+.mini-input-compact input:focus {
+    border-color: var(--primary);
 }
 
 .infusion-result strong {
