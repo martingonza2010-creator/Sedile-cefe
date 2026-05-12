@@ -699,82 +699,6 @@
                 </section>
 
 
-                <!-- NEW V4.60: 💉 CALCULADORA AVANZADA DE NPT (DESIGNER) -->
-                <section class="card" id="nptCard"
-                    style="border-left: 4px solid #8e44ad; background: rgba(142, 68, 173, 0.02); margin-bottom: 20px;">
-                    <details class="folds-accordion" id="nptAccordion">
-                        <summary style="font-weight:700; color:#8e44ad;">💉 2. Calculadora Avanzada de Nutrición Parenteral (NPT)</summary>
-                        
-                        <div style="padding-top:12px;">
-                            <div class="ia-alert" style="background:#f3e5f5; border-left:4px solid #8e44ad; padding:10px; border-radius:8px; margin-bottom:15px; font-size:0.8rem; color:#4a148c;">
-                                <strong>Nota Clínica:</strong> Diseña la mezcla parenteral y calcula automáticamente la osmolaridad y carga metabólica.
-                            </div>
-
-                            <!-- NPT Inputs Grid -->
-                            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin-bottom:15px;">
-                                <div class="mini-input" style="margin-bottom:0;">
-                                    <label style="font-size:0.65rem; font-weight:700;">Volumen Total (ml)</label>
-                                    <input type="number" id="nptVol" value="500" oninput="window.updateNPTCalculator()"
-                                        style="font-size:1.1rem; font-weight:700; color:#8e44ad;">
-                                </div>
-                                <div class="mini-input" style="margin-bottom:0;">
-                                    <label style="font-size:0.65rem; font-weight:700;">Peso Cálculo (kg)</label>
-                                    <input type="number" id="nptWeight" value="0" disabled 
-                                        style="background:#f8f9fa; font-size:1.1rem; font-weight:700; color:#666;">
-                                </div>
-                                <div class="mini-input" style="margin-bottom:0;">
-                                    <label style="font-size:0.65rem; font-weight:700;">Dextrosa (g)</label>
-                                    <input type="number" id="nptDex" placeholder="Gramos" oninput="window.updateNPTCalculator()">
-                                </div>
-                                <div class="mini-input" style="margin-bottom:0;">
-                                    <label style="font-size:0.65rem; font-weight:700;">Aminoácidos (g)</label>
-                                    <input type="number" id="nptAA" placeholder="Gramos" oninput="window.updateNPTCalculator()">
-                                </div>
-                                <div class="mini-input" style="margin-bottom:0;">
-                                    <label style="font-size:0.65rem; font-weight:700;">Lípidos 20% (ml)</label>
-                                    <input type="number" id="nptLip" placeholder="ml" oninput="window.updateNPTCalculator()">
-                                </div>
-                                <div class="mini-input" style="margin-bottom:0; display:flex; gap:5px;">
-                                    <div style="flex:1;">
-                                        <label style="font-size:0.6rem;">Na+ (mEq)</label>
-                                        <input type="number" id="nptNa" placeholder="mEq" oninput="window.updateNPTCalculator()">
-                                    </div>
-                                    <div style="flex:1;">
-                                        <label style="font-size:0.6rem;">K+ (mEq)</label>
-                                        <input type="number" id="nptK" placeholder="mEq" oninput="window.updateNPTCalculator()">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- NPT Results Panel -->
-                            <div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                                <h4 style="margin-top:0; color:#8e44ad; font-size:0.85rem; border-bottom:1px solid #eee; padding-bottom:5px; display:flex; justify-content:space-between;">
-                                    <span>📊 Análisis de Mezcla</span>
-                                    <span id="nptStatus" style="font-size:0.65rem; background:#8e44ad; color:white; padding:1px 6px; border-radius:4px;">Central</span>
-                                </h4>
-                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
-                                    <div style="background:#fcfcfc; padding:8px; border-radius:8px; border:1px solid #f0f0f0;">
-                                        <span style="font-size:0.6rem; color:#888; display:block;">Osmolaridad</span>
-                                        <strong id="nptOsm" style="font-size:1rem; color:#e74c3c;">0</strong> <small style="font-size:0.6rem;">mOsm/L</small>
-                                    </div>
-                                    <div style="background:#fcfcfc; padding:8px; border-radius:8px; border:1px solid #f0f0f0;">
-                                        <span style="font-size:0.6rem; color:#888; display:block;">Carga Glucosa (GIR)</span>
-                                        <strong id="nptGIR" style="font-size:1rem; color:#27ae60;">0</strong> <small style="font-size:0.6rem;">mg/kg/m</small>
-                                    </div>
-                                    <div style="background:#fcfcfc; padding:8px; border-radius:8px; border:1px solid #f0f0f0;">
-                                        <span style="font-size:0.6rem; color:#888; display:block;">Kcal No Proteicas</span>
-                                        <strong id="nptKcalNP" style="font-size:1rem; color:#2980b9;">0</strong> <small style="font-size:0.6rem;">kcal</small>
-                                    </div>
-                                    <div style="background:#fcfcfc; padding:8px; border-radius:8px; border:1px solid #f0f0f0;">
-                                        <span style="font-size:0.6rem; color:#888; display:block;">Relación NP/Nitrógeno</span>
-                                        <strong id="nptKcalGN" style="font-size:1rem; color:#d35400;">0</strong>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </details>
-                </section>
-
                 <!-- SECCIÓN 2: SIMULADOR INTEGRADO -->
                 <section class="card simulator-card">
                     <div class="sim-header-dashboard">
@@ -1160,44 +1084,6 @@
                     lo aportado por la fórmula vs. metas establecidas</small>
             </div>
 
-            <!-- NEW V4.25: Tarjeta de Eficiencia Metabólica -->
-            <div id="metabolicEfficiencyCard"
-                style="margin-top:20px; background:linear-gradient(135deg, #1a2a3a, #2c3e50); color:white; padding:15px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1); border-bottom:4px solid #f1c40f;">
-                <h4
-                    style="margin:0 0 10px 0; font-size:0.8rem; color:#f1c40f; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:8px;">
-                    <span>⚡ Eficiencia Metabólica</span>
-                </h4>
-
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                    <!-- Nitrogen Balance -->
-                    <div
-                        style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
-                        <span style="font-size:0.6rem; color:#bdc3c7; display:block; margin-bottom:4px;">Balance
-                            Nitrogenado (BN)</span>
-                        <div style="display:flex; justify-content:space-between; align-items:baseline;">
-                            <strong id="valBN" style="font-size:1.3rem;">--</strong>
-                            <span id="labelBN"
-                                style="font-size:0.55rem; background:#7f8c8d; padding:2px 5px; border-radius:4px; font-weight:800;">PENDIENTE</span>
-                        </div>
-                    </div>
-                    <!-- NPC:N Ratio -->
-                    <div
-                        style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
-                        <span style="font-size:0.6rem; color:#bdc3c7; display:block; margin-bottom:4px;">Relación
-                            NPC:N</span>
-                        <div style="display:flex; justify-content:space-between; align-items:baseline;">
-                            <strong id="valNPCN" style="font-size:1.3rem;">--</strong>
-                            <span id="labelNPCN"
-                                style="font-size:0.55rem; background:#7f8c8d; padding:2px 5px; border-radius:4px; font-weight:800;">NPC/N</span>
-                        </div>
-                    </div>
-                </div>
-                <div id="metabolicAdvice"
-                    style="margin-top:10px; font-size:0.6rem; color:#ecf0f1; font-style:italic; opacity:0.8;">
-                    Ingresa datos de proteína y calorías para habilitar el monitoreo metabólico.
-                </div>
-            </div>
-
             <!-- Prescribir button removed in V3.43 as requested (non-functional) -->
         </div><!-- End View Dashboard -->
 
@@ -1481,7 +1367,46 @@
                 </div>
             </div>
 
+            <!-- NEW V4.25: Tarjeta de Eficiencia Metabólica (Moved to NPT View) -->
+            <div id="metabolicEfficiencyCard"
+                style="margin-bottom:20px; background:linear-gradient(135deg, #1a2a3a, #2c3e50); color:white; padding:15px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1); border-bottom:4px solid #f1c40f;">
+                <h4
+                    style="margin:0 0 10px 0; font-size:0.8rem; color:#f1c40f; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:8px;">
+                    <span>⚡ 3. Eficiencia Metabólica (Monitoreo)</span>
+                </h4>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <!-- Nitrogen Balance -->
+                    <div
+                        style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
+                        <span style="font-size:0.6rem; color:#bdc3c7; display:block; margin-bottom:4px;">Balance
+                            Nitrogenado (BN)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                            <strong id="valBN" style="font-size:1.3rem;">--</strong>
+                            <span id="labelBN"
+                                style="font-size:0.55rem; background:#7f8c8d; padding:2px 5px; border-radius:4px; font-weight:800;">PENDIENTE</span>
+                        </div>
+                    </div>
+                    <!-- NPC:N Ratio -->
+                    <div
+                        style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
+                        <span style="font-size:0.6rem; color:#bdc3c7; display:block; margin-bottom:4px;">Relación
+                            NPC:N</span>
+                        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                            <strong id="valNPCN" style="font-size:1.3rem;">--</strong>
+                            <span id="labelNPCN"
+                                style="font-size:0.55rem; background:#7f8c8d; padding:2px 5px; border-radius:4px; font-weight:800;">NPC/N</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="metabolicAdvice"
+                    style="margin-top:10px; font-size:0.6rem; color:#ecf0f1; font-style:italic; opacity:0.8;">
+                    Ingresa datos de proteína y calorías para habilitar el monitoreo metabólico.
+                </div>
+            </div>
+
             <!-- TOTAL ADEQUACY SUMMARY -->
+
             <div class="card" style="background:#2c3e50; color:white; border:none; padding:20px;">
                 <h3 style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; font-size:1rem; color:#ecf0f1;">📊 Adecuación Total (NP + NE)</h3>
                 <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; margin-top:15px; text-align:center;">
@@ -1753,7 +1678,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.43"></script>
+        <script src="app_core.js?v=4.44"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
