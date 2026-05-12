@@ -655,8 +655,8 @@ window.loadHistoryList = async (showPapelera = false) => {
                         <span style="font-size:0.8rem; color:#666;">Se eliminará en ${r._daysLeft} días</span>
                     </div>
                     <div style="display:flex; gap:10px;">
-                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background:#27ae60;" onclick="window.restorePatient('${r.id}')">Restaurar</button>
-                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.hardDeletePatient('${r.id}')" title="Eliminar definitivamente">Borrar</button>
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background:#27ae60;" onclick="window.restorePatient('${r.id}')">\u{21A9}\u{FE0F} Restaurar</button>
+                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.hardDeletePatient('${r.id}')" title="Eliminar definitivamente">\u{1F5D1}\u{FE0F}</button>
                     </div>
                 </div>
             `;
@@ -668,8 +668,8 @@ window.loadHistoryList = async (showPapelera = false) => {
                         <span style="font-size:0.8rem; color:#666;">${dateStr} | ${r.edad} años | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal</span>
                     </div>
                     <div style="display:flex; gap:10px;">
-                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">Cargar</button>
-                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a papelera">Borrar</button>
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">\u{1F4C2} Cargar</button>
+                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a papelera">\u{1F5D1}\u{FE0F}</button>
                     </div>
                 </div>
             `;
@@ -763,10 +763,10 @@ async function loadWardKanban() {
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
                     <span style="font-size:0.75rem; font-weight:600; color:var(--primary);">${p.peso_kg} kg | ${p.tmt ? Math.round(p.tmt) + ' kcal' : '--'}</span>
                     <button onclick="event.stopPropagation(); window.openQuickView('${p.id}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Resumen de Bolsillo">
-                        Ver
+                        \u{1F50D}
                     </button>
                     <button onclick="event.stopPropagation(); window.togglePatientState('${p.id}', '${isCritico ? 'activo' : 'critico'}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Cambiar a ${isCritico ? 'En Curso' : 'Crítico'}">
-                        ${isCritico ? 'Restaurar' : 'Alerta'}
+                        ${isCritico ? '\u{21A9}\u{FE0F}' : '\u{1F6A8}'}
                     </button>
                     <button onclick="event.stopPropagation(); window.dischargePatient('${p.id}')" style="background:none; border:none; color:#27ae60; cursor:pointer;" title="Dar de Alta">
                         âœ”ï¸
