@@ -62,7 +62,7 @@
                         style="background:var(--primary); color:white; border-color:white;">
                         <span>🏥 Vista de Sala</span>
                     </button>
-                    <button class="btn-icon-circle" id="btnLogoutHeader" title="Cerrar Sesión">🚪</button>
+                    <button class="btn-icon-circle" id="btnLogoutHeader" title="Cerrar Sesión" onclick="window.logout()">Salir</button>
                 </div>
 
                 <div class="patient-quick-access" id="btnPatientToggle">
@@ -101,7 +101,7 @@
                     <div class="card-header">
                         <h3>Registro Evaluación</h3>
                         <div class="header-actions">
-                            <button class="btn-micro" id="btnOpenHistory">📂 Historial</button>
+                            <button class="btn-micro" id="btnOpenHistory">Historial</button>
                             <button class="btn-micro" id="btnAddPatient">+ Nuevo</button>
                         </div>
                     </div>
@@ -1574,7 +1574,7 @@
                 <div class="tab-nav" style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
                     <button class="tab-btn active" id="tabHistActivos" onclick="window.loadHistoryList(false)">Registros
                         Activos</button>
-                    <button class="tab-btn" id="tabHistPapelera" onclick="window.loadHistoryList(true)">🗑️ Papelera (30
+                    <button class="tab-btn" id="tabHistPapelera" onclick="window.loadHistoryList(true)">Papelera (30
                         días)</button>
                 </div>
                 <div class="history-list" id="historyContainer">
@@ -1753,7 +1753,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.40"></script>
+        <script src="app_core.js?v=4.41"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

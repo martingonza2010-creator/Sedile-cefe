@@ -282,7 +282,7 @@ window.login = async function () {
     }
 };
 
-async function logout() {
+window.logout = async function () {
     // 1. Clear Supabase Session
     await supabaseClient.auth.signOut();
 
@@ -595,7 +595,10 @@ window.loadHistoryList = async (showPapelera = false) => {
                 daysLeft = 30 - diffDays;
             } else {
                 // Si no hay fecha de borrado en la metadata, asumimos que se acaba de borrar
-                // (Para evitar que pacientes muy antiguos desaparezcan instantáneamente)
+                // Y parchamos la metadata para que empiece a contar desde hoy
+                let meta = r.metadata || {};
+                meta.deleted_at = new Date().toISOString();
+                supabaseClient.from('pacientes').update({ metadata: meta }).eq('id', r.id).then(()=>{});
                 daysLeft = 30;
             }
 
@@ -652,8 +655,8 @@ window.loadHistoryList = async (showPapelera = false) => {
                         <span style="font-size:0.8rem; color:#666;">Se eliminará en ${r._daysLeft} días</span>
                     </div>
                     <div style="display:flex; gap:10px;">
-                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background:#27ae60;" onclick="window.restorePatient('${r.id}')">â†©ï¸ Restaurar</button>
-                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.hardDeletePatient('${r.id}')" title="Eliminar definitivamente">ðŸ—‘ï¸</button>
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background:#27ae60;" onclick="window.restorePatient('${r.id}')">Restaurar</button>
+                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.hardDeletePatient('${r.id}')" title="Eliminar definitivamente">Borrar</button>
                     </div>
                 </div>
             `;
@@ -665,8 +668,8 @@ window.loadHistoryList = async (showPapelera = false) => {
                         <span style="font-size:0.8rem; color:#666;">${dateStr} | ${r.edad} años | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal</span>
                     </div>
                     <div style="display:flex; gap:10px;">
-                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">ðŸ“‚ Cargar</button>
-                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a papelera">ðŸ—‘ï¸</button>
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">Cargar</button>
+                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a papelera">Borrar</button>
                     </div>
                 </div>
             `;
@@ -741,13 +744,13 @@ async function loadWardKanban() {
             const diffTime = Math.abs(today - dateSNG);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             if (diffDays >= 30) {
-                alertBadge += `<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem; margin-right:5px;">⚠️ Sonda > 30d</span>`;
+                alertBadge += `<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem; margin-right:5px;">⚠️  Sonda > 30d</span>`;
             }
         }
 
         // Fast Check Weight drop (simulate if multiple histories exist but for now simple badge)
         if (p.requiere_atencion) {
-            alertBadge += `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem;">⚠️ Revisar Peso</span>`;
+            alertBadge += `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem;">⚠️  Revisar Peso</span>`;
         }
 
         const cardHTML = `
@@ -760,10 +763,10 @@ async function loadWardKanban() {
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
                     <span style="font-size:0.75rem; font-weight:600; color:var(--primary);">${p.peso_kg} kg | ${p.tmt ? Math.round(p.tmt) + ' kcal' : '--'}</span>
                     <button onclick="event.stopPropagation(); window.openQuickView('${p.id}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Resumen de Bolsillo">
-                        ðŸ”
+                        Ver
                     </button>
                     <button onclick="event.stopPropagation(); window.togglePatientState('${p.id}', '${isCritico ? 'activo' : 'critico'}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Cambiar a ${isCritico ? 'En Curso' : 'Crítico'}">
-                        ${isCritico ? 'â†©ï¸' : 'ðŸš¨'}
+                        ${isCritico ? 'Restaurar' : 'Alerta'}
                     </button>
                     <button onclick="event.stopPropagation(); window.dischargePatient('${p.id}')" style="background:none; border:none; color:#27ae60; cursor:pointer;" title="Dar de Alta">
                         âœ”ï¸
@@ -813,22 +816,33 @@ window.deletePatient = async (id) => {
         return;
     }
 
-    const { error, status, statusText } = await supabaseClient.from('pacientes').update({
-        estado_sala: 'eliminado'
-    }).eq('nombre', p.nombre).eq('user_id', AppState.user.id);
+    const { data: records } = await supabaseClient.from('pacientes').select('id, metadata').eq('nombre', p.nombre).eq('user_id', AppState.user.id);
+    const nowISO = new Date().toISOString();
+    let hasError = false;
+    let errorMsg = null;
 
-    if (error) {
-        // If HTTP 400 triggers, it usually means 'estado_sala' column is completely missing from the DB
-        if (error.code === "PGRST204" || (error.message && error.message.includes('estado_sala')) || status === 400) {
-            if (confirm("⚠️ Tu base de datos no tiene la columna 'estado_sala' para la papelera.\nDebes correr el código SQL que te pasé.\n\n¿Deseas ELIMINAR al paciente de todas formas (definitivo)?")) {
-                window.hardDeletePatient(id, true);
-            }
-            return;
+    if (records && records.length > 0) {
+        for (let r of records) {
+            let meta = r.metadata || {};
+            meta.deleted_at = nowISO;
+            const { error } = await supabaseClient.from('pacientes').update({
+                estado_sala: 'eliminado',
+                metadata: meta
+            }).eq('id', r.id);
+            if (error) { hasError = true; errorMsg = error.message; }
         }
-        console.error("Error API:", error);
-        alert("Falla de conexión o base de datos (" + status + "). " + (error.message || JSON.stringify(error)));
     } else {
-        showToast("ðŸ—‘ï¸ Paciente movido a la papelera");
+        const { error } = await supabaseClient.from('pacientes').update({
+            estado_sala: 'eliminado'
+        }).eq('nombre', p.nombre).eq('user_id', AppState.user.id);
+        if (error) { hasError = true; errorMsg = error.message; }
+    }
+
+    if (hasError) {
+        console.error("Error API:", errorMsg);
+        alert("Falla de conexión o base de datos. " + errorMsg);
+    } else {
+        showToast("Paciente movido a la papelera");
         if (typeof window.loadHistoryList === 'function') window.loadHistoryList(false);
         if (typeof loadWardKanban === 'function') loadWardKanban();
 
@@ -5133,29 +5147,50 @@ window.showCurve = function(type) {
     const curveMeta = {
         'pe': {
             'f': [
-                { minAge: 0, maxAge: 24, url: 'assets/curvas/pe_f_0_2.png', xValue: edadMeses, yValue: peso, xMin: 0, xMax: 24, yMin: 2, yMax: 17, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'Peso (kg)' }
+                { minAge: 0, maxAge: 24, url: 'assets/curvas/pe_f_0_2.png', xValue: edadMeses, yValue: peso, xMin: 0, xMax: 24, yMin: 2, yMax: 17, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Peso (kg)' },
+                { minAge: 24, maxAge: 60, url: 'assets/curvas/pe_f_2_5.png', xValue: edadMeses, yValue: peso, xMin: 24, xMax: 60, yMin: 8, yMax: 25, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Peso (kg)' }
+            ],
+            'm': [
+                { minAge: 0, maxAge: 24, url: 'assets/curvas/pe_m_0_2.png', xValue: edadMeses, yValue: peso, xMin: 0, xMax: 24, yMin: 2, yMax: 17, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Peso (kg)' },
+                { minAge: 24, maxAge: 60, url: 'assets/curvas/pe_m_2_5.png', xValue: edadMeses, yValue: peso, xMin: 24, xMax: 60, yMin: 8, yMax: 25, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Peso (kg)' }
             ]
         },
         'te': {
             'f': [
-                { minAge: 0, maxAge: 24, url: 'assets/curvas/te_f_0_2.png', xValue: edadMeses, yValue: talla, xMin: 0, xMax: 24, yMin: 45, yMax: 95, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'Talla (cm)' },
-                { minAge: 60, maxAge: 228, url: 'assets/curvas/te_f_5_19.png', xValue: edadMeses, yValue: talla, xMin: 60, xMax: 228, yMin: 100, yMax: 180, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'Talla (cm)' }
+                { minAge: 0, maxAge: 24, url: 'assets/curvas/te_f_0_2.png', xValue: edadMeses, yValue: talla, xMin: 0, xMax: 24, yMin: 45, yMax: 95, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Talla (cm)' },
+                { minAge: 24, maxAge: 60, url: 'assets/curvas/te_f_2_5.png', xValue: edadMeses, yValue: talla, xMin: 24, xMax: 60, yMin: 75, yMax: 120, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Talla (cm)' },
+                { minAge: 60, maxAge: 228, url: 'assets/curvas/te_f_5_19.png', xValue: edadMeses, yValue: talla, xMin: 60, xMax: 228, yMin: 100, yMax: 180, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Talla (cm)' }
+            ],
+            'm': [
+                { minAge: 0, maxAge: 24, url: 'assets/curvas/te_m_0_2.png', xValue: edadMeses, yValue: talla, xMin: 0, xMax: 24, yMin: 45, yMax: 95, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Talla (cm)' },
+                { minAge: 24, maxAge: 60, url: 'assets/curvas/te_m_2_5.png', xValue: edadMeses, yValue: talla, xMin: 24, xMax: 60, yMin: 80, yMax: 120, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Talla (cm)' },
+                { minAge: 60, maxAge: 228, url: 'assets/curvas/te_m_5_19.png', xValue: edadMeses, yValue: talla, xMin: 60, xMax: 228, yMin: 100, yMax: 200, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'Talla (cm)' }
             ]
         },
         'pt': {
             'f': [
-                { minTalla: 45, maxTalla: 110, url: 'assets/curvas/pt_f_0_2.png', xValue: talla, yValue: peso, xMin: 45, xMax: 110, yMin: 1, yMax: 23, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Talla (cm)', yName: 'Peso (kg)' },
-                { minTalla: 65, maxTalla: 120, url: 'assets/curvas/pt_f_2_5.png', xValue: talla, yValue: peso, xMin: 65, xMax: 120, yMin: 6, yMax: 29, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Talla (cm)', yName: 'Peso (kg)' }
+                { minTalla: 45, maxTalla: 110, url: 'assets/curvas/pt_f_0_2.png', xValue: talla, yValue: peso, xMin: 45, xMax: 110, yMin: 1, yMax: 23, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Talla (cm)', yName: 'Peso (kg)' },
+                { minTalla: 65, maxTalla: 120, url: 'assets/curvas/pt_f_2_5.png', xValue: talla, yValue: peso, xMin: 65, xMax: 120, yMin: 6, yMax: 29, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Talla (cm)', yName: 'Peso (kg)' }
+            ],
+            'm': [
+                { minTalla: 45, maxTalla: 110, url: 'assets/curvas/pt_m_0_2.png', xValue: talla, yValue: peso, xMin: 45, xMax: 110, yMin: 1, yMax: 23, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Talla (cm)', yName: 'Peso (kg)' },
+                { minTalla: 65, maxTalla: 120, url: 'assets/curvas/pt_m_2_5.png', xValue: talla, yValue: peso, xMin: 65, xMax: 120, yMin: 6, yMax: 28, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Talla (cm)', yName: 'Peso (kg)' }
             ]
         },
         'pce': {
             'f': [
-                { minAge: 0, maxAge: 24, url: 'assets/curvas/pce_f_0_2.png', xValue: edadMeses, yValue: pc, xMin: 0, xMax: 24, yMin: 30, yMax: 51, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'PC (cm)' }
+                { minAge: 0, maxAge: 24, url: 'assets/curvas/pce_f_0_2.png', xValue: edadMeses, yValue: pc, xMin: 0, xMax: 24, yMin: 30, yMax: 51, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'PC (cm)' }
+            ],
+            'm': [
+                { minAge: 0, maxAge: 24, url: 'assets/curvas/pce_m_0_2.png', xValue: edadMeses, yValue: pc, xMin: 0, xMax: 24, yMin: 31, yMax: 52, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'PC (cm)' }
             ]
         },
         'imc': {
             'f': [
-                { minAge: 60, maxAge: 228, url: 'assets/curvas/imc_f_5_19.png', xValue: edadMeses, yValue: imc, xMin: 60, xMax: 228, yMin: 12, yMax: 38, pxLeft: 10.5, pxRight: 89.5, pxBottom: 12.0, pxTop: 88.0, xName: 'Meses', yName: 'IMC (kg/m2)' }
+                { minAge: 60, maxAge: 228, url: 'assets/curvas/imc_f_5_19.png', xValue: edadMeses, yValue: imc, xMin: 60, xMax: 228, yMin: 12, yMax: 38, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'IMC (kg/m2)' }
+            ],
+            'm': [
+                { minAge: 60, maxAge: 228, url: 'assets/curvas/imc_m_5_19.png', xValue: edadMeses, yValue: imc, xMin: 60, xMax: 228, yMin: 12, yMax: 36, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'IMC (kg/m2)' }
             ]
         }
     };
