@@ -1055,7 +1055,19 @@ function renderEvolutionChart(history) {
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    if (!history || history.length === 0) {
+    // Get current weight from AppState / input
+    const currentWeightInput = AppState.patient?.peso || parseFloat(document.getElementById('peso')?.value) || 0;
+    
+    // Check if the current weight is already the latest in history
+    const isCurrentInHistory = history && history.length > 0 && history[history.length - 1].peso_kg === currentWeightInput;
+    
+    // Plot the history points + the current weight if it's not 0 and not already the latest
+    let plotData = [...(history || [])];
+    if (currentWeightInput > 0 && !isCurrentInHistory) {
+        plotData.push({ peso_kg: currentWeightInput, isCurrent: true });
+    }
+
+    if (plotData.length === 0) {
         ctx.fillStyle = '#aaa';
         ctx.font = 'italic 10px Arial';
         ctx.textAlign = 'center';
@@ -1068,14 +1080,17 @@ function renderEvolutionChart(history) {
     const pesoAjustado = AppState.patient?.peso_ajustado || 0;
 
     // Normalize Data
-    const weights = history.map(h => h.peso_kg);
+    const weights = plotData.map(h => h.peso_kg);
     let allReferenceWeights = [pesoIdeal, pesoAjustado].filter(w => w > 0);
 
     const maxW = Math.max(...weights, ...allReferenceWeights) + 2;
     const minW = Math.max(0, Math.min(...weights, ...allReferenceWeights) - 2);
-    const xStep = (history.length > 1) ? (width - 2 * padding) / (history.length - 1) : 0;
+    const xStep = (plotData.length > 1) ? (width - 2 * padding) / (plotData.length - 1) : 0;
 
-    const getY = (w) => height - padding - ((w - minW) / (maxW - minW) * (height - 2 * padding));
+    const getY = (w) => {
+        if (maxW === minW) return height / 2;
+        return height - padding - ((w - minW) / (maxW - minW) * (height - 2 * padding));
+    };
 
     // Draw Reference Lines FIRST
     if (pesoIdeal > 0) {
@@ -1118,11 +1133,11 @@ function renderEvolutionChart(history) {
     ctx.stroke();
 
     // Draw Evolution Line
-    if (history.length > 1) {
+    if (plotData.length > 1) {
         ctx.beginPath();
         ctx.strokeStyle = '#f39c12';
         ctx.lineWidth = 2.5;
-        history.forEach((h, i) => {
+        plotData.forEach((h, i) => {
             const x = padding + i * xStep;
             const y = getY(h.peso_kg);
             if (i === 0) ctx.moveTo(x, y);
@@ -1132,20 +1147,22 @@ function renderEvolutionChart(history) {
     }
 
     // Draw Points
-    history.forEach((h, i) => {
-        const x = (history.length > 1) ? padding + i * xStep : width / 2;
+    plotData.forEach((h, i) => {
+        const x = (plotData.length > 1) ? padding + i * xStep : width / 2;
         const y = getY(h.peso_kg);
-        ctx.fillStyle = '#f39c12';
+        
+        // RED dot for current unsaved point, Orange for history
+        ctx.fillStyle = h.isCurrent ? '#e74c3c' : '#f39c12'; 
         ctx.beginPath();
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.arc(x, y, h.isCurrent ? 5 : 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
         // Label
-        ctx.fillStyle = '#333';
-        ctx.font = 'bold 9px Arial';
+        ctx.fillStyle = h.isCurrent ? '#e74c3c' : '#333';
+        ctx.font = h.isCurrent ? 'bold 10px Arial' : 'bold 9px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(h.peso_kg, x, y - 8);
     });
@@ -1310,10 +1327,12 @@ window.updatePatientEvolutionChart = async (nombre) => {
 
     if (!error && evolutionPoints.length > 0) {
         const history = evolutionPoints.slice(0, 10).reverse();
+        AppState.currentEvolutionHistory = history; // Store for real-time updates
         const lbl = document.getElementById('lblChartPatientName');
         if (lbl) lbl.innerText = nombre;
         renderEvolutionChart(history);
     } else {
+        AppState.currentEvolutionHistory = [];
         const lbl = document.getElementById('lblChartPatientName');
         if (lbl) lbl.innerText = nombre || '--';
         renderEvolutionChart([]);
@@ -1620,6 +1639,11 @@ function calculateRequirements() {
 
         calcHydration();
         runSimulation();
+    }
+    
+    // Re-render chart to reflect current point instantly
+    if (typeof renderEvolutionChart === 'function') {
+        renderEvolutionChart(AppState.currentEvolutionHistory || []);
     }
 }
 
