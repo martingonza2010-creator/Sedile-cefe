@@ -698,34 +698,44 @@
                         en Peso Actual</small>
                 </section>
 
-                <!-- SECCIÓN 2: RTH E INFUSIÓN (COMPACTA) -->
-                <section class="card infusion-card" style="margin-bottom: 15px; border-left: 4px solid var(--accent); padding: 12px 20px;">
-                    <div class="infusion-box-compact">
-                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:15px;">
-                            <div style="display:flex; align-items:center; gap:8px; min-width:200px;">
-                                <span style="font-size:1.1rem;">⏱️</span>
-                                <h4 style="margin:0; font-size:0.85rem; color:var(--secondary); white-space:nowrap;">RTH e Infusión</h4>
-                                <select id="infusionRTHSelect" class="select-modern" onchange="window.calcInfusion()" style="padding:4px 8px; font-size:0.75rem; min-width:180px;">
-                                    <option value="">-- Sin RTH --</option>
+                <!-- SECCIÓN 2: RTH E INFUSIÓN (COMPACTA CENTRADA) -->
+                <section class="card infusion-card" style="margin-bottom: 20px; background: rgba(231, 76, 60, 0.02); border: 1px solid rgba(231, 76, 60, 0.15); border-radius: 16px; padding: 15px;">
+                    <div class="infusion-box-compact" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%;">
+                        
+                        <h4 style="margin: 0 0 15px 0; font-size: 0.95rem; color: var(--secondary); display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border-bottom: 1px dashed rgba(231, 76, 60, 0.2); padding-bottom: 10px;">
+                            <span style="font-size: 1.2rem;">⏱️</span> RTH e Infusión (SEDILE)
+                        </h4>
+
+                        <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 20px; width: 100%;">
+                            
+                            <div class="mini-input-compact" style="align-items: center; min-width: 280px; flex: 1; max-width: 400px;">
+                                <label style="font-size: 0.7rem; color: #555; font-weight: 700; margin-bottom: 4px;">Fórmula Instalada (RTH)</label>
+                                <select id="infusionRTHSelect" class="select-modern" onchange="window.calcInfusion()" style="padding: 8px 12px; font-size: 0.85rem; width: 100%; text-align: center; background: white; border: 1px solid #ddd; border-radius: 8px;">
+                                    <option value="">-- No usar fórmula RTH --</option>
                                 </select>
                             </div>
                             
-                            <div style="display:flex; gap:15px; align-items:center; flex:1; justify-content:flex-end;">
-                                <div class="mini-input-compact">
-                                    <label>Instalación</label>
-                                    <input type="time" id="infusionStart" onchange="window.calcInfusion()" style="padding:4px; font-size:0.75rem; width:100px;">
-                                </div>
-                                <div class="mini-input-compact">
-                                    <label>Vel. (ml/hr) <span id="infusionSuggestionLabel" onclick="window.applyInfusionSuggestion()" style="cursor:pointer; color:var(--primary); text-decoration:underline;">Sug: 80</span></label>
-                                    <input type="number" id="infusionRate" placeholder="Ej. 60" oninput="window.calcInfusion()" style="padding:4px; font-size:0.8rem; width:80px; font-weight:700;">
-                                </div>
-                                <div id="infusionResultBox" style="display:none; background:rgba(231, 76, 60, 0.05); padding:4px 10px; border-radius:8px; border:1px solid rgba(231, 76, 60, 0.1);">
-                                    <span style="font-size:0.7rem; color:#666;">Fin:</span>
-                                    <strong id="valEndTime" style="color:var(--accent); font-size:0.9rem;">--:--</strong>
+                            <div class="mini-input-compact" style="align-items: center;">
+                                <label style="font-size: 0.7rem; color: #555; font-weight: 700; margin-bottom: 4px;">Hora Instalación</label>
+                                <input type="time" id="infusionStart" onchange="window.calcInfusion()" style="padding: 8px 12px; font-size: 0.9rem; width: 130px; text-align: center; background: white; border: 1px solid #ddd; border-radius: 8px;">
+                            </div>
+                            
+                            <div class="mini-input-compact" style="align-items: center;">
+                                <label style="font-size: 0.7rem; color: #555; font-weight: 700; margin-bottom: 4px;">Velocidad (ml/hr) <span id="infusionSuggestionLabel" onclick="window.applyInfusionSuggestion()" style="cursor:pointer; color:var(--primary); font-size: 0.65rem; margin-left: 5px; background: #eaf2f8; padding: 2px 6px; border-radius: 4px; border: 1px solid #d4e6f1;" title="Aplicar sugerencia">Sug: 80</span></label>
+                                <input type="number" id="infusionRate" placeholder="Ej. 60" oninput="window.calcInfusion()" style="padding: 8px 12px; font-size: 0.9rem; width: 130px; font-weight: 700; text-align: center; background: white; border: 1px solid #ddd; border-radius: 8px;">
+                            </div>
+
+                            <div id="infusionResultBox" style="display:none; align-items: center; justify-content: center; background: white; padding: 8px 25px; border-radius: 12px; border: 2px solid rgba(231, 76, 60, 0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <span style="font-size: 0.65rem; color: #888; font-weight: 700; text-transform: uppercase;">Término de Envase</span>
+                                    <strong id="valEndTime" style="color: var(--accent); font-size: 1.4rem; line-height: 1;">--:--</strong>
+                                    <span id="valDuration" style="font-size: 0.7rem; color: #999; font-weight: 500; margin-top: 3px;">(0 hrs)</span>
                                 </div>
                             </div>
                         </div>
-                        <div id="valLogisticsBox" style="display:none; margin-top:8px; font-size:0.65rem; color:#b7950b; background:#fef9e7; padding:4px 10px; border-radius:6px; border:1px solid #f9e79f;"></div>
+                        
+                        <div id="valLogisticsBox" style="display:none; margin-top:15px; font-size:0.75rem; color:#b7950b; background:#fef9e7; padding:8px 15px; border-radius:8px; border:1px dashed #f1c40f; max-width: 600px; text-align: center; width: 100%;"></div>
+
                     </div>
                 </section>
 
@@ -1659,7 +1669,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.45"></script>
+        <script src="app_core.js?v=4.46"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
