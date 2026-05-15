@@ -437,37 +437,37 @@ function initCompactLayout() {
                 const actividad = parseFloat(document.getElementById('actividad').value) || 1.2;
                 const diagnostico = document.getElementById('diagnostico')?.value || '';
                 const cama = document.getElementById('cama')?.value || '';
-                const tmt = parseFloat(document.getElementById('goalTotal').value) || 0;
+                const tmt = parseFloat(document.getElementById('goalTotal')?.value) || 0;
 
                 // FULL STATE PERSISTENCE V3.51
                 const metadata = {
                     simulator: {
-                        formula: document.getElementById('formulaSelect').value,
-                        volume: document.getElementById('volume').value,
-                        dilution: document.getElementById('dilution').value,
+                        formula: document.getElementById('formulaSelect')?.value || "",
+                        volume: document.getElementById('volume')?.value || "",
+                        dilution: document.getElementById('dilution')?.value || "",
                         goal_total: tmt,
                         macro_mode: macroGoalMode || 'gkg',
-                        goal_prot: document.getElementById('goalProtKg').value,
-                        goal_cho: document.getElementById('goalCHOKg').value,
-                        goal_lip: document.getElementById('goalLipKg').value,
+                        goal_prot: document.getElementById('goalProtKg')?.value || "",
+                        goal_cho: document.getElementById('goalCHOKg')?.value || "",
+                        goal_lip: document.getElementById('goalLipKg')?.value || "",
                         modules: {
-                            nessucar: document.getElementById('modNessucar').value,
-                            mct: document.getElementById('modMCT').value,
-                            enterex: document.getElementById('modEnterex').value,
-                            banatrol: document.getElementById('modBanatrol').value,
-                            proteinex: document.getElementById('modProteinex').value,
-                            fresubin: document.getElementById('modFresubin').value
+                            nessucar: document.getElementById('modNessucar')?.value || "",
+                            mct: document.getElementById('modMCT')?.value || "",
+                            enterex: document.getElementById('modEnterex')?.value || "",
+                            banatrol: document.getElementById('modBanatrol')?.value || "",
+                            proteinex: document.getElementById('modProteinex')?.value || "",
+                            fresubin: document.getElementById('modFresubin')?.value || ""
                         },
                         oral: {
-                            kcal: document.getElementById('oralKcal').value,
-                            prot: document.getElementById('oralProt').value,
-                            cho: document.getElementById('oralCHO').value,
-                            lip: document.getElementById('oralLip').value,
-                            water: document.getElementById('oralWater').value
+                            kcal: document.getElementById('oralKcal')?.value || "",
+                            prot: document.getElementById('oralProt')?.value || "",
+                            cho: document.getElementById('oralCHO')?.value || "",
+                            lip: document.getElementById('oralLip')?.value || "",
+                            water: document.getElementById('oralWater')?.value || ""
                         },
                         iv: {
-                            type: document.getElementById('ivType').value,
-                            volume: document.getElementById('ivVolume').value
+                            type: document.getElementById('ivType')?.value || "",
+                            volume: document.getElementById('ivVolume')?.value || ""
                         }
                     },
                     assessment: {
@@ -482,14 +482,17 @@ function initCompactLayout() {
                             pa: document.getElementById('pabdominal')?.value || ""
                         },
                         talla: {
-                            mediaenv: document.getElementById('mediaenv').value,
-                            envcomp: document.getElementById('envcomp').value
+                            mediaenv: document.getElementById('mediaenv')?.value || "",
+                            envcomp: document.getElementById('envcomp')?.value || ""
                         },
-                        edema: document.getElementById('edemaGrade').value,
+                        edema: document.getElementById('edemaGrade')?.value || "",
                         exams: Array.from(document.querySelectorAll('#examsContainer .exam-row')).map(row => {
                             const inputs = row.querySelectorAll('input');
-                            return { date: inputs[0].value, type: inputs[1].value, res: inputs[2].value };
-                        }),
+                            if(inputs && inputs.length >= 3) {
+                                return { date: inputs[0].value, type: inputs[1].value, res: inputs[2].value };
+                            }
+                            return null;
+                        }).filter(Boolean),
                         cribaje: {
                             nrs: document.getElementById('nrs2002')?.value || "",
                             vgs: document.getElementById('vgs')?.value || ""
