@@ -283,28 +283,35 @@ window.login = async function () {
 };
 
 window.logout = async function () {
-    // 1. Clear Supabase Session
-    await supabaseClient.auth.signOut();
-
-    // 2. Clear Local Storage
-    localStorage.clear();
+    // 1. Mostrar login e iniciar limpieza de forma inmediata para respuesta visual instantánea
+    if (typeof showLogin === 'function') showLogin();
+    
     sessionStorage.clear();
-
-    // 3. Unregister Service Workers
+    localStorage.clear();
+    
+    // 2. Ejecutar cierre de sesión en Supabase (no bloqueante)
+    try {
+        supabaseClient.auth.signOut();
+    } catch (e) {
+        console.error(e);
+    }
+    
+    // 3. Limpiar service workers y cachés en segundo plano sin bloquear la navegación
     if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const registration of registrations) {
-            await registration.unregister();
-        }
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            for (const registration of registrations) {
+                registration.unregister();
+            }
+        });
     }
-
-    // 4. Clear ALL Caches
+    
     if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map(key => caches.delete(key)));
+        caches.keys().then(keys => {
+            Promise.all(keys.map(key => caches.delete(key)));
+        });
     }
 
-    // 5. Force Hard Reload (Clean)
+    // 4. Redirigir de inmediato al origen limpio (hall de inicio)
     window.location.replace(window.location.origin);
 }
 
