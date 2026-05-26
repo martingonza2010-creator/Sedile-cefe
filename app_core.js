@@ -308,31 +308,167 @@ window.logout = async function () {
     window.location.replace(window.location.origin);
 }
 
-function showApp() {
+async function hashPIN(pin) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pin);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function showApp() {
     try {
         const authScreen = document.getElementById('auth-screen');
+        if (authScreen) authScreen.style.display = 'none';
+
+        // Verificar si la sesión ya está desbloqueada por PIN en esta pestaña
+        if (sessionStorage.getItem('sedile_unlocked') === 'true') {
+            const mainApp = document.getElementById('main-app');
+            const pinLock = document.getElementById('pin-lock-screen');
+            if (mainApp) mainApp.style.display = 'block';
+            if (pinLock) pinLock.style.display = 'none';
+
+            if (AppState.user && AppState.user.user_metadata) {
+                const name = AppState.user.user_metadata.full_name || AppState.user.email || 'Usuario';
+                const displayEl = document.getElementById('userNameDisplay');
+                if (displayEl) {
+                    displayEl.innerHTML = `Nutricionista <b>${name}</b>`;
+                }
+            }
+            return;
+        }
+
+        // Si no está desbloqueada, ocultamos el dashboard y mostramos el bloqueo de PIN
         const mainApp = document.getElementById('main-app');
-        if (!authScreen || !mainApp) return;
+        if (mainApp) mainApp.style.display = 'none';
 
-        authScreen.style.display = 'none';
-        mainApp.style.display = 'block';
+        showPINLockScreen();
+    } catch (err) {
+        console.error("🔴 Error displaying App:", err);
+    }
+}
 
-        if (AppState.user && AppState.user.user_metadata) {
-            const name = AppState.user.user_metadata.full_name || AppState.user.email || 'Usuario';
-            const displayEl = document.getElementById('userNameDisplay');
-            if (displayEl) {
-                displayEl.innerHTML = `Nutricionista <b>${name}</b>`;
+async function showPINLockScreen() {
+    const lockScreen = document.getElementById('pin-lock-screen');
+    if (!lockScreen) return;
+    lockScreen.style.display = 'flex';
+
+    const pinInput = document.getElementById('pinInput');
+    const pinConfirmInput = document.getElementById('pinConfirmInput');
+    const pinConfirmGroup = document.getElementById('pinConfirmGroup');
+    const title = document.getElementById('pinWelcomeTitle');
+    const desc = document.getElementById('pinWelcomeDesc');
+    const errEl = document.getElementById('pinErrorMessage');
+
+    if (pinInput) {
+        pinInput.value = '';
+        pinInput.focus();
+    }
+    if (pinConfirmInput) pinConfirmInput.value = '';
+    if (errEl) errEl.style.display = 'none';
+
+    const name = AppState.user?.user_metadata?.full_name || AppState.user?.email || 'Usuario';
+    const pinHash = AppState.user?.user_metadata?.pin_hash;
+
+    if (!pinHash) {
+        // Caso A: Primer acceso (Configurar PIN)
+        title.innerText = "🔒 Configura tu PIN";
+        desc.innerText = `¡Bienvenido, ${name}! Define tu código secreto de 4 a 6 dígitos para proteger tus datos.`;
+        if (pinConfirmGroup) pinConfirmGroup.style.display = 'block';
+    } else {
+        // Caso B: Usuario recurrente (Desbloqueo)
+        title.innerText = "🔒 Bloqueo de Seguridad";
+        desc.innerText = `Hola, ${name}. Ingresa tu código de acceso para continuar.`;
+        if (pinConfirmGroup) pinConfirmGroup.style.display = 'none';
+    }
+}
+
+window.submitPIN = async function() {
+    const pinInput = document.getElementById('pinInput');
+    const pinConfirmInput = document.getElementById('pinConfirmInput');
+    const errEl = document.getElementById('pinErrorMessage');
+    
+    if (errEl) errEl.style.display = 'none';
+
+    const pinVal = pinInput ? pinInput.value.trim() : '';
+    if (!/^[0-9]{4,6}$/.test(pinVal)) {
+        showPINError("⚠️ El PIN debe ser numérico y tener entre 4 y 6 dígitos.");
+        return;
+    }
+
+    const pinHashExist = AppState.user?.user_metadata?.pin_hash;
+    
+    if (!pinHashExist) {
+        // Flujo de Configuración Inicial
+        const confirmVal = pinConfirmInput ? pinConfirmInput.value.trim() : '';
+        if (pinVal !== confirmVal) {
+            showPINError("⚠️ Los códigos no coinciden. Inténtalo de nuevo.");
+            return;
+        }
+
+        try {
+            const hashed = await hashPIN(pinVal);
+            
+            // Guardar en la metadata de Supabase Auth
+            const { data, error } = await supabaseClient.auth.updateUser({
+                data: { pin_hash: hashed }
+            });
+
+            if (error) throw error;
+
+            AppState.user = data.user;
+            sessionStorage.setItem('sedile_unlocked', 'true');
+            
+            const lockScreen = document.getElementById('pin-lock-screen');
+            if (lockScreen) lockScreen.style.display = 'none';
+            await showApp();
+            showToast("✅ PIN secreto configurado con éxito.");
+        } catch (err) {
+            showPINError("🔴 Error al guardar en Supabase: " + err.message);
+        }
+    } else {
+        // Flujo de Validación Recurrente
+        const hashedInput = await hashPIN(pinVal);
+        if (hashedInput === pinHashExist) {
+            sessionStorage.setItem('sedile_unlocked', 'true');
+            const lockScreen = document.getElementById('pin-lock-screen');
+            if (lockScreen) lockScreen.style.display = 'none';
+            await showApp();
+            showToast("🔓 Acceso concedido.");
+        } else {
+            showPINError("❌ Código secreto incorrecto. Inténtalo de nuevo.");
+            if (pinInput) {
+                pinInput.value = '';
+                pinInput.focus();
             }
         }
-    } catch (err) {
-        console.error("ðŸ”´ Error displaying App:", err);
+    }
+};
+
+function showPINError(msg) {
+    const errEl = document.getElementById('pinErrorMessage');
+    if (errEl) {
+        errEl.innerText = msg;
+        errEl.style.display = 'block';
     }
 }
 
 function showLogin() {
     document.getElementById('auth-screen').style.display = 'grid';
     document.getElementById('main-app').style.display = 'none';
+    const pinLock = document.getElementById('pin-lock-screen');
+    if (pinLock) pinLock.style.display = 'none';
 }
+
+// Escucha para enviar el PIN con la tecla Enter
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        const lockScreen = document.getElementById('pin-lock-screen');
+        if (lockScreen && lockScreen.style.display === 'flex') {
+            window.submitPIN();
+        }
+    }
+});
 
 // --- 5. COMPACT UI LOGIC ---
 
@@ -4065,7 +4201,9 @@ function initGlobalEvents() {
 
     // Edema/Dry Weight Logic
     const selEdema = document.getElementById('edemaGrade');
-    if (selEdema) selEdema.onchange = calcDryWeight;
+    if (selEdema) selEdema.onchange = window.updateDryWeight;
+    const selAscites = document.getElementById('ascitesGrade');
+    if (selAscites) selAscites.onchange = window.updateDryWeight;
 
     // Exams Logic
     const btnAddExam = document.getElementById('btnAddExam');
@@ -4432,13 +4570,9 @@ function calcTMB_OMS() {
 }
 
 function calcDryWeight() {
-    const p = AppState.patient;
-    const grade = parseInt(document.getElementById('edemaGrade').value);
-    if (!p.peso) return;
-
-    // Grades: 0, 1, 3, 7, 10
-    const dry = p.peso - grade;
-    document.getElementById('valDryWeight').innerText = dry.toFixed(1);
+    if (typeof window.updateDryWeight === 'function') {
+        window.updateDryWeight();
+    }
 }
 
 // --- 18. BIOCHEMICAL EXAMS HELPERS ---

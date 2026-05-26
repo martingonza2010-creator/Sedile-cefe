@@ -32,6 +32,34 @@
         </div>
     </section>
 
+    <!-- PANTALLA DE BLOQUEO DE PIN (2FA LOCAL) -->
+    <section id="pin-lock-screen" class="pin-container" style="display:none;">
+        <div class="pin-card">
+            <img src="https://i.imgur.com/ugEhxa1.jpeg" alt="Logo HRA" class="logo-entrance">
+            <h2 id="pinWelcomeTitle">🔒 Desbloquear SEDILE</h2>
+            <p id="pinWelcomeDesc">Hola. Ingresa tu código de acceso para continuar.</p>
+            
+            <!-- Contenedor del input del PIN -->
+            <div class="pin-input-group">
+                <input type="password" id="pinInput" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="off" style="-webkit-text-security: disc;">
+            </div>
+
+            <!-- Confirmación (Solo se muestra la primera vez al configurar el PIN) -->
+            <div id="pinConfirmGroup" class="pin-input-group" style="display:none; margin-top:10px;">
+                <p style="font-size:0.75rem; color:#7f8c8d; margin-bottom:5px;">Confirma tu código secreto:</p>
+                <input type="password" id="pinConfirmInput" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="off" style="-webkit-text-security: disc;">
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="pin-actions">
+                <button id="btnUnlockPIN" class="btn-primary" onclick="window.submitPIN()" style="width:100%;">Confirmar</button>
+                <button id="btnLogoutPIN" class="btn-secondary" onclick="window.logout()" style="margin-top:10px; width:100%; border:1px solid #ddd; background:transparent; color:#666;">Cerrar Sesión</button>
+            </div>
+            
+            <p id="pinErrorMessage" style="color:#e74c3c; font-size:0.8rem; margin-top:12px; font-weight:600; display:none;"></p>
+        </div>
+    </section>
+
     <!-- APLICACIÓN PRINCIPAL (OCULTA HASTA LOGIN) -->
     <div id="main-app" class="app-container compact-mode" style="display:none;">
 
