@@ -1920,12 +1920,23 @@ window.toggleQuemado = () => {
 
 window.calculatePediatricAge = () => {
     const fn = document.getElementById('fechaNacimiento').value;
-    if (!fn) return;
+    if (!fn) {
+        // If birth date is not entered, hide panels
+        const panelPeds = document.getElementById('pedsPrematurityPanel');
+        if (panelPeds) panelPeds.style.display = 'none';
+        const panelNeo = document.getElementById('neonateCorrectedAgePanel');
+        if (panelNeo) panelNeo.style.display = 'none';
+        return;
+    }
 
     // Fix TimeZone offset issues by parsing the date string directly
     const [y, mm, d] = fn.split('-');
     const birth = new Date(y, mm - 1, d);
     const now = new Date();
+
+    // Clear hours to ensure exact day differences
+    birth.setHours(0,0,0,0);
+    now.setHours(0,0,0,0);
 
     let years = now.getFullYear() - birth.getFullYear();
     let months = now.getMonth() - birth.getMonth();
@@ -1967,6 +1978,125 @@ window.calculatePediatricAge = () => {
     AppState.patient.exactMonths = evalMonths;
     AppState.patient.ageParts = { y: years, m: months, d: days };
     AppState.patient.evalParts = { y: evalY, m: evalM, d: days };
+
+    // Calculate Corrected Age
+    const isPeds = AppState.patient.type === 'pediatric';
+    const isNeo = AppState.patient.type === 'neonate';
+    
+    // Chronological days calculation
+    const totalDaysChrono = Math.floor(Math.abs(now - birth) / (1000 * 60 * 60 * 24));
+
+    // Show/Hide prematurity panel in pediatric mode based on chronological age (< 2 years)
+    const pedsPrematurityPanel = document.getElementById('pedsPrematurityPanel');
+    if (pedsPrematurityPanel) {
+        pedsPrematurityPanel.style.display = (isPeds && totalMonths < 24) ? 'block' : 'none';
+    }
+
+    if (isPeds && totalMonths < 24) {
+        const semNacer = parseInt(document.getElementById('egSemanasPeds')?.value) || 0;
+        const diasNacer = parseInt(document.getElementById('egDiasPeds')?.value) || 0;
+        const displayEl = document.getElementById('lblCorrectedAgeDisplay');
+
+        if (semNacer > 0 && semNacer < 37) {
+            // Premature baby!
+            const prematurityDays = (40 * 7) - (semNacer * 7 + diasNacer);
+            const correctedDays = totalDaysChrono - prematurityDays;
+
+            if (correctedDays < 0) {
+                if (displayEl) {
+                    displayEl.innerHTML = `⚠️ No ha alcanzado la Fecha Probable de Parto (FPP: ${Math.abs(correctedDays)} días restantes)`;
+                }
+                AppState.patient.exactMonthsCorr = 0;
+                AppState.patient.agePartsCorr = { y: 0, m: 0, d: 0 };
+                AppState.patient.evalPartsCorr = { y: 0, m: 0, d: 0 };
+            } else {
+                const corrY = Math.floor(correctedDays / 365.25);
+                const remainingDays = correctedDays % 365.25;
+                const corrM = Math.floor(remainingDays / 30.4375);
+                const corrD = Math.round(remainingDays % 30.4375);
+
+                let corrStr = "Edad Corregida: ";
+                if (corrY > 0) corrStr += `${corrY} año${corrY > 1 ? 's' : ''}, `;
+                if (corrM > 0 || corrY > 0) corrStr += `${corrM} mes${corrM !== 1 ? 'es' : ''}, `;
+                corrStr += `${corrD} día${corrD !== 1 ? 's' : ''}`;
+
+                if (displayEl) displayEl.innerText = corrStr;
+
+                let evalMonthsCorr = (corrY * 12) + corrM;
+                let corrEvalY = corrY;
+                let corrEvalM = corrM;
+                if (corrD >= 16) {
+                    evalMonthsCorr += 1;
+                    corrEvalM += 1;
+                    if (corrEvalM >= 12) {
+                        corrEvalY += 1;
+                        corrEvalM -= 12;
+                    }
+                }
+
+                AppState.patient.exactMonthsCorr = evalMonthsCorr;
+                AppState.patient.agePartsCorr = { y: corrY, m: corrM, d: corrD };
+                AppState.patient.evalPartsCorr = { y: corrEvalY, m: corrEvalM, d: corrD };
+            }
+        } else {
+            if (displayEl) displayEl.innerText = "Edad Corregida: -- (No prematuro / No ingresado)";
+            delete AppState.patient.exactMonthsCorr;
+            delete AppState.patient.agePartsCorr;
+            delete AppState.patient.evalPartsCorr;
+        }
+    } else {
+        delete AppState.patient.exactMonthsCorr;
+        delete AppState.patient.agePartsCorr;
+        delete AppState.patient.evalPartsCorr;
+    }
+
+    // Neonatal Corrected Age calculations
+    const neonateAgePanel = document.getElementById('neonateCorrectedAgePanel');
+    if (neonateAgePanel) {
+        neonateAgePanel.style.display = isNeo ? 'flex' : 'none';
+    }
+
+    if (isNeo) {
+        const semNacer = parseInt(document.getElementById('egSemanas')?.value) || 0;
+        const diasNacer = parseInt(document.getElementById('egDias')?.value) || 0;
+
+        const lblChrono = document.getElementById('lblNeonateChronologicalAge');
+        const lblCorrGest = document.getElementById('lblNeonateCorrectedGestation');
+        const lblCorrPost = document.getElementById('lblNeonateCorrectedPostnatal');
+
+        if (lblChrono) {
+            lblChrono.innerText = `Edad Cronológica Postnatal: ${totalDaysChrono} días (${Math.floor(totalDaysChrono / 7)} sem, ${totalDaysChrono % 7} días)`;
+        }
+
+        if (semNacer > 0) {
+            // Corrected Gestational Age: EG al nacer + chronological age
+            const totalDaysGestNacer = (semNacer * 7) + diasNacer;
+            const totalDaysGestCorr = totalDaysGestNacer + totalDaysChrono;
+            const semGestCorr = Math.floor(totalDaysGestCorr / 7);
+            const diasGestCorr = totalDaysGestCorr % 7;
+
+            if (lblCorrGest) {
+                lblCorrGest.innerText = `Edad Gestacional Corregida: ${semGestCorr} semanas + ${diasGestCorr} días`;
+            }
+
+            // Corrected Postnatal Age: chronological age - prematurity days
+            const prematurityDays = (40 * 7) - totalDaysGestNacer;
+            const correctedDaysPost = totalDaysChrono - prematurityDays;
+
+            if (lblCorrPost) {
+                if (correctedDaysPost < 0) {
+                    lblCorrPost.innerText = `Edad Postnatal Corregida: -${Math.abs(correctedDaysPost)} días (Faltan ${Math.abs(correctedDaysPost)} días para término)`;
+                } else {
+                    const corrPostSem = Math.floor(correctedDaysPost / 7);
+                    const corrPostDias = correctedDaysPost % 7;
+                    lblCorrPost.innerText = `Edad Postnatal Corregida: ${corrPostSem} semanas + ${corrPostDias} días`;
+                }
+            }
+        } else {
+            if (lblCorrGest) lblCorrGest.innerText = `Edad Gestacional Corregida: -- (Falta EG al nacer)`;
+            if (lblCorrPost) lblCorrPost.innerText = `Edad Postnatal Corregida: -- (Falta EG al nacer)`;
+        }
+    }
 
     calculateRequirements();
 };
@@ -2138,7 +2268,8 @@ function renderPediatricZScores() {
 
     if (p.type !== 'pediatric' && p.type !== 'neonate') return;
 
-    let m = p.exactMonths || 0;
+    const useCorrected = document.getElementById('chkUseCorrectedAge')?.checked;
+    let m = (useCorrected && p.exactMonthsCorr !== undefined && p.type === 'pediatric') ? p.exactMonthsCorr : (p.exactMonths || 0);
     if (m < 0) m = 0;
 
     const cm = p.estatura > 3 ? p.estatura : p.estatura * 100;
@@ -2151,6 +2282,10 @@ function renderPediatricZScores() {
     let html = '';
 
     const specCond = document.getElementById('specialCondition')?.value || 'none';
+    if (useCorrected && p.exactMonthsCorr !== undefined && p.type === 'pediatric') {
+        html += `<div style="grid-column:1/-1; background:rgba(142,68,173,0.1); padding:6px; border-radius:6px; margin-bottom:6px; color:#8e44ad; font-size:0.65rem; text-align:center; font-weight:700; border:1px solid rgba(142,68,173,0.2);">👶 Evaluación: Utilizando Edad Corregida para cálculo de Z-Scores (Prematuro).</div>`;
+    }
+
     if (specCond === 'down') {
         html += `<div style="grid-column:1/-1; background:rgba(211,84,0,0.1); padding:4px; border-radius:4px; margin-bottom:4px; color:#d35400; font-size:0.65rem; text-align:center;">ðŸ“Š <b>Zemel (S. Down):</b> Evaluando curvas LMS vía Interpolación Geométrica (Hitos).</div>`;
     } else if (specCond.startsWith('cp_')) {
@@ -2292,7 +2427,7 @@ function renderPediatricZScores() {
             html += makeBadge('Condición', null, 'Término', '#2980b9');
         }
     } else {
-        const parts = AppState.patient.ageParts || { y: 0, m: 0, d: 0 };
+        const parts = (useCorrected && p.exactMonthsCorr !== undefined && p.type === 'pediatric') ? (p.agePartsCorr || { y: 0, m: 0, d: 0 }) : (p.ageParts || { y: 0, m: 0, d: 0 });
         const y = parts.y;
         const mt = parts.m;
         const d = parts.d;

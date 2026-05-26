@@ -238,28 +238,49 @@
 
                         <!-- V3.80: Pediatric & Neonatal Specific Rows -->
                         <div id="rowPediatric"
-                            style="display:none; gap:10px; margin-top:10px; background:#e8f4f8; padding:8px; border-radius:8px;">
-                            <div class="mini-input" style="flex:1;">
+                            style="display:none; gap:10px; margin-top:10px; background:#e8f4f8; padding:8px; border-radius:8px; flex-wrap:wrap;">
+                            <div class="mini-input" style="flex:1; min-width:140px;">
                                 <label>Fecha Nacimiento</label>
                                 <input type="date" id="fechaNacimiento" onchange="calculatePediatricAge()">
                                 <div id="lblExactAge" style="font-size:0.65rem; color:#2980b9; margin-top:2px;"></div>
                             </div>
-                            <div class="mini-input" style="flex:1;">
+                            <div class="mini-input" style="flex:1; min-width:140px;">
                                 <label>Perímetro Craneal (cm)</label>
                                 <input type="number" step="0.1" id="perimetroCraneal" placeholder="cm"
                                     oninput="calculateRequirements()">
+                            </div>
+                            <!-- V4.60: Pediatric prematurity panel -->
+                            <div id="pedsPrematurityPanel" style="display:none; width:100%; margin-top:8px; padding:10px; background:#f5eef8; border:1px solid #ebdef0; border-radius:8px;">
+                                <h5 style="margin:0 0 8px 0; color:#8e44ad; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:5px;">👶 Edad Corregida (Prematuros &lt; 2 Años)</h5>
+                                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                                    <div class="mini-input" style="margin-bottom:0; flex:1; min-width:120px;">
+                                        <label style="font-size:0.65rem;">EG al Nacer (Semanas)</label>
+                                        <input type="number" id="egSemanasPeds" placeholder="E.g. 32" min="20" max="42" oninput="calculatePediatricAge()">
+                                    </div>
+                                    <div class="mini-input" style="margin-bottom:0; flex:1; min-width:100px;">
+                                        <label style="font-size:0.65rem;">Días Extras (+)</label>
+                                        <input type="number" id="egDiasPeds" placeholder="0" min="0" max="6" oninput="calculatePediatricAge()">
+                                    </div>
+                                    <div style="flex:2; min-width:180px; font-size:0.75rem; color:#8e44ad; font-weight:600; line-height:1.2; display:flex; flex-direction:column; justify-content:center;">
+                                        <div id="lblCorrectedAgeDisplay" style="margin-bottom:4px;">Edad Corregida: --</div>
+                                        <label style="font-size:0.65rem; color:#666; cursor:pointer; display:flex; align-items:center; gap:4px; font-weight:600;">
+                                            <input type="checkbox" id="chkUseCorrectedAge" onchange="calculatePediatricAge()" checked>
+                                            Usar Edad Corregida en curvas Z-Score
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <div id="rowNeonate"
                             style="display:none; gap:10px; margin-top:10px; background:#f9ebea; padding:8px; border-radius:8px; flex-wrap:wrap;">
                             <div class="mini-input" style="flex:1; min-width: 110px;">
-                                <label>Edad Gestacional (Semanas)</label>
-                                <input type="number" id="egSemanas" placeholder="Sem" oninput="calculateRequirements()">
+                                <label>EG al Nacer (Semanas)</label>
+                                <input type="number" id="egSemanas" placeholder="Sem" oninput="calculateRequirements(); calculatePediatricAge();">
                             </div>
                             <div class="mini-input" style="flex:1; min-width: 90px;">
                                 <label>Días extras (+)</label>
-                                <input type="number" id="egDias" placeholder="Días" oninput="calculateRequirements()">
+                                <input type="number" id="egDias" placeholder="Días" oninput="calculateRequirements(); calculatePediatricAge();">
                             </div>
                             <!-- NEW V3.95: Growth Velocity Inputs -->
                             <div class="mini-input" style="flex:1; min-width: 110px;">
@@ -271,6 +292,12 @@
                                 <label style="color:#27ae60;">Días Medición</label>
                                 <input type="number" id="diasMedicion" placeholder="Días"
                                     oninput="calculateRequirements()">
+                            </div>
+                            <!-- V4.60: Neonato Age Calculation Display -->
+                            <div id="neonateCorrectedAgePanel" style="width:100%; margin-top:8px; padding:10px; background:#fdf2e9; border:1px solid #fadbd8; border-radius:8px; font-size:0.75rem; color:#c0392b; font-weight:600; display:none; flex-direction:column; gap:4px;">
+                                <div id="lblNeonateChronologicalAge">Edad Cronológica Postnatal: --</div>
+                                <div id="lblNeonateCorrectedGestation">Edad Gestacional Corregida: --</div>
+                                <div id="lblNeonateCorrectedPostnatal">Edad Postnatal Corregida: --</div>
                             </div>
                         </div>
 
