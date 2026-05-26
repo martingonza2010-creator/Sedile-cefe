@@ -1,15 +1,19 @@
+// --- EMERGENCY ERROR HANDLER & UNHANDLED REJECTIONS ---
+window.onerror = function (msg, url, line, col, error) {
+    alert("⚠️  Error de Script (V3.6): " + msg + "\nLínea: " + line);
+    console.error(error);
+    return false;
+};
+
+window.addEventListener('unhandledrejection', function (event) {
+    console.error('⚠️ Unhandled Promise Rejection:', event.reason);
+});
+
 // --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
 // --- 1. SUPABASE CONFIGURATION ---
 const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
 const supabaseKey = 'sb_publishable_xCxGjcAngmfd0hJYv2uphg_yB-pF3Hp';
-const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-// --- EMERGENCY ERROR HANDLER ---
-window.onerror = function (msg, url, line, col, error) {
-    alert("⚠️ Error de Script (V3.6): " + msg + "\nLínea: " + line);
-    console.error(error);
-    return false;
-};
+const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
 // --- 2. DATABASE (Vademécum HRA & RTH) ---
 const LOCAL_FORMULAS = [
@@ -698,6 +702,16 @@ function initGoalLogic() {
 }
 
 window.loadHistoryList = async (showPapelera = false) => {
+    // Guard clause for uninitialized user session
+    if (!AppState.user || !AppState.user.id) {
+        console.warn("loadHistoryList: AppState.user is not loaded yet. Skipping load.");
+        const list = document.getElementById('patientListContainer');
+        if (list) {
+            list.innerHTML = '<p style="text-align:center; opacity:0.6;">Cargando tus registros...</p>';
+        }
+        return;
+    }
+
     // Update tabs robustly
     const tabActivos = document.getElementById('tabHistActivos');
     const tabPapelera = document.getElementById('tabHistPapelera');
@@ -849,6 +863,16 @@ function initWardKanban() {
 }
 
 async function loadWardKanban() {
+    // Guard clause for uninitialized user session
+    if (!AppState.user || !AppState.user.id) {
+        console.warn("loadWardKanban: AppState.user is not loaded yet. Skipping load.");
+        const colActivos = document.getElementById('colActivos');
+        const colCriticos = document.getElementById('colCriticos');
+        if (colActivos) colActivos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
+        if (colCriticos) colCriticos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
+        return;
+    }
+
     const colActivos = document.getElementById('colActivos');
     const colCriticos = document.getElementById('colCriticos');
     const cntActivos = document.getElementById('countActivos');
@@ -964,6 +988,11 @@ window.dischargePatient = async (id) => {
 };
 
 window.deletePatient = async (id) => {
+    if (!AppState.user || !AppState.user.id) {
+        alert("⚠️ Error: Sesión de usuario no válida.");
+        return;
+    }
+
     if (!confirm("¿Mover este paciente a la papelera?")) return;
 
     // Fetch the patient name to delete ALL their history snapshots
@@ -1018,6 +1047,11 @@ window.deletePatient = async (id) => {
 };
 
 window.hardDeletePatient = async (id, skipConfirm = false) => {
+    if (!AppState.user || !AppState.user.id) {
+        alert("⚠️ Error: Sesión de usuario no válida.");
+        return;
+    }
+
     if (!skipConfirm && !confirm("¿Eliminar PERMANENTEMENTE a este paciente de la base de dato⚠️")) return;
 
     // Fetch the patient name to delete all grouped rows
@@ -1047,6 +1081,11 @@ window.hardDeletePatient = async (id, skipConfirm = false) => {
 };
 
 window.restorePatient = async (id) => {
+    if (!AppState.user || !AppState.user.id) {
+        alert("⚠️ Error: Sesión de usuario no válida.");
+        return;
+    }
+
     // Return to generic 'activo' state for all history rows tied to this name
     const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
     if (fetchErr || !p) {
@@ -1121,6 +1160,11 @@ window.openQuickView = async (id) => {
 };
 
 async function generateShiftHandoff() {
+    if (!AppState.user || !AppState.user.id) {
+        alert("⚠️ Error: Sesión de usuario no válida.");
+        return;
+    }
+
     const { data: patients, error } = await supabaseClient
         .from('pacientes')
         .select('*')
@@ -1456,6 +1500,11 @@ window.loadPatient = async (id) => {
 
 window.updatePatientEvolutionChart = async (nombre) => {
     if (!nombre) return;
+    if (!AppState.user || !AppState.user.id) {
+        console.warn("updatePatientEvolutionChart: AppState.user not loaded.");
+        return;
+    }
+
     const chartSection = document.getElementById('chartContainer');
     if (!chartSection) return;
 
@@ -3403,6 +3452,11 @@ function animateValue(id, end) {
 }
 
 async function savePrescription() {
+    if (!AppState.user || !AppState.user.id) {
+        alert("⚠️ Error: Sesión de usuario no válida.");
+        return;
+    }
+
     const btn = document.getElementById('btnSaveHistory');
     const { error } = await supabaseClient.from('prescripciones').insert([{
         paciente_nombre: document.getElementById('nombre').value || 'Anónimo',
