@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function applyCircularFavicon() {
-    const faviconUrl = 'favicon.jpg';
+    const faviconUrl = 'logo.png';
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = function () {
