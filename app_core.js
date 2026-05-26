@@ -547,7 +547,7 @@ function initHistoryModal() {
 
 // --- 7. PATIENT & HISTORY LOGIC ---
 function initPatientLogic() {
-    const fields = ['nombre', 'edad', 'sexo', 'peso', 'estatura', 'actividad'];
+    const fields = ['nombre', 'edad', 'sexo', 'peso', 'estatura', 'actividad', 'pcefalico'];
     fields.forEach(f => {
         const el = document.getElementById(f);
         if (el) {
@@ -2300,14 +2300,12 @@ function renderPediatricZScores() {
         if (textOverride === null) {
             if (z === null || isNaN(z)) return '';
 
-            // Adjusting to match printed MINSAL tables rounding
-            const absZ = Math.round(z * 100) / 100;
-
-            if (title.includes('IMC') && absZ >= 2.99) { color = '#8e44ad'; diag = '+3 DE'; }
-            else if (absZ >= 1.99) { color = '#c0392b'; diag = '+2 DE'; } // MINSAL Obesidad is >= +2
-            else if (absZ >= 0.99) { color = '#f39c12'; diag = '+1 DE'; } // MINSAL Sobrepeso is >= +1
-            else if (absZ <= -1.99) { color = '#c0392b'; diag = '-2 DE'; }
-            else if (absZ <= -0.99) { color = '#e67e22'; diag = '-1 DE'; }
+            // Adjusting to match printed MINSAL tables rounding with a clinical tolerance of 0.06
+            if (title.includes('IMC') && z >= 2.94) { color = '#8e44ad'; diag = '+3 DE'; }
+            else if (z >= 1.94) { color = '#c0392b'; diag = '+2 DE'; } // MINSAL Obesidad is >= +2
+            else if (z >= 0.94) { color = '#f39c12'; diag = '+1 DE'; } // MINSAL Sobrepeso is >= +1
+            else if (z <= -1.94) { color = '#c0392b'; diag = '-2 DE'; }
+            else if (z <= -0.94) { color = '#e67e22'; diag = '-1 DE'; }
 
             displayVal = `${z > 0 ? '+' : ''}${z.toFixed(2)}`;
         } else {
@@ -2441,30 +2439,30 @@ function renderPediatricZScores() {
         let evaluatedBy = '';
         if (isUnderOne) {
             const zPT = (zWFH !== null && !isNaN(zWFH)) ? zWFH : null;
-            if (zPT !== null && zPT >= 1.0) {
+            if (zPT !== null && zPT >= 0.94) {
                 evaluatedBy = ' [Evaluado por P/T]';
-                if (zPT >= +2) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
+                if (zPT >= 1.94) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
                 else { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
             } else {
                 evaluatedBy = ' [Evaluado por P/E]';
-                if (zWFA <= -2) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
-                else if (zWFA <= -1) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
+                if (zWFA <= -1.94) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
+                else if (zWFA <= -0.94) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
                 else { diagWeight = 'Normal o Eutrófico'; diagWColor = '#27ae60'; }
             }
         } else if (isOneToFive) {
             evaluatedBy = ' [Evaluado por P/T]';
-            if (zWFH <= -2) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
-            else if (zWFH <= -1) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
-            else if (zWFH >= +2) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
-            else if (zWFH >= +1) { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
+            if (zWFH <= -1.94) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
+            else if (zWFH <= -0.94) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
+            else if (zWFH >= 1.94) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
+            else if (zWFH >= 0.94) { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
             else { diagWeight = 'Normal o Eutrófico'; diagWColor = '#27ae60'; }
         } else {
             evaluatedBy = ' [Evaluado por IMC/E]';
-            if (zBMI <= -2) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
-            else if (zBMI <= -1) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
-            else if (zBMI >= +3) { diagWeight = 'Obesidad Severa'; diagWColor = '#8e44ad'; }
-            else if (zBMI >= +2) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
-            else if (zBMI >= +1) { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
+            if (zBMI <= -1.94) { diagWeight = 'Desnutrición'; diagWColor = '#c0392b'; }
+            else if (zBMI <= -0.94) { diagWeight = 'Riesgo de Desnutrir'; diagWColor = '#e67e22'; }
+            else if (zBMI >= 2.94) { diagWeight = 'Obesidad Severa'; diagWColor = '#8e44ad'; }
+            else if (zBMI >= 1.94) { diagWeight = 'Obesidad'; diagWColor = '#c0392b'; }
+            else if (zBMI >= 0.94) { diagWeight = 'Sobrepeso'; diagWColor = '#f39c12'; }
             else { diagWeight = 'Normal o Eutrófico'; diagWColor = '#27ae60'; }
         }
 
