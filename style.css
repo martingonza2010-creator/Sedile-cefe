@@ -1,13 +1,19 @@
 :root {
-    --primary: #8e44ad;
-    --primary-light: #9b59b6;
-    --secondary: #2c3e50;
-    --accent: #e74c3c;
-    --success: #27ae60;
-    --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    --glass: rgba(255, 255, 255, 0.85);
-    --glass-blur: blur(10px);
-    --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    --primary: hsl(262, 60%, 55%);        /* Amatista Clínico (#8c4fe6) */
+    --primary-light: hsl(262, 70%, 65%);  /* Lavanda Brillante (#ae83fa) */
+    --secondary: hsl(220, 25%, 23%);      /* Azul Marino Pizarra Profundo (#2c3647) */
+    --accent: hsl(0, 78%, 62%);           /* Rojo Coral Suave para Alertas (#eb5959) */
+    --success: hsl(145, 63%, 42%);        /* Verde Esmeralda Clínico (#27ae60) */
+    
+    /* Gradiente Aurora Ultra-Suave */
+    --bg-gradient: linear-gradient(135deg, #f4f6fa 0%, #e8ecf4 50%, #e0e5ed 100%);
+    
+    /* Variables de Vidrio Esmerilado (Glassmorphic) Refinadas */
+    --glass: rgba(255, 255, 255, 0.72);
+    --glass-blur: blur(15px);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 16px 40px 0 rgba(31, 38, 135, 0.05);
+    --shadow: 0 16px 40px 0 rgba(31, 38, 135, 0.05);
 }
 
 * {
@@ -24,26 +30,35 @@ body {
     color: var(--secondary);
 }
 
-/* Background Blobs */
+/* Background Blobs with Smooth Floating Loop Animation */
+@keyframes floatBlob {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(60px, -40px) scale(1.15); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+
 .bg-blob {
     position: fixed;
-    width: 400px;
-    height: 400px;
-    background: var(--primary-light);
-    filter: blur(80px);
-    opacity: 0.15;
+    width: 500px;
+    height: 500px;
+    filter: blur(100px);
+    opacity: 0.12;
     z-index: -1;
     border-radius: 50%;
 }
 
 .blob-1 {
-    top: -100px;
-    right: -100px;
+    top: -150px;
+    right: -150px;
+    background: radial-gradient(circle, var(--primary-light) 0%, rgba(255,255,255,0) 70%);
+    animation: floatBlob 18s infinite ease-in-out alternate;
 }
 
 .blob-2 {
-    bottom: -100px;
-    left: -100px;
+    bottom: -150px;
+    left: -150px;
+    background: radial-gradient(circle, #3498db 0%, rgba(255,255,255,0) 70%);
+    animation: floatBlob 24s infinite ease-in-out alternate-reverse;
 }
 
 /* AUTH SCREEN (LANDING) */
@@ -217,16 +232,24 @@ header.main-header {
         grid-template-columns: minmax(0, 1fr);
     }
 }
-
 .card {
     background: var(--glass);
     backdrop-filter: var(--glass-blur);
     border-radius: 24px;
     padding: 25px;
     box-shadow: var(--shadow);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid var(--glass-border);
     width: 100%;
     margin: 0 auto;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                border-color 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 48px 0 rgba(31, 38, 135, 0.08);
+    border-color: rgba(174, 131, 250, 0.3);
 }
 
 @media (max-width: 600px) {
@@ -1395,4 +1418,28 @@ body::before {
 @keyframes scaleIn {
     from { opacity: 0; transform: scale(0.92); }
     to { opacity: 1; transform: scale(1); }
+}
+
+/* --- UNIFIED PREMIUM INPUTS & SELECTS V4.50 --- */
+input[type="text"], input[type="number"], select, textarea {
+    border: 2px solid rgba(44, 62, 80, 0.08) !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    outline: none !important;
+}
+
+input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+    border-color: var(--primary-light) !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 4px rgba(174, 131, 250, 0.12) !important;
+}
+
+/* --- MICRO-INTERACTIONS ELÁSTICAS PARA BOTONES Y TABS V4.50 --- */
+.tab-btn, .btn-primary, .btn-micro, .btn-google, .btn-save-small, .btn-assess {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.tab-btn:active, .btn-primary:active, .btn-micro:active, .btn-google:active, .btn-save-small:active, .btn-assess:active {
+    transform: scale(0.96) !important;
 }
