@@ -559,6 +559,13 @@ function initPatientLogic() {
                     }
                 });
             }
+            if (f === 'peso') {
+                el.addEventListener('input', () => {
+                    if (typeof window.updateDryWeight === 'function') {
+                        window.updateDryWeight();
+                    }
+                });
+            }
         }
     });
 }
@@ -1707,6 +1714,10 @@ function calculateRequirements() {
             w = p.peso_ideal;
         } else if (selCalculo === 'ajustado' && p.peso_ajustado > 0) {
             w = p.peso_ajustado;
+        } else if (selCalculo === 'dry') {
+            const edemaKg = parseFloat(document.getElementById('edemaGrade')?.value) || 0;
+            const ascitisKg = parseFloat(document.getElementById('ascitesGrade')?.value) || 0;
+            w = Math.max(0, p.peso - (edemaKg + ascitisKg));
         }
         p.peso_calculo = w; // Store to use in macronutrient goals globally
 
