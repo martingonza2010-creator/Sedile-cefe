@@ -1004,6 +1004,39 @@
                         <h4
                             style="font-size: 0.8rem; color: #555; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
                             🍲 Ingesta Oral / Bandeja</h4>
+                        
+                        <!-- Panel de Regímenes Clínicos Predefinidos y Barra de Consumo -->
+                        <div style="background:#f8f9fa; padding:15px; border-radius:12px; border:1px solid rgba(0,0,0,0.05); margin-top:10px; margin-bottom:15px;">
+                            <div style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                                <div class="mini-input">
+                                    <label style="font-weight:700; color:var(--primary); font-size:0.75rem;">Seleccionar Régimen Clínico</label>
+                                    <select id="oralDietType" style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); width:100%; font-size:0.85rem;">
+                                        <option value="custom">-- Personalizado --</option>
+                                        <option value="blando_sin_residuos">Blando sin Residuos (1874 kcal)</option>
+                                        <option value="liviano">Liviano (2055 kcal)</option>
+                                        <option value="hiposodico">Hiposódico (2063 kcal)</option>
+                                        <option value="hypercalorico">Hipercalórico (2445 kcal)</option>
+                                        <option value="hyperproteico">Hiperproteico (2448 kcal)</option>
+                                        <option value="hipocalorico">Hipocalórico (1486 kcal)</option>
+                                        <option value="hipoproteico">Hipoproteico (1925 kcal)</option>
+                                        <option value="papilla_diabetico">Papilla Diabético (1537 kcal)</option>
+                                        <option value="papilla_liviana">Papilla Liviana (1587 kcal)</option>
+                                        <option value="hipoglucidico">Hipoglucídico (1480 kcal)</option>
+                                        <option value="isoglucidico_160">Iso Glucídico 160 (1530 kcal)</option>
+                                        <option value="isoglucidico_200">Isoglucídico 200 (1634 kcal)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mini-input" style="margin-top:5px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                        <label style="font-weight:700; color:var(--primary); margin:0; font-size:0.75rem;">% de Ingesta Real (Consumo)</label>
+                                        <span id="oralIntakePercentBadge" style="background:var(--primary); color:white; font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:10px;">100%</span>
+                                    </div>
+                                    <input type="range" id="oralIntakePercent" min="0" max="100" value="100" step="5" style="width:100%; accent-color:var(--primary); cursor:pointer;">
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="modules-grid"
                             style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
                             <div class="mini-input">
@@ -1035,21 +1068,7 @@
 
             </main>
 
-            <div class="macro-stack-wrapper">
-                <!-- Primary Bar -->
-                <div class="macro-stack-bar" id="stackPrimary">
-                    <div class="stack-segment p" id="barProt" style="width:0%"></div>
-                    <div class="stack-segment c" id="barCHO" style="width:0%"></div>
-                    <div class="stack-segment f" id="barLip" style="width:0%"></div>
-                </div>
-                <!-- Secondary Bar (Comparison) -->
-                <div class="macro-stack-bar secondary" id="stackCompare"
-                    style="display:none; opacity:0; transform:translateY(18px);">
-                    <div class="stack-segment p" id="barProtB" style="width:0%"></div>
-                    <div class="stack-segment c" id="barCHOB" style="width:0%"></div>
-                    <div class="stack-segment f" id="barLipB" style="width:0%"></div>
-                </div>
-            </div>
+            <!-- Barras de progreso eliminadas para simplificación visual -->
 
             <!-- Formula B Macro Board (Shown only in Compare Mode) -->
             <div id="macroBoardB" class="macro-board"
@@ -1067,24 +1086,23 @@
                         style="font-size:1.1rem;">0</span><small>g</small></div>
             </div>
 
-            <!-- Donut Chart + Macros -->
-            <div
-                style="display:flex; gap:15px; align-items:center; margin-top:10px; justify-content:center; flex-wrap:wrap;">
-
-                <div style="width:100%; text-align:center; margin-top:15px;">
-                    <span
-                        style="font-size:0.75rem; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:1px; border-bottom:2px solid var(--primary); padding-bottom:3px;">TOTAL
-                        (Fórmulas + Módulos + Oral/IV)</span>
+            <!-- Donut Chart + Macros (Rediseño Premium a Ancho Completo) -->
+            <div style="margin-top: 25px; background: rgba(46, 204, 113, 0.05); padding: 20px; border-radius: 20px; border: 1px solid rgba(46, 204, 113, 0.15); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.03);">
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
+                    <span style="font-size:0.8rem; font-weight:800; color:#27ae60; text-transform:uppercase; letter-spacing:1px; border-bottom: 2px solid #27ae60; padding-bottom: 3px;">
+                        TOTAL (Fórmulas + Módulos + Oral/IV)
+                    </span>
+                    <div style="width:50px; height:50px; position:relative;">
+                        <canvas id="macroChart"></canvas>
+                    </div>
                 </div>
 
-                <div style="width:80px; height:80px; position:relative;">
-                    <canvas id="macroChart"></canvas>
-                </div>
-                <div class="macro-board" style="flex:1; margin:0; max-width:400px;">
-                    <div class="macro-item k"><label>Energía</label><span id="valKcal">0</span><small>kcal</small></div>
-                    <div class="macro-item p"><label>Prot</label><span id="valProt">0</span><small>g</small></div>
-                    <div class="macro-item c"><label>CHO</label><span id="valCHO">0</span><small>g</small></div>
-                    <div class="macro-item f"><label>Lípidos</label><span id="valLip">0</span><small>g</small></div>
+                <div class="macro-board" style="margin: 0; width: 100%;">
+                    <div class="macro-item k"><label>Energía</label><span id="valKcal" style="font-size: 1.1rem;">0</span><small>kcal</small></div>
+                    <div class="macro-item p"><label>Prot</label><span id="valProt" style="font-size: 1.1rem;">0</span><small>g</small></div>
+                    <div class="macro-item c"><label>CHO</label><span id="valCHO" style="font-size: 1.1rem;">0</span><small>g</small></div>
+                    <div class="macro-item f"><label>Lípidos</label><span id="valLip" style="font-size: 1.1rem;">0</span><small>g</small></div>
                 </div>
             </div>
 

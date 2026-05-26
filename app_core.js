@@ -2595,6 +2595,30 @@ function initSimulatorLogic() {
         inp.addEventListener('input', runSimulation);
     });
 
+    // Escuchas para regímenes predefinidos y barra de consumo
+    const oralDietType = document.getElementById('oralDietType');
+    const oralIntakePercent = document.getElementById('oralIntakePercent');
+    if (oralDietType) oralDietType.addEventListener('change', updateOralIntakePreset);
+    if (oralIntakePercent) oralIntakePercent.addEventListener('input', updateOralIntakeSlider);
+
+    // Si el usuario edita de forma manual los campos, revertir a "Personalizado" y 100% de barra
+    document.querySelectorAll('.input-oral').forEach(inp => {
+        inp.addEventListener('input', () => {
+            const oralDietType = document.getElementById('oralDietType');
+            const oralIntakePercent = document.getElementById('oralIntakePercent');
+            const badge = document.getElementById('oralIntakePercentBadge');
+            if (oralDietType && oralDietType.value !== 'custom') {
+                oralDietType.value = 'custom';
+            }
+            if (oralIntakePercent) {
+                oralIntakePercent.value = 100;
+            }
+            if (badge) {
+                badge.innerText = '100%';
+            }
+        });
+    });
+
     // Favorites Logic
     const btnFav = document.getElementById('btnToggleFav');
     if (btnFav) {
@@ -2854,6 +2878,50 @@ function renderFormulaInputs(formula) {
     }
 }
 
+// --- CONSTANTE DE REGÍMENES CLÍNICOS PEDIÁTRICOS ---
+const ORAL_PRESETS = {
+    blando_sin_residuos: { kcal: 1874, prot: 74, cho: 309, lip: 38 },
+    liviano: { kcal: 2055, prot: 84.5, cho: 292, lip: 46.6 },
+    hiposodico: { kcal: 2063, prot: 82, cho: 297, lip: 45.7 },
+    hypercalorico: { kcal: 2445, prot: 113.8, cho: 366, lip: 48.1 },
+    hyperproteico: { kcal: 2448, prot: 132, cho: 348, lip: 46 },
+    hipocalorico: { kcal: 1486, prot: 75.7, cho: 165, lip: 44 },
+    hipoproteico: { kcal: 1925, prot: 25, cho: 314, lip: 46 },
+    papilla_diabetico: { kcal: 1537, prot: 77.2, cho: 192, lip: 47.5 },
+    papilla_liviana: { kcal: 1587, prot: 63.5, cho: 217, lip: 47.2 },
+    hipoglucidico: { kcal: 1480, prot: 97.2, cho: 151, lip: 44.3 },
+    isoglucidico_160: { kcal: 1530, prot: 97.4, cho: 165, lip: 41 },
+    isoglucidico_200: { kcal: 1634, prot: 111.5, cho: 198, lip: 43 }
+};
+
+function updateOralIntakePreset() {
+    const diet = document.getElementById('oralDietType').value;
+    const percent = parseFloat(document.getElementById('oralIntakePercent').value) || 100;
+    
+    if (diet === 'custom') return;
+    
+    const preset = ORAL_PRESETS[diet];
+    if (preset) {
+        document.getElementById('oralKcal').value = Math.round(preset.kcal * (percent / 100));
+        document.getElementById('oralProt').value = (preset.prot * (percent / 100)).toFixed(1);
+        document.getElementById('oralCHO').value = (preset.cho * (percent / 100)).toFixed(1);
+        document.getElementById('oralLip').value = (preset.lip * (percent / 100)).toFixed(1);
+        
+        runSimulation();
+    }
+}
+
+function updateOralIntakeSlider() {
+    const percent = document.getElementById('oralIntakePercent').value;
+    const badge = document.getElementById('oralIntakePercentBadge');
+    if (badge) badge.innerText = percent + '%';
+    
+    const diet = document.getElementById('oralDietType').value;
+    if (diet !== 'custom') {
+        updateOralIntakePreset();
+    }
+}
+
 function runSimulation() {
     const isCustomMix = document.getElementById('customMixContainer') && document.getElementById('customMixContainer').style.display === 'block';
 
@@ -3019,18 +3087,23 @@ function runSimulation() {
 
     // Animation: Stacked Bar (New)
     const totalMacross = p + c + l;
-    if (totalMacross > 0) {
-        const pPct = (p / totalMacross) * 100;
-        const cPct = (c / totalMacross) * 100;
-        const lPct = (l / totalMacross) * 100;
+    const barProtEl = document.getElementById('barProt');
+    const barCHOEl = document.getElementById('barCHO');
+    const barLipEl = document.getElementById('barLip');
+    if (barProtEl && barCHOEl && barLipEl) {
+        if (totalMacross > 0) {
+            const pPct = (p / totalMacross) * 100;
+            const cPct = (c / totalMacross) * 100;
+            const lPct = (l / totalMacross) * 100;
 
-        document.getElementById('barProt').style.width = pPct + "%";
-        document.getElementById('barCHO').style.width = cPct + "%";
-        document.getElementById('barLip').style.width = lPct + "%";
-    } else {
-        document.getElementById('barProt').style.width = "0%";
-        document.getElementById('barCHO').style.width = "0%";
-        document.getElementById('barLip').style.width = "0%";
+            barProtEl.style.width = pPct + "%";
+            barCHOEl.style.width = cPct + "%";
+            barLipEl.style.width = lPct + "%";
+        } else {
+            barProtEl.style.width = "0%";
+            barCHOEl.style.width = "0%";
+            barLipEl.style.width = "0%";
+        }
     }
 
     // Compare Mode Updates
