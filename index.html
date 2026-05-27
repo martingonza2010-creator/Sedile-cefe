@@ -240,7 +240,7 @@
                         <div id="rowPediatric"
                             style="display:none; gap:10px; margin-top:10px; background:#e8f4f8; padding:8px; border-radius:8px; flex-wrap:wrap;">
                             <div class="mini-input" style="flex:1; min-width:200px;">
-                                <label>Fecha Nacimiento</label>
+                                <label>Fecha Nacimiento (Día/Mes/Año)</label>
                                 <input type="date" id="fechaNacimiento" onchange="calculatePediatricAge()">
                                 <div id="lblExactAge" style="font-size:0.65rem; color:#2980b9; margin-top:2px;"></div>
                             </div>
@@ -1221,6 +1221,181 @@
                     </details>
                 </section>
 
+                </section>
+
+                <!-- 4. Anamnesis y Síntomas Clínicos (Interactivo) -->
+                <section class="card assess-module" style="border-left-color: #2980b9;">
+                    <div class="module-head">
+                        <h3>📋 Anamnesis y Síntomas Clínicos</h3>
+                    </div>
+                    
+                    <h4 style="margin: 0 0 12px 0; color: #2980b9; font-size: 0.8rem; text-transform: uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px;">🍲 Síntomas Gastrointestinales</h4>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:15px; margin-bottom: 25px;">
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Náuseas</span>
+                            <div class="toggle-btn-group" data-id="sintomaNauseas" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no active" onclick="window.setToggleState('sintomaNauseas', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si" onclick="window.setToggleState('sintomaNauseas', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Vómitos</span>
+                            <div class="toggle-btn-group" data-id="sintomaVomitos" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no active" onclick="window.setToggleState('sintomaVomitos', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si" onclick="window.setToggleState('sintomaVomitos', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Reflujo Gastroesofágico</span>
+                            <div class="toggle-btn-group" data-id="sintomaReflujo" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no active" onclick="window.setToggleState('sintomaReflujo', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si" onclick="window.setToggleState('sintomaReflujo', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Deposiciones con Diarrea</span>
+                            <div class="toggle-btn-group" data-id="sintomaDeposiciones" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no active" onclick="window.setToggleState('sintomaDeposiciones', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si" onclick="window.setToggleState('sintomaDeposiciones', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Distensión Abdominal</span>
+                            <div class="toggle-btn-group" data-id="sintomaDistension" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no active" onclick="window.setToggleState('sintomaDistension', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si" onclick="window.setToggleState('sintomaDistension', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Gases/Flatulencia</span>
+                            <div class="toggle-btn-group" data-id="sintomaGases" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no active" onclick="window.setToggleState('sintomaGases', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si" onclick="window.setToggleState('sintomaGases', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 0 0 12px 0; color: #2980b9; font-size: 0.8rem; text-transform: uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px;">🍎 Anamnesis Alimentaria</h4>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:15px;">
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Dentadura Adecuada</span>
+                            <div class="toggle-btn-group" data-id="anamnesisDentadura" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no" onclick="window.setToggleState('anamnesisDentadura', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si active" onclick="window.setToggleState('anamnesisDentadura', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #6ee7b7; border-radius:6px; cursor:pointer; background:#d1fae5; color:#1e8449; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Alergias Alimentarias</span>
+                            <div class="toggle-btn-group" data-id="anamnesisAlergias" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no active" onclick="window.setToggleState('anamnesisAlergias', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si" onclick="window.setToggleState('anamnesisAlergias', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Trastorno de Deglución</span>
+                            <div class="toggle-btn-group" data-id="anamnesisDeglucion" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no active" onclick="window.setToggleState('anamnesisDeglucion', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si" onclick="window.setToggleState('anamnesisDeglucion', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.8rem; font-weight:600; color:#4a5568;">Buen Apetito</span>
+                            <div class="toggle-btn-group" data-id="anamnesisApetito" style="display:flex; gap:5px;">
+                                <button type="button" class="btn-toggle no" onclick="window.setToggleState('anamnesisApetito', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">NO</button>
+                                <button type="button" class="btn-toggle si active" onclick="window.setToggleState('anamnesisApetito', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #6ee7b7; border-radius:6px; cursor:pointer; background:#d1fae5; color:#1e8449; transition:all 0.2s;">SÍ</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. Tamizaje de Riesgo Nutricional (STRONGkids) -->
+                <section class="card assess-module" style="border-left-color: #e67e22;">
+                    <div class="module-head">
+                        <h3>🛡️ Tamizaje de Riesgo Nutricional (STRONGkids)</h3>
+                    </div>
+                    
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <!-- Pregunta 1 -->
+                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <div style="flex:1; min-width:250px;">
+                                <span style="font-size:0.85rem; font-weight:600; color:#2c3e50; line-height:1.3;">1. ¿Existe una enfermedad subyacente con riesgo de desnutrición (ver ítem 1) o se espera una cirugía mayor?</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span id="skScoreQ1" style="font-size:0.8rem; font-weight:700; color:#95a5a6; min-width:45px; text-align:right;">0 pts</span>
+                                <div class="sk-btn-group" data-q="q1" style="display:flex; gap:5px;">
+                                    <button type="button" class="btn-toggle no active" onclick="window.setSkState('q1', 'No', 2)" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                    <button type="button" class="btn-toggle si" onclick="window.setSkState('q1', 'Sí', 2)" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pregunta 2 -->
+                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <div style="flex:1; min-width:250px;">
+                                <span style="font-size:0.85rem; font-weight:600; color:#2c3e50; line-height:1.3;">2. ¿Está el paciente en un estado nutritional deficiente juzgado por evaluación clínica subjetiva: (pérdida de grasa subcutánea y/o pérdida de masa muscular y/o cara hundida)?</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span id="skScoreQ2" style="font-size:0.8rem; font-weight:700; color:#95a5a6; min-width:45px; text-align:right;">0 pts</span>
+                                <div class="sk-btn-group" data-q="q2" style="display:flex; gap:5px;">
+                                    <button type="button" class="btn-toggle no active" onclick="window.setSkState('q2', 'No', 1)" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                    <button type="button" class="btn-toggle si" onclick="window.setSkState('q2', 'Sí', 1)" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pregunta 3 -->
+                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <div style="flex:1; min-width:250px;">
+                                <span style="font-size:0.85rem; font-weight:600; color:#2c3e50; line-height:1.3; display:block; margin-bottom:4px;">3. ¿Está presente alguno de los siguientes elementos?</span>
+                                <small style="font-size:0.65rem; color:#7f8c8d; display:block; line-height:1.3;">
+                                    - Diarrea excesiva (>= 5 por día) y/o vómitos (> 3 veces/día) durante los últimos 1 - 3 días.<br>
+                                    - Intervención nutricional preexistente (p. ej. ONS o alimentación por sonda).<br>
+                                    - Reducción de la ingesta de alimentos durante los últimos 1 - 3 días.<br>
+                                    - Incapacidad para consumir una ingesta nutricional adecuada debido al dolor.
+                                </small>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span id="skScoreQ3" style="font-size:0.8rem; font-weight:700; color:#95a5a6; min-width:45px; text-align:right;">0 pts</span>
+                                <div class="sk-btn-group" data-q="q3" style="display:flex; gap:5px;">
+                                    <button type="button" class="btn-toggle no active" onclick="window.setSkState('q3', 'No', 1)" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                    <button type="button" class="btn-toggle si" onclick="window.setSkState('q3', 'Sí', 1)" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pregunta 4 -->
+                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <div style="flex:1; min-width:250px;">
+                                <span style="font-size:0.85rem; font-weight:600; color:#2c3e50; line-height:1.3;">4. ¿Hay pérdida de peso (todas las edades) y/o falta de aumento de peso/talla (lactantes &lt;1 año) durante los últimos meses/semanas?</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span id="skScoreQ4" style="font-size:0.8rem; font-weight:700; color:#95a5a6; min-width:45px; text-align:right;">0 pts</span>
+                                <div class="sk-btn-group" data-q="q4" style="display:flex; gap:5px;">
+                                    <button type="button" class="btn-toggle no active" onclick="window.setSkState('q4', 'No', 1)" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                    <button type="button" class="btn-toggle si" onclick="window.setSkState('q4', 'Sí', 1)" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Resultados de STRONGkids -->
+                    <div id="strongKidsResultPanel" style="margin-top:20px; padding:15px; border-radius:15px; border:1px solid rgba(39,174,96,0.2); background:rgba(39,174,96,0.05); display:flex; flex-direction:column; gap:10px; transition:all 0.3s ease;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <span style="font-size:0.85rem; font-weight:700; color:#333;">PUNTAJE STRONGkids TOTAL:</span>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <strong id="strongKidsTotalScore" style="font-size:1.4rem; color:#27ae60; font-weight:900;">0 pts</strong>
+                                <span id="strongKidsClassif" style="font-size:0.75rem; font-weight:800; background:white; padding:4px 10px; border-radius:30px; box-shadow:0 2px 5px rgba(0,0,0,0.03); color:#27ae60; border:1px solid rgba(39, 174, 96, 0.2); transition:all 0.3s;">RIESGO BAJO</span>
+                            </div>
+                        </div>
+                        <div style="border-top:1px dashed rgba(0,0,0,0.06); padding-top:8px;">
+                            <span style="font-size:0.7rem; font-weight:700; color:#333; display:block; text-transform:uppercase; margin-bottom:4px;">Recomendaciones Clínicas:</span>
+                            <div id="strongKidsRecs" style="font-size:0.75rem; color:#555; line-height:1.4; white-space:pre-wrap;">• No es necesaria una intervención nutricional.
+• Controlar el peso regularmente (según la política hospitalaria).
+• Evaluar el riesgo nutricional semanalmente.</div>
+                        </div>
+                    </div>
+                </section>
+                
                 <!-- 3. Diagnóstico Nutricional Integrado (RESTORED) -->
                 <section class="card assess-module" style="border-left-color: #9b59b6;">
                     <div class="module-head">

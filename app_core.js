@@ -1972,7 +1972,8 @@ window.calculatePediatricAge = () => {
     if (months > 0 || years > 0) ageStr += `${months} mes${months !== 1 ? 'es' : ''}, `;
     ageStr += `${days} día${days !== 1 ? 's' : ''}`;
 
-    document.getElementById('lblExactAge').innerText = ageStr;
+    const formattedDate = `${d}/${mm}/${y}`;
+    document.getElementById('lblExactAge').innerHTML = `<span style="font-weight:700; color:#2c3e50;">F. Nacimiento: ${formattedDate}</span> | ${ageStr}`;
 
     let evalMonths = totalMonths;
     let evalY = years;
@@ -2650,6 +2651,11 @@ function initSimulatorLogic() {
             if (fSelNew) fSelNew.value = fId; // Restore selection
             checkFavoriteStatus();
         };
+    }
+    
+    // Inicializar estados de anamnesis y STRONGkids
+    if (typeof window.initAnamnesisToggles === 'function') {
+        window.initAnamnesisToggles();
     }
 }
 
@@ -4611,6 +4617,7 @@ ${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
         const cm = (document.getElementById('tallaCM')?.value || (p.estatura * 100)) || 0;
         const tallaMt = (cm / 100).toFixed(3);
         const cCintura = document.getElementById('cCintura')?.value || '--';
+        const cBraquialVal = document.getElementById('cbraquial')?.value || '[Completar]';
 
         const imcVal = document.getElementById('valIMC')?.innerText || '--';
         const zImcVal = document.getElementById('valZBMI')?.innerText || '--';
@@ -4629,11 +4636,35 @@ ${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
 
         const userName = AppState.user?.user_metadata?.full_name || "[Nombre del Profesional]";
 
+        // Obtener fecha de nacimiento en formato chileno DD/MM/YYYY
+        let fNacStr = "[Completar]";
+        const fnVal = document.getElementById('fechaNacimiento')?.value;
+        if (fnVal) {
+            const [y, mm, d] = fnVal.split('-');
+            fNacStr = `${d}/${mm}/${y}`;
+        }
+
+        // Obtener valores de la Anamnesis y STRONGkids
+        const anam = p.anamnesis || {};
+        const sk = p.strongkids || { score: 0, classification: 'Riesgo bajo' };
+
+        const nauseasVal = anam.sintomaNauseas || 'No';
+        const vomitosVal = anam.sintomaVomitos || 'No';
+        const reflujoVal = anam.sintomaReflujo || 'No';
+        const deposicionesVal = anam.sintomaDeposiciones || 'No';
+        const distensionVal = anam.sintomaDistension || 'No';
+        const gasesVal = anam.sintomaGases || 'No';
+
+        const dentaduraVal = anam.anamnesisDentadura || 'Sí';
+        const alergiasVal = anam.anamnesisAlergias || 'No';
+        const deglucionVal = anam.anamnesisDeglucion || 'No';
+        const apetitoVal = anam.anamnesisApetito || 'Sí';
+
         const vgoText = `VALORACION GLOBAL OBJETIVA POR NUTRICIONISTA
 
 o Fecha de evaluación: ${dateStr}
 
-Fecha de nacimiento: [Completar]
+Fecha de nacimiento: ${fNacStr}
 Edad: ${ageStr}
 Sexo: ${sexStr}
 
@@ -4643,7 +4674,7 @@ o 1. [Completar diagnóstico médico]
 Antropometría: (Evaluación en bipedestación por nutricionista del servicio)
 o Peso ciego: ${pesoFisico} kg
 o Talla: ${tallaMt} mt
-o C. braquial: [Completar] cm
+o C. braquial: ${cBraquialVal} cm
 o C. cintura: ${cCintura} cm
 
 Indicadores nutricionales: (WHO Antrho)
@@ -4653,12 +4684,12 @@ o Zscore T/E: ${zTallaVal} DE
 o C. Cintura /E: [Completar si aplica]
 
 Anamnesis:
-o Síntomas gastrointestinales: Nauseas ( ) Vómitos ( ) Reflujo gastroesofágico ( ) Deposiciones ( ) Distensión abdominal ( ) Gases ( ).
-o Anamnesis alimentaria: Dentadura ( ) Alergias/intolerancias alimentarias ( ) Trastorno de deglución ( ) Apetito ( ).
+o Síntomas gastrointestinales: Nauseas (${nauseasVal}) Vómitos (${vomitosVal}) Reflujo gastroesofágico (${reflujoVal}) Deposiciones (${deposicionesVal}) Distensión abdominal (${distensionVal}) Gases (${gasesVal}).
+o Anamnesis alimentaria: Dentadura (${dentaduraVal}) Alergias/intolerancias alimentarias (${alergiasVal}) Trastorno de deglución (${deglucionVal}) Apetito (${apetitoVal}).
 
 Tamizaje: (STRONG KIDS)
-o Puntaje: [Completar] pts
-o Interpretación: [Completar]
+o Puntaje: ${sk.score} pts
+o Interpretación: ${sk.classification.toUpperCase()}
 
 Diagnóstico Nutricional Integrado:
 o ${des}
@@ -5570,6 +5601,163 @@ window.updateDryWeight = () => {
     if (mode === 'dry') {
         calculateRequirements();
     }
+};
+
+// --- INTERACTIVE ANAMNESIS & STRONGKIDS CLINICAL LOGIC ---
+window.setToggleState = (elementId, value) => {
+    const group = document.querySelector(`.toggle-btn-group[data-id="${elementId}"]`);
+    if (!group) return;
+    
+    const btns = group.querySelectorAll('.btn-toggle');
+    btns.forEach(btn => {
+        btn.style.background = '#f7fafc';
+        btn.style.color = '#a0aec0';
+        btn.style.borderColor = '#e2e8f0';
+        btn.classList.remove('active');
+        
+        const isSiBtn = btn.innerText.trim() === 'SÍ' || btn.innerText.trim() === 'SI';
+        if ((value === 'Sí' && isSiBtn) || (value === 'No' && !isSiBtn)) {
+            btn.classList.add('active');
+            if (value === 'Sí') {
+                btn.style.background = '#d1fae5';
+                btn.style.color = '#1e8449';
+                btn.style.borderColor = '#6ee7b7';
+            } else {
+                btn.style.background = '#fee2e2';
+                btn.style.color = '#c0392b';
+                btn.style.borderColor = '#fca5a5';
+            }
+        }
+    });
+
+    if (!AppState.patient.anamnesis) AppState.patient.anamnesis = {};
+    AppState.patient.anamnesis[elementId] = value;
+};
+
+window.setSkState = (qId, value, ptsYes) => {
+    const group = document.querySelector(`.sk-btn-group[data-q="${qId}"]`);
+    if (!group) return;
+
+    const btns = group.querySelectorAll('.btn-toggle');
+    btns.forEach(btn => {
+        btn.style.background = '#f7fafc';
+        btn.style.color = '#a0aec0';
+        btn.style.borderColor = '#e2e8f0';
+        btn.classList.remove('active');
+        
+        const isSiBtn = btn.innerText.trim() === 'SÍ' || btn.innerText.trim() === 'SI';
+        if ((value === 'Sí' && isSiBtn) || (value === 'No' && !isSiBtn)) {
+            btn.classList.add('active');
+            if (value === 'Sí') {
+                btn.style.background = '#d1fae5';
+                btn.style.color = '#1e8449';
+                btn.style.borderColor = '#6ee7b7';
+            } else {
+                btn.style.background = '#fee2e2';
+                btn.style.color = '#c0392b';
+                btn.style.borderColor = '#fca5a5';
+            }
+        }
+    });
+
+    const scoreLabel = document.getElementById(`skScoreQ${qId.substring(1).toUpperCase()}`);
+    if (scoreLabel) {
+        scoreLabel.innerText = value === 'Sí' ? `+${ptsYes} pts` : '0 pts';
+        scoreLabel.style.color = value === 'Sí' ? '#e74c3c' : '#95a5a6';
+    }
+
+    window.calculateStrongKids();
+};
+
+window.calculateStrongKids = () => {
+    let total = 0;
+    
+    const q1Active = document.querySelector('.sk-btn-group[data-q="q1"] .btn-toggle.si.active');
+    const q2Active = document.querySelector('.sk-btn-group[data-q="q2"] .btn-toggle.si.active');
+    const q3Active = document.querySelector('.sk-btn-group[data-q="q3"] .btn-toggle.si.active');
+    const q4Active = document.querySelector('.sk-btn-group[data-q="q4"] .btn-toggle.si.active');
+
+    if (q1Active) total += 2;
+    if (q2Active) total += 1;
+    if (q3Active) total += 1;
+    if (q4Active) total += 1;
+
+    const totalBadge = document.getElementById('strongKidsTotalScore');
+    if (totalBadge) totalBadge.innerText = total + ' pts';
+
+    let classif = 'Riesgo bajo';
+    let color = '#27ae60';
+    let bg = 'rgba(39, 174, 96, 0.05)';
+    let border = 'rgba(39, 174, 96, 0.2)';
+    let recs = `• No es necesaria una intervención nutricional.\n• Controlar el peso regularmente (según la política hospitalaria).\n• Evaluar el riesgo nutricional semanalmente.`;
+
+    if (total >= 4) {
+        classif = 'Riesgo alto';
+        color = '#c0392b';
+        bg = 'rgba(192, 57, 43, 0.05)';
+        border = 'rgba(192, 57, 43, 0.2)';
+        recs = `• Consulte al médico y al dietista para obtener un diagnóstico completo y asesoramiento nutricional individual y seguimiento.\n• Controle el peso dos veces por semana y evalúe el estado nutricional.\n• Evaluar el riesgo nutricional semanalmente.`;
+    } else if (total >= 1) {
+        classif = 'Riesgo medio';
+        color = '#d35400';
+        bg = 'rgba(211, 84, 0, 0.05)';
+        border = 'rgba(211, 84, 0, 0.2)';
+        recs = `• Considere la intervención nutricional.\n• Controlar el peso dos veces por semana.\n• Evaluar el riesgo nutricional semanalmente.`;
+    }
+
+    const classifLabel = document.getElementById('strongKidsClassif');
+    const recsArea = document.getElementById('strongKidsRecs');
+    const panelBox = document.getElementById('strongKidsResultPanel');
+
+    if (classifLabel) {
+        classifLabel.innerText = classif.toUpperCase();
+        classifLabel.style.color = color;
+    }
+    if (recsArea) {
+        recsArea.innerText = recs;
+    }
+    if (panelBox) {
+        panelBox.style.background = bg;
+        panelBox.style.borderColor = border;
+        panelBox.style.borderWidth = '1px';
+    }
+
+    if (!AppState.patient.strongkids) AppState.patient.strongkids = {};
+    AppState.patient.strongkids.score = total;
+    AppState.patient.strongkids.classification = classif;
+};
+
+window.initAnamnesisToggles = () => {
+    if (!AppState.patient) AppState.patient = {};
+    if (!AppState.patient.anamnesis) {
+        AppState.patient.anamnesis = {
+            sintomaNauseas: 'No',
+            sintomaVomitos: 'No',
+            sintomaReflujo: 'No',
+            sintomaDeposiciones: 'No',
+            sintomaDistension: 'No',
+            sintomaGases: 'No',
+            anamnesisDentadura: 'Sí',
+            anamnesisAlergias: 'No',
+            anamnesisDeglucion: 'No',
+            anamnesisApetito: 'Sí'
+        };
+    }
+    if (!AppState.patient.strongkids) {
+        AppState.patient.strongkids = {
+            score: 0,
+            classification: 'Riesgo bajo'
+        };
+    }
+
+    Object.entries(AppState.patient.anamnesis).forEach(([id, val]) => {
+        window.setToggleState(id, val);
+    });
+
+    window.setSkState('q1', 'No', 2);
+    window.setSkState('q2', 'No', 1);
+    window.setSkState('q3', 'No', 1);
+    window.setSkState('q4', 'No', 1);
 };
 
 
