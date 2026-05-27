@@ -223,7 +223,7 @@ header.main-header {
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 3.2fr) minmax(0, 0.8fr);
     gap: 25px;
 }
 

@@ -1310,6 +1310,60 @@ function renderEvolutionChart(history) {
         plotData.push({ peso_kg: currentWeightInput, isCurrent: true });
     }
 
+    // --- MANEJO DE LA TABLA DE PESO EN TIEMPO REAL ---
+    const tableBody = document.getElementById('evolutionTableBody');
+    if (tableBody) {
+        tableBody.innerHTML = '';
+        if (plotData.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="padding:15px; text-align:center; color:#94a3b8; font-style:italic;">
+                        Sin registros de peso en el historial
+                    </td>
+                </tr>
+            `;
+        } else {
+            // Mostrar los registros del más reciente al más antiguo (descendente)
+            const tableData = [...plotData].reverse();
+            tableData.forEach(h => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #f1f5f9';
+                tr.style.transition = 'background 0.2s';
+                
+                // Efectos visuales de hover
+                tr.onmouseenter = () => tr.style.background = '#f8fafc';
+                tr.onmouseleave = () => tr.style.background = 'transparent';
+
+                let dateStr = '';
+                let statusBadge = '';
+
+                if (h.isCurrent) {
+                    dateStr = `<span style="color:#e74c3c; font-weight:700;">[Peso Actual (Temporal)]</span>`;
+                    statusBadge = `<span style="background:#fff3cd; color:#856404; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid #ffeeba; font-size:0.65rem; display:inline-block;">Temporal</span>`;
+                    tr.style.background = 'rgba(243, 156, 18, 0.05)';
+                    tr.onmouseleave = () => tr.style.background = 'rgba(243, 156, 18, 0.05)';
+                } else {
+                    const dateObj = h.created_at ? new Date(h.created_at) : (h.metadata?.logged_at ? new Date(h.metadata.logged_at) : new Date());
+                    dateStr = dateObj.toLocaleString('es-CL', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    statusBadge = `<span style="background:#d1fae5; color:#0f5132; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid #badbcc; font-size:0.65rem; display:inline-block;">Registrado</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td style="padding:10px; color:#475569; font-weight:600;">${dateStr}</td>
+                    <td style="padding:10px; text-align:right; color:#1e293b; font-weight:800; font-size:0.8rem;">${h.peso_kg.toFixed(1)} kg</td>
+                    <td style="padding:10px; text-align:center;">${statusBadge}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+    }
+
     if (plotData.length === 0) {
         ctx.fillStyle = '#aaa';
         ctx.font = 'italic 10px Arial';
@@ -2801,9 +2855,14 @@ function initSimulatorLogic() {
         };
     }
     
-    // Inicializar estados de anamnesis y STRONGkids
+    // Inicializar estados de anamnesis y STRONGkids / NRS 2002
     if (typeof window.initAnamnesisToggles === 'function') {
         window.initAnamnesisToggles();
+    }
+    
+    // NEW: Sincronizar visibilidad de tamizajes condicionales en la carga inicial
+    if (typeof window.togglePatientMode === 'function') {
+        window.togglePatientMode();
     }
 }
 
