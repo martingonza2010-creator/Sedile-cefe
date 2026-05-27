@@ -1186,52 +1186,6 @@
                     </div>
                 </section>
 
-                <!-- 1.1. Evolución de Peso (Mover desde Dashboard) -->
-                <section class="card assess-module" id="chartContainer" style="border-left-color: #f39c12; grid-column: 1 / -1;">
-                    <div class="module-head">
-                        <h3>📈 Historial de Evolución de Peso</h3>
-                    </div>
-                    
-                    <div style="display:flex; gap:25px; flex-wrap:wrap; margin-top:10px;">
-                        <!-- Gráfico de Evolución -->
-                        <div style="flex: 1 1 320px; background: white; border: 1px solid #eee; border-radius: 16px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.01);">
-                            <span style="font-size:0.75rem; font-weight:700; color:#555; display:block; text-transform:uppercase; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px;">Gráfico de Tendencia</span>
-                            <div style="position: relative; height: 160px; width: 100%;">
-                                <canvas id="evolutionChart" style="width:100%; height:100%;"></canvas>
-                            </div>
-                            <p style="text-align:center; font-size:0.7rem; color:#7f8c8d; font-style:italic; margin-top:6px; margin-bottom:10px;">
-                                Paciente: <strong id="lblChartPatientName" style="color:#2c3e50;">--</strong>
-                            </p>
-                            <button type="button" id="btnLogEvolution"
-                                style="width:100%; background:#f39c12; color:white; border:none; border-radius:10px; padding:10px; font-size:0.8rem; font-weight:700; cursor:pointer; box-shadow:0 3px 6px rgba(243, 156, 18, 0.2); transition: all 0.2s;">
-                                ➕ Registrar Peso Actual en Historial
-                            </button>
-                        </div>
-
-                        <!-- Tabla de Pesos -->
-                        <div style="flex: 1 1 320px; background: white; border: 1px solid #eee; border-radius: 16px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.01); display:flex; flex-direction:column; gap:8px;">
-                            <span style="font-size:0.75rem; font-weight:700; color:#555; display:block; text-transform:uppercase; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px;">Tabla de Registros</span>
-                            <div style="overflow-x:auto; max-height: 180px; overflow-y:auto; border-radius:8px; border:1px solid #e2e8f0;">
-                                <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;">
-                                    <thead>
-                                        <tr style="background:#f1f5f9; color:#475569; font-weight:700; border-bottom:1px solid #e2e8f0; position: sticky; top:0; z-index:5;">
-                                            <th style="padding:8px 10px;">Fecha / Hora</th>
-                                            <th style="padding:8px 10px; text-align:right;">Peso</th>
-                                            <th style="padding:8px 10px; text-align:center;">Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="evolutionTableBody">
-                                        <tr>
-                                            <td colspan="3" style="padding:15px; text-align:center; color:#94a3b8; font-style:italic;">
-                                                Sin registros de peso en el historial
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
                 <!-- 2. Antropometría Avanzada (RESTORED) -->
                 <section class="card assess-module" style="border-left-color: #f39c12;">
