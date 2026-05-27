@@ -1412,35 +1412,96 @@
                     </div>
                     
                     <div style="display:flex; flex-direction:column; gap:12px;">
-                        <!-- Estado Nutricional -->
-                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
-                            <span style="font-size:0.85rem; font-weight:700; color:#2c3e50;">1. Alteración del Estado Nutricional</span>
-                            <select id="nrsNutritionalStatus" class="select-modern" onchange="window.calculateNRS2002()" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.85rem;">
-                                <option value="0">Ausente (0 pts) - Estado nutricional normal</option>
-                                <option value="1">Leve (1 pt) - Pérdida de peso >5% en 3 meses, o ingesta alimentaria 50-75% en última semana</option>
-                                <option value="2">Moderado (2 pts) - Pérdida de peso >5% en 2 meses, o IMC 18.5-20.5 + deterioro del estado general, o ingesta alimentaria 25-50% en última semana</option>
-                                <option value="3">Grave (3 pts) - Pérdida de peso >5% en 1 mes (>15% en 3 meses), o IMC <18.5 + deterioro del estado general, o ingesta alimentaria 0-25% en última semana</option>
-                            </select>
+                        
+                        <!-- Fase 1: Screening Inicial -->
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:15px; padding:15px; display:flex; flex-direction:column; gap:12px; box-shadow:inset 0 1px 3px rgba(0,0,0,0.01);">
+                            <span style="font-size:0.85rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:6px; border-bottom:1px solid #e2e8f0; padding-bottom:8px; margin-bottom:4px;">
+                                📋 Screening Inicial (Filtro Rápido)
+                            </span>
+                            
+                            <!-- Pregunta 1 -->
+                            <div style="padding:10px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                                <div style="flex:1; min-width:200px;">
+                                    <span style="font-size:0.8rem; font-weight:600; color:#475569; line-height:1.3;">1. ¿IMC &lt; 20,5 kg/m²?</span>
+                                </div>
+                                <div class="nrs-init-btn-group" data-q="nrsQ1" style="display:flex; gap:5px;">
+                                    <button type="button" class="btn-toggle no active" onclick="window.setNrsInitialState('nrsQ1', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                    <button type="button" class="btn-toggle si" onclick="window.setNrsInitialState('nrsQ1', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                                </div>
+                            </div>
+
+                            <!-- Pregunta 2 -->
+                            <div style="padding:10px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                                <div style="flex:1; min-width:200px;">
+                                    <span style="font-size:0.8rem; font-weight:600; color:#475569; line-height:1.3;">2. ¿El paciente ha perdido peso en los últimos 3 meses?</span>
+                                </div>
+                                <div class="nrs-init-btn-group" data-q="nrsQ2" style="display:flex; gap:5px;">
+                                    <button type="button" class="btn-toggle no active" onclick="window.setNrsInitialState('nrsQ2', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                    <button type="button" class="btn-toggle si" onclick="window.setNrsInitialState('nrsQ2', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                                </div>
+                            </div>
+
+                            <!-- Pregunta 3 -->
+                            <div style="padding:10px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                                <div style="flex:1; min-width:200px;">
+                                    <span style="font-size:0.8rem; font-weight:600; color:#475569; line-height:1.3;">3. ¿El paciente ha disminuido su ingesta en la última semana?</span>
+                                </div>
+                                <div class="nrs-init-btn-group" data-q="nrsQ3" style="display:flex; gap:5px;">
+                                    <button type="button" class="btn-toggle no active" onclick="window.setNrsInitialState('nrsQ3', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                    <button type="button" class="btn-toggle si" onclick="window.setNrsInitialState('nrsQ3', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                                </div>
+                            </div>
+
+                            <!-- Pregunta 4 -->
+                            <div style="padding:10px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                                <div style="flex:1; min-width:200px;">
+                                    <span style="font-size:0.8rem; font-weight:600; color:#475569; line-height:1.3;">4. ¿Está el paciente gravemente enfermo? <small style="font-size:0.7rem; color:#64748b; display:block; margin-top:2px;">(ej. UCI, TEC, sepsis, ventilación mecánica)</small></span>
+                                </div>
+                                <div class="nrs-init-btn-group" data-q="nrsQ4" style="display:flex; gap:5px;">
+                                    <button type="button" class="btn-toggle no active" onclick="window.setNrsInitialState('nrsQ4', 'No')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #fca5a5; border-radius:6px; cursor:pointer; background:#fee2e2; color:#c0392b; transition:all 0.2s;">NO</button>
+                                    <button type="button" class="btn-toggle si" onclick="window.setNrsInitialState('nrsQ4', 'Sí')" style="padding:4px 12px; font-size:0.75rem; font-weight:700; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; background:#f7fafc; color:#a0aec0; transition:all 0.2s;">SÍ</button>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Severidad de la Enfermedad -->
-                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
-                            <span style="font-size:0.85rem; font-weight:700; color:#2c3e50;">2. Severidad de la Enfermedad (Requerimientos Aumentados)</span>
-                            <select id="nrsDiseaseSeverity" class="select-modern" onchange="window.calculateNRS2002()" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.85rem;">
-                                <option value="0">Ausente (0 pts) - Requerimientos nutricionales normales</option>
-                                <option value="1">Leve (1 pt) - Fractura de cadera, paciente crónico con complicaciones agudas (EPOC, hemodiálisis, diabetes, oncología)</option>
-                                <option value="2">Moderado (2 pts) - Cirugía abdominal mayor, ACV, neumonía grave, neoplasia hematológica</option>
-                                <option value="3">Grave (3 pts) - Traumatismo craneoencefálico, trasplante de médula ósea, paciente crítico en UCI (APACHE II > 10)</option>
-                            </select>
-                        </div>
-                        
-                        <!-- Ajuste por Edad -->
-                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
-                            <div>
-                                <span style="font-size:0.85rem; font-weight:700; color:#2c3e50; display:block;">3. Ajuste por Edad (>= 70 años)</span>
-                                <small style="font-size:0.7rem; color:#7f8c8d;">Se suma +1 punto automáticamente si el paciente tiene 70 años o más.</small>
+                        <!-- Fase 2: Screening Final (Tabla 2) -->
+                        <div id="nrs2002FinalSection" style="display:none; transition:all 0.3s ease;">
+                            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:15px; padding:15px; display:flex; flex-direction:column; gap:12px; box-shadow:inset 0 1px 3px rgba(0,0,0,0.01);">
+                                <span style="font-size:0.85rem; font-weight:800; color:#166534; display:flex; align-items:center; gap:6px; border-bottom:1px solid #bbf7d0; padding-bottom:8px; margin-bottom:4px;">
+                                    🔍 Screening Final (Tabla 2)
+                                </span>
+                                
+                                <!-- Estado Nutricional -->
+                                <div style="padding:12px; background:white; border:1px solid #e2e8f0; border-radius:12px; display:flex; flex-direction:column; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                                    <span style="font-size:0.8rem; font-weight:700; color:#334155;">1. Alteración del Estado Nutricional (0 - 3 puntos)</span>
+                                    <select id="nrsNutritionalStatus" class="select-modern" onchange="window.calculateNRS2002()" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.85rem; background:#fdfefe; cursor:pointer; color:#334155; font-weight:600;">
+                                        <option value="0">Ausente (0 pts) - Estado nutricional normal</option>
+                                        <option value="1">Leve (1 pt) - Pérdida de peso >5% en 3 meses, o ingesta alimentaria 50-75% en última semana</option>
+                                        <option value="2">Moderado (2 pts) - Pérdida de peso >5% en 2 meses, o IMC 18.5-20.5 + deterioro del estado general, o ingesta alimentaria 25-50% en última semana</option>
+                                        <option value="3">Grave (3 pts) - Pérdida de peso >5% en 1 mes (>15% en 3 meses), o IMC <18.5 + deterioro del estado general, o ingesta alimentaria 0-25% en última semana</option>
+                                    </select>
+                                </div>
+
+                                <!-- Severidad de la Enfermedad -->
+                                <div style="padding:12px; background:white; border:1px solid #e2e8f0; border-radius:12px; display:flex; flex-direction:column; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                                    <span style="font-size:0.8rem; font-weight:700; color:#334155;">2. Severidad de la Enfermedad (Requerimientos Aumentados) (0 - 3 puntos)</span>
+                                    <select id="nrsDiseaseSeverity" class="select-modern" onchange="window.calculateNRS2002()" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.85rem; background:#fdfefe; cursor:pointer; color:#334155; font-weight:600;">
+                                        <option value="0">Ausente (0 pts) - Requerimientos nutricionales normales</option>
+                                        <option value="1">Leve (1 pt) - Fractura de cadera, paciente crónico con complicaciones agudas (EPOC, hemodiálisis, diabetes, oncología)</option>
+                                        <option value="2">Moderado (2 pts) - Cirugía abdominal mayor, ACV, neumonía grave, neoplasia hematológica</option>
+                                        <option value="3">Grave (3 pts) - Traumatismo craneoencefálico, trasplante de médula ósea, paciente crítico en UCI (APACHE II > 10)</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Ajuste por Edad -->
+                                <div style="padding:12px; background:white; border:1px solid #e2e8f0; border-radius:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                                    <div>
+                                        <span style="font-size:0.8rem; font-weight:700; color:#334155; display:block;">3. Ajuste por Edad (>= 70 años)</span>
+                                        <small style="font-size:0.7rem; color:#64748b;">Se suma +1 punto automáticamente si el paciente tiene 70 años o más.</small>
+                                    </div>
+                                    <span id="nrsAgeBonus" style="font-size:0.8rem; font-weight:800; padding:4px 10px; border-radius:12px; background:#f1f5f9; color:#64748b; transition:all 0.3s;">+0 pts</span>
+                                </div>
                             </div>
-                            <span id="nrsAgeBonus" style="font-size:0.8rem; font-weight:800; padding:4px 10px; border-radius:12px; background:#f1f5f9; color:#64748b;">+0 pts</span>
                         </div>
                     </div>
 

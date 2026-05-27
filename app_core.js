@@ -5834,75 +5834,156 @@ window.calculateStrongKids = () => {
     AppState.patient.strongkids.classification = classif;
 };
 
+window.setNrsInitialState = (qId, value) => {
+    if (!AppState.patient.nrs2002) AppState.patient.nrs2002 = {};
+    if (!AppState.patient.nrs2002.initialAnswers) AppState.patient.nrs2002.initialAnswers = {};
+    AppState.patient.nrs2002.initialAnswers[qId] = value;
+
+    const group = document.querySelector(`.nrs-init-btn-group[data-q="${qId}"]`);
+    if (!group) return;
+
+    const btns = group.querySelectorAll('.btn-toggle');
+    btns.forEach(btn => {
+        btn.style.background = '#f7fafc';
+        btn.style.color = '#a0aec0';
+        btn.style.borderColor = '#e2e8f0';
+        btn.classList.remove('active');
+        
+        const isSiBtn = btn.innerText.trim() === 'SÍ' || btn.innerText.trim() === 'SI';
+        if ((value === 'Sí' && isSiBtn) || (value === 'No' && !isSiBtn)) {
+            btn.classList.add('active');
+            if (value === 'Sí') {
+                btn.style.background = '#fee2e2';
+                btn.style.color = '#c0392b';
+                btn.style.borderColor = '#fca5a5';
+            } else {
+                btn.style.background = '#d1fae5';
+                btn.style.color = '#1e8449';
+                btn.style.borderColor = '#6ee7b7';
+            }
+        }
+    });
+
+    window.calculateNRS2002();
+};
+
 window.calculateNRS2002 = () => {
+    const finalSection = document.getElementById('nrs2002FinalSection');
     const statusSelect = document.getElementById('nrsNutritionalStatus');
     const severitySelect = document.getElementById('nrsDiseaseSeverity');
     
     if (!statusSelect || !severitySelect) return;
     
-    const statusVal = parseInt(statusSelect.value) || 0;
-    const severityVal = parseInt(severitySelect.value) || 0;
-    
-    // Obtener edad del paciente desde el input de edad
-    const age = parseFloat(document.getElementById('edad')?.value) || 0;
-    
-    // Si edad >= 70 años, suma +1 punto automáticamente
-    const ageScore = age >= 70 ? 1 : 0;
-    
-    // Actualizar badge de bonificación por edad
-    const nrsAgeBonus = document.getElementById('nrsAgeBonus');
-    if (nrsAgeBonus) {
-        if (ageScore > 0) {
-            nrsAgeBonus.innerText = `+1 pt`;
-            nrsAgeBonus.style.background = '#fee2e2';
-            nrsAgeBonus.style.color = '#c0392b';
-        } else {
-            nrsAgeBonus.innerText = `+0 pts`;
-            nrsAgeBonus.style.background = '#f1f5f9';
-            nrsAgeBonus.style.color = '#64748b';
-        }
+    if (!AppState.patient.nrs2002) AppState.patient.nrs2002 = {};
+    if (!AppState.patient.nrs2002.initialAnswers) {
+        AppState.patient.nrs2002.initialAnswers = {
+            nrsQ1: 'No',
+            nrsQ2: 'No',
+            nrsQ3: 'No',
+            nrsQ4: 'No'
+        };
     }
-    
-    const total = statusVal + severityVal + ageScore;
-    
-    // Clasificación y UI de NRS 2002
-    let classif = 'Sin riesgo';
-    let color = '#1abc9c';
-    let bg = 'rgba(26, 188, 156, 0.05)';
-    let border = 'rgba(26, 188, 156, 0.2)';
-    let recs = `• El paciente no presenta riesgo nutricional.\n• Reevaluar el tamizaje semanalmente durante la hospitalización.\n• Si el paciente está programado para una cirugía mayor, considerar plan preventivo.`;
-    
-    if (total >= 3) {
-        classif = 'Con riesgo';
-        color = '#c0392b';
-        bg = 'rgba(192, 57, 43, 0.05)';
-        border = 'rgba(192, 57, 43, 0.2)';
-        recs = `• El paciente presenta RIESGO NUTRICIONAL.\n• Iniciar plan de soporte nutricional formal según protocolo institucional.\n• Monitorear estrechamente la ingesta alimentaria y el peso.\n• Reevaluar periódicamente.`;
-    }
-    
+
+    const initAnswers = AppState.patient.nrs2002.initialAnswers;
+    const hasAnyYes = Object.values(initAnswers).some(val => val === 'Sí');
+
     const totalBadge = document.getElementById('nrsTotalScore');
     const classifLabel = document.getElementById('nrsClassif');
     const recsArea = document.getElementById('nrsRecs');
     const panelBox = document.getElementById('nrsResultPanel');
-    
-    if (totalBadge) totalBadge.innerText = total + ' pts';
-    if (classifLabel) {
-        classifLabel.innerText = classif.toUpperCase() + ' NUTRICIONAL';
-        classifLabel.style.color = color;
-        classifLabel.style.borderColor = border;
+
+    // Elementos de UI de resultados
+    let total = 0;
+    let classif = 'Sin riesgo';
+    let color = '#1abc9c';
+    let bg = 'rgba(26, 188, 156, 0.05)';
+    let border = 'rgba(26, 188, 156, 0.2)';
+    let recs = '';
+
+    if (!hasAnyYes) {
+        // ESCENARIO A: Todo NO en Screening Inicial
+        if (finalSection) finalSection.style.display = 'none';
+
+        recs = `• El paciente se encuentra sin riesgo en el screening inicial.\n• Reevaluar semanalmente durante la hospitalización.\n• En caso de que el paciente vaya a ser sometido a una cirugía mayor, considerar la posibilidad de soporte nutricional perioperatorio.`;
+        
+        if (totalBadge) totalBadge.innerText = '0 pts';
+        if (classifLabel) {
+            classifLabel.innerText = 'SIN RIESGO';
+            classifLabel.style.color = color;
+            classifLabel.style.borderColor = border;
+        }
+        if (recsArea) recsArea.innerText = recs;
+        if (panelBox) {
+            panelBox.style.background = bg;
+            panelBox.style.borderColor = border;
+        }
+
+        AppState.patient.nrs2002.score = 0;
+        AppState.patient.nrs2002.classification = 'Sin riesgo nutricional (Filtro Inicial Negativo)';
+        AppState.patient.nrs2002.statusScore = 0;
+        AppState.patient.nrs2002.severityScore = 0;
+        AppState.patient.nrs2002.ageScore = 0;
+    } else {
+        // ESCENARIO B: Al menos un SÍ en Screening Inicial
+        if (finalSection) finalSection.style.display = 'block';
+
+        const statusVal = parseInt(statusSelect.value) || 0;
+        const severityVal = parseInt(severitySelect.value) || 0;
+        
+        // Obtener edad del paciente desde el input de edad
+        const age = parseFloat(document.getElementById('edad')?.value) || 0;
+        
+        // Si edad >= 70 años, suma +1 punto automáticamente
+        const ageScore = age >= 70 ? 1 : 0;
+        
+        // Actualizar badge de bonificación por edad
+        const nrsAgeBonus = document.getElementById('nrsAgeBonus');
+        if (nrsAgeBonus) {
+            if (ageScore > 0) {
+                nrsAgeBonus.innerText = `+1 pt`;
+                nrsAgeBonus.style.background = '#fee2e2';
+                nrsAgeBonus.style.color = '#c0392b';
+            } else {
+                nrsAgeBonus.innerText = `+0 pts`;
+                nrsAgeBonus.style.background = '#f1f5f9';
+                nrsAgeBonus.style.color = '#64748b';
+            }
+        }
+        
+        total = statusVal + severityVal + ageScore;
+        
+        if (total >= 3) {
+            classif = 'Con riesgo';
+            color = '#c0392b';
+            bg = 'rgba(192, 57, 43, 0.05)';
+            border = 'rgba(192, 57, 43, 0.2)';
+            recs = `• El paciente presenta RIESGO NUTRICIONAL.\n• Iniciar plan de soporte nutricional formal según protocolo institucional.\n• Monitorear estrechamente la ingesta alimentaria y el peso.\n• Reevaluar periódicamente.`;
+        } else {
+            classif = 'Sin riesgo';
+            color = '#1abc9c';
+            bg = 'rgba(26, 188, 156, 0.05)';
+            border = 'rgba(26, 188, 156, 0.2)';
+            recs = `• El paciente no presenta riesgo nutricional en la evaluación final.\n• Reevaluar el tamizaje semanalmente durante la hospitalización.\n• Si el paciente está programado para una cirugía mayor, considerar plan preventivo.`;
+        }
+        
+        if (totalBadge) totalBadge.innerText = total + ' pts';
+        if (classifLabel) {
+            classifLabel.innerText = classif.toUpperCase() + ' NUTRICIONAL';
+            classifLabel.style.color = color;
+            classifLabel.style.borderColor = border;
+        }
+        if (recsArea) recsArea.innerText = recs;
+        if (panelBox) {
+            panelBox.style.background = bg;
+            panelBox.style.borderColor = border;
+        }
+        
+        AppState.patient.nrs2002.score = total;
+        AppState.patient.nrs2002.classification = classif === 'Con riesgo' ? 'Con riesgo nutricional' : 'Sin riesgo nutricional';
+        AppState.patient.nrs2002.statusScore = statusVal;
+        AppState.patient.nrs2002.severityScore = severityVal;
+        AppState.patient.nrs2002.ageScore = ageScore;
     }
-    if (recsArea) recsArea.innerText = recs;
-    if (panelBox) {
-        panelBox.style.background = bg;
-        panelBox.style.borderColor = border;
-    }
-    
-    if (!AppState.patient.nrs2002) AppState.patient.nrs2002 = {};
-    AppState.patient.nrs2002.score = total;
-    AppState.patient.nrs2002.classification = classif === 'Con riesgo' ? 'Con riesgo nutricional' : 'Sin riesgo nutricional';
-    AppState.patient.nrs2002.statusScore = statusVal;
-    AppState.patient.nrs2002.severityScore = severityVal;
-    AppState.patient.nrs2002.ageScore = ageScore;
 };
 
 window.initAnamnesisToggles = () => {
@@ -5930,10 +6011,16 @@ window.initAnamnesisToggles = () => {
     if (!AppState.patient.nrs2002) {
         AppState.patient.nrs2002 = {
             score: 0,
-            classification: 'Sin riesgo nutricional',
+            classification: 'Sin riesgo nutricional (Filtro Inicial Negativo)',
             statusScore: 0,
             severityScore: 0,
-            ageScore: 0
+            ageScore: 0,
+            initialAnswers: {
+                nrsQ1: 'No',
+                nrsQ2: 'No',
+                nrsQ3: 'No',
+                nrsQ4: 'No'
+            }
         };
     }
 
@@ -5946,7 +6033,10 @@ window.initAnamnesisToggles = () => {
     window.setSkState('q3', 'No', 1);
     window.setSkState('q4', 'No', 1);
     
-    window.calculateNRS2002();
+    window.setNrsInitialState('nrsQ1', 'No');
+    window.setNrsInitialState('nrsQ2', 'No');
+    window.setNrsInitialState('nrsQ3', 'No');
+    window.setNrsInitialState('nrsQ4', 'No');
 };
 
 
