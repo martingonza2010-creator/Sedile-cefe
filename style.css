@@ -222,13 +222,21 @@ header.main-header {
 }
 
 .dashboard-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 3.2fr) minmax(0, 0.8fr);
+    display: flex;
+    flex-direction: column;
     gap: 25px;
+    width: 100%;
+}
+
+.dashboard-row-2col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 25px;
+    width: 100%;
 }
 
 @media (max-width: 850px) {
-    .dashboard-grid {
+    .dashboard-row-2col {
         grid-template-columns: minmax(0, 1fr);
     }
 }

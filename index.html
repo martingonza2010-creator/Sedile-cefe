@@ -673,109 +673,112 @@
                 </section>
 
 
-                <!-- NEW: Hydration Card -->
-                <section class="card hydration-card" style="border-left: 5px solid #3498db;">
-                    <div class="card-header" style="margin-bottom:10px;">
-                        <h3>💦 Terapia Hídrica</h3>
-                        <div style="display:flex; gap:10px; font-size:0.8rem;">
-                            <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
-                                <input type="radio" name="hydMethod" value="holiday" checked
-                                    onchange="toggleHydMethod()">
-                                Holliday-Segar
-                            </label>
-                            <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
-                                <input type="radio" name="hydMethod" value="mlkg" onchange="toggleHydMethod()"> ml/kg
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Input Factor ml/kg (Hidden by default) -->
-                    <div id="hydFactorRow" style="display:none; margin-bottom:15px; text-align:right;">
-                        <label style="font-size:0.8rem; margin-right:5px;">Factor:</label>
-                        <input type="number" id="hydFactor" value="30"
-                            style="width:50px; padding:4px; border-radius:6px; border:1px solid #ddd; text-align:center;">
-                        <span style="font-size:0.8rem;">ml/kg</span>
-                    </div>
-
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <div style="text-align:center;">
-                            <span style="font-size:0.7rem; color:#888;">Requerimiento</span>
-                            <div style="font-size:1.4rem; font-weight:700; color:#3498db;"><span id="hydReq">0</span> ml
+                <!-- FILA 2: TERAPIA HÍDRICA & INFUSIÓN (SIMÉTRICAS) -->
+                <div class="dashboard-row-2col">
+                    <!-- NEW: Hydration Card -->
+                    <section class="card hydration-card" style="border-left: 5px solid #3498db;">
+                        <div class="card-header" style="margin-bottom:10px;">
+                            <h3>💦 Terapia Hídrica</h3>
+                            <div style="display:flex; gap:10px; font-size:0.8rem;">
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
+                                    <input type="radio" name="hydMethod" value="holiday" checked
+                                        onchange="toggleHydMethod()">
+                                    Holliday-Segar
+                                </label>
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
+                                    <input type="radio" name="hydMethod" value="mlkg" onchange="toggleHydMethod()"> ml/kg
+                                </label>
                             </div>
                         </div>
-                        <div style="font-size:1.5rem; opacity:0.2;">➔</div>
-                        <div style="text-align:center;">
-                            <span style="font-size:0.7rem; color:#888;">Déficit (Agua Libre)</span>
-                            <div style="font-size:1.4rem; font-weight:700; color:#e74c3c;" id="hydDeficitBox"><span
-                                    id="hydDeficit">0</span> ml</div>
+
+                        <!-- Input Factor ml/kg (Hidden by default) -->
+                        <div id="hydFactorRow" style="display:none; margin-bottom:15px; text-align:right;">
+                            <label style="font-size:0.8rem; margin-right:5px;">Factor:</label>
+                            <input type="number" id="hydFactor" value="30"
+                                style="width:50px; padding:4px; border-radius:6px; border:1px solid #ddd; text-align:center;">
+                            <span style="font-size:0.8rem;">ml/kg</span>
                         </div>
-                    </div>
 
-                    <!-- NEW V3.12: Clinical Hydration Row -->
-                    <div
-                        style="display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px; margin-top:10px; border-top:1px solid rgba(0,0,0,0.05); padding-top:10px; text-align:center;">
-                        <div>
-                            <span style="font-size:0.6rem; color:#888; display:block;">Ingreso Actual</span>
-                            <strong style="font-size:0.85rem;" id="valHydTotal">0 ml</strong>
-                        </div>
-                        <div>
-                            <span style="font-size:0.6rem; color:#888; display:block;">Relación ml/kcal</span>
-                            <strong style="font-size:0.85rem;" id="valHydRatio">0.0</strong>
-                        </div>
-                        <div>
-                            <span style="font-size:0.6rem; color:#888; display:block;">Balance Est.</span>
-                            <strong style="font-size:0.85rem;" id="valHydBalance">0 ml</strong>
-                        </div>
-                    </div>
-
-                    <div class="water-bar-container" style="margin-top:15px;">
-                        <div class="water-bar" id="hydBar"></div>
-                    </div>
-                    <small
-                        style="text-align:center; display:block; margin-top:5px; opacity:0.6; font-size:0.7rem;">Basado
-                        en Peso Actual</small>
-                </section>
-
-                <!-- SECCIÓN 2: RTH E INFUSIÓN (COMPACTA CENTRADA) -->
-                <section class="card infusion-card" style="margin-bottom: 20px; background: rgba(231, 76, 60, 0.02); border: 1px solid rgba(231, 76, 60, 0.15); border-radius: 16px; padding: 15px;">
-                    <div class="infusion-box-compact" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%;">
-                        
-                        <h4 style="margin: 0 0 15px 0; font-size: 0.95rem; color: var(--secondary); display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border-bottom: 1px dashed rgba(231, 76, 60, 0.2); padding-bottom: 10px;">
-                            <span style="font-size: 1.2rem;">⏱️</span> RTH e Infusión (SEDILE)
-                        </h4>
-
-                        <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 20px; width: 100%;">
-                            
-                            <div class="mini-input-compact" style="align-items: center; min-width: 280px; flex: 1; max-width: 400px;">
-                                <label style="font-size: 0.7rem; color: #555; font-weight: 700; margin-bottom: 4px;">Fórmula Instalada (RTH)</label>
-                                <select id="infusionRTHSelect" class="select-modern" onchange="window.calcInfusion()" style="padding: 8px 12px; font-size: 0.85rem; width: 100%; text-align: center; background: white; border: 1px solid #ddd; border-radius: 8px;">
-                                    <option value="">-- No usar fórmula RTH --</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mini-input-compact" style="align-items: center;">
-                                <label style="font-size: 0.7rem; color: #555; font-weight: 700; margin-bottom: 4px;">Hora Instalación</label>
-                                <input type="time" id="infusionStart" onchange="window.calcInfusion()" style="padding: 8px 12px; font-size: 0.9rem; width: 130px; text-align: center; background: white; border: 1px solid #ddd; border-radius: 8px;">
-                            </div>
-                            
-                            <div class="mini-input-compact" style="align-items: center;">
-                                <label style="font-size: 0.7rem; color: #555; font-weight: 700; margin-bottom: 4px;">Velocidad (ml/hr) <span id="infusionSuggestionLabel" onclick="window.applyInfusionSuggestion()" style="cursor:pointer; color:var(--primary); font-size: 0.65rem; margin-left: 5px; background: #eaf2f8; padding: 2px 6px; border-radius: 4px; border: 1px solid #d4e6f1;" title="Aplicar sugerencia">Sug: 80</span></label>
-                                <input type="number" id="infusionRate" placeholder="Ej. 60" oninput="window.calcInfusion()" style="padding: 8px 12px; font-size: 0.9rem; width: 130px; font-weight: 700; text-align: center; background: white; border: 1px solid #ddd; border-radius: 8px;">
-                            </div>
-
-                            <div id="infusionResultBox" style="display:none; align-items: center; justify-content: center; background: white; padding: 8px 25px; border-radius: 12px; border: 2px solid rgba(231, 76, 60, 0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
-                                <div style="display: flex; flex-direction: column; align-items: center;">
-                                    <span style="font-size: 0.65rem; color: #888; font-weight: 700; text-transform: uppercase;">Término de Envase</span>
-                                    <strong id="valEndTime" style="color: var(--accent); font-size: 1.4rem; line-height: 1;">--:--</strong>
-                                    <span id="valDuration" style="font-size: 0.7rem; color: #999; font-weight: 500; margin-top: 3px;">(0 hrs)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <div style="text-align:center;">
+                                <span style="font-size:0.7rem; color:#888;">Requerimiento</span>
+                                <div style="font-size:1.4rem; font-weight:700; color:#3498db;"><span id="hydReq">0</span> ml
                                 </div>
                             </div>
+                            <div style="font-size:1.5rem; opacity:0.2;">➔</div>
+                            <div style="text-align:center;">
+                                <span style="font-size:0.7rem; color:#888;">Déficit (Agua Libre)</span>
+                                <div style="font-size:1.4rem; font-weight:700; color:#e74c3c;" id="hydDeficitBox"><span
+                                        id="hydDeficit">0</span> ml</div>
+                            </div>
                         </div>
-                        
-                        <div id="valLogisticsBox" style="display:none; margin-top:15px; font-size:0.75rem; color:#b7950b; background:#fef9e7; padding:8px 15px; border-radius:8px; border:1px dashed #f1c40f; max-width: 600px; text-align: center; width: 100%;"></div>
 
-                    </div>
-                </section>
+                        <!-- NEW V3.12: Clinical Hydration Row -->
+                        <div
+                            style="display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px; margin-top:10px; border-top:1px solid rgba(0,0,0,0.05); padding-top:10px; text-align:center;">
+                            <div>
+                                <span style="font-size:0.6rem; color:#888; display:block;">Ingreso Actual</span>
+                                <strong style="font-size:0.85rem;" id="valHydTotal">0 ml</strong>
+                            </div>
+                            <div>
+                                <span style="font-size:0.6rem; color:#888; display:block;">Relación ml/kcal</span>
+                                <strong style="font-size:0.85rem;" id="valHydRatio">0.0</strong>
+                            </div>
+                            <div>
+                                <span style="font-size:0.6rem; color:#888; display:block;">Balance Est.</span>
+                                <strong style="font-size:0.85rem;" id="valHydBalance">0 ml</strong>
+                            </div>
+                        </div>
+
+                        <div class="water-bar-container" style="margin-top:15px;">
+                            <div class="water-bar" id="hydBar"></div>
+                        </div>
+                        <small
+                            style="text-align:center; display:block; margin-top:5px; opacity:0.6; font-size:0.7rem;">Basado
+                            en Peso Actual</small>
+                    </section>
+
+                    <!-- SECCIÓN 2: RTH E INFUSIÓN (COMPACTA CENTRADA) -->
+                    <section class="card infusion-card" style="margin-bottom: 20px; background: rgba(231, 76, 60, 0.02); border: 1px solid rgba(231, 76, 60, 0.15); border-radius: 16px; padding: 15px;">
+                        <div class="infusion-box-compact" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%;">
+                            
+                            <h4 style="margin: 0 0 15px 0; font-size: 0.95rem; color: var(--secondary); display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border-bottom: 1px dashed rgba(231, 76, 60, 0.2); padding-bottom: 10px;">
+                                <span style="font-size: 1.2rem;">⏱️</span> RTH e Infusión (SEDILE)
+                            </h4>
+
+                            <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 20px; width: 100%;">
+                                
+                                <div class="mini-input-compact" style="align-items: center; min-width: 280px; flex: 1; max-width: 400px;">
+                                    <label style="font-size: 0.7rem; color: #555; font-weight: 700; margin-bottom: 4px;">Fórmula Instalada (RTH)</label>
+                                    <select id="infusionRTHSelect" class="select-modern" onchange="window.calcInfusion()" style="padding: 8px 12px; font-size: 0.85rem; width: 100%; text-align: center; background: white; border: 1px solid #ddd; border-radius: 8px;">
+                                        <option value="">-- No usar fórmula RTH --</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mini-input-compact" style="align-items: center;">
+                                    <label style="font-size: 0.7rem; color: #555; font-weight: 700; margin-bottom: 4px;">Hora Instalación</label>
+                                    <input type="time" id="infusionStart" onchange="window.calcInfusion()" style="padding: 8px 12px; font-size: 0.9rem; width: 130px; text-align: center; background: white; border: 1px solid #ddd; border-radius: 8px;">
+                                </div>
+                                
+                                <div class="mini-input-compact" style="align-items: center;">
+                                    <label style="font-size: 0.7rem; color: #555; font-weight: 700; margin-bottom: 4px;">Velocidad (ml/hr) <span id="infusionSuggestionLabel" onclick="window.applyInfusionSuggestion()" style="cursor:pointer; color:var(--primary); font-size: 0.65rem; margin-left: 5px; background: #eaf2f8; padding: 2px 6px; border-radius: 4px; border: 1px solid #d4e6f1;" title="Aplicar sugerencia">Sug: 80</span></label>
+                                    <input type="number" id="infusionRate" placeholder="Ej. 60" oninput="window.calcInfusion()" style="padding: 8px 12px; font-size: 0.9rem; width: 130px; font-weight: 700; text-align: center; background: white; border: 1px solid #ddd; border-radius: 8px;">
+                                </div>
+
+                                <div id="infusionResultBox" style="display:none; align-items: center; justify-content: center; background: white; padding: 8px 25px; border-radius: 12px; border: 2px solid rgba(231, 76, 60, 0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+                                    <div style="display: flex; flex-direction: column; align-items: center;">
+                                        <span style="font-size: 0.65rem; color: #888; font-weight: 700; text-transform: uppercase;">Término de Envase</span>
+                                        <strong id="valEndTime" style="color: var(--accent); font-size: 1.4rem; line-height: 1;">--:--</strong>
+                                        <span id="valDuration" style="font-size: 0.7rem; color: #999; font-weight: 500; margin-top: 3px;">(0 hrs)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="valLogisticsBox" style="display:none; margin-top:15px; font-size:0.75rem; color:#b7950b; background:#fef9e7; padding:8px 15px; border-radius:8px; border:1px dashed #f1c40f; max-width: 600px; text-align: center; width: 100%;"></div>
+
+                        </div>
+                    </section>
+                </div>
 
                 <!-- SECCIÓN 3: SIMULADOR INTEGRADO -->
                 <section class="card simulator-card">
@@ -923,135 +926,138 @@
                     </div>
                 </section>
 
-                <!-- NEW V3.50: CALCULADORA DE MÓDULOS -->
-                <section class="card simulator-card" style="margin-top: -15px;">
-                    <details class="folds-accordion" id="modulesAccordion">
-                        <summary style="font-weight:700; color:var(--primary);">➕ Calculadora de Módulos (Refuerzos)
-                        </summary>
-                        <div class="modules-grid"
-                            style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
-                            <div class="mini-input">
-                                <label>Nessucar (%)</label>
-                                <input type="number" id="modNessucar" class="input-module" placeholder="%">
-                            </div>
-                            <div class="mini-input">
-                                <label>MCT Oil (%)</label>
-                                <input type="number" id="modMCT" class="input-module" placeholder="%">
-                            </div>
-                            <div class="mini-input">
-                                <label>Enterex Karb (%)</label>
-                                <input type="number" id="modEnterex" class="input-module" placeholder="%">
-                            </div>
-                            <div class="mini-input">
-                                <label>Banatrol Plus (%)</label>
-                                <input type="number" id="modBanatrol" class="input-module" placeholder="%">
-                            </div>
-                            <div class="mini-input">
-                                <label>Proteinex (%)</label>
-                                <input type="number" id="modProteinex" class="input-module" placeholder="%">
-                            </div>
-                            <div class="mini-input">
-                                <label>Fresubin Powder (%)</label>
-                                <input type="number" id="modFresubin" class="input-module" placeholder="%">
-                            </div>
-                        </div>
-                        <small style="display:block; margin-top:8px; opacity:0.6; font-size:0.65rem;">Los módulos se
-                            suman al aporte total de la fórmula seleccionada.</small>
-                    </details>
-                </section>
-
-                <!-- NEW V3.60: INGESTA ORAL Y SUEROTERAPIA (Restored) -->
-                <section class="card simulator-card" style="margin-top: -15px;">
-                    <details class="folds-accordion" id="oralIvAccordion">
-                        <summary style="font-weight:700; color:var(--primary);">🏥 Ingesta Oral y Sueroterapia</summary>
-
-                        <!-- Sueroterapia (IV Fluids) -->
-                        <h4
-                            style="font-size: 0.8rem; color: #555; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                            💧 Sueroterapia (Fluidos IV)</h4>
-                        <div class="modules-grid"
-                            style="display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap:10px; padding-top:10px;">
-                            <div class="mini-input">
-                                <label>Tipo de Suero</label>
-                                <select id="ivType"
-                                    style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); width:100%; font-size:0.85rem;">
-                                    <option value="none">Ninguno</option>
-                                    <option value="sg5">Suero Glucosado 5%</option>
-                                    <option value="sg10">Suero Glucosado 10%</option>
-                                    <option value="sf">Suero Fisiológico 0.9%</option>
-                                    <option value="ringer">Ringer Lactato</option>
-                                </select>
-                            </div>
-                            <div class="mini-input">
-                                <label>Volumen Total (ml/día)</label>
-                                <input type="number" id="ivVolume" class="input-iv" placeholder="ml">
-                            </div>
-                        </div>
-
-                        <!-- Ingesta Oral -->
-                        <h4
-                            style="font-size: 0.8rem; color: #555; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                            🍲 Ingesta Oral / Bandeja</h4>
-                        
-                        <!-- Panel de Regímenes Clínicos Predefinidos y Barra de Consumo -->
-                        <div style="background:#f8f9fa; padding:15px; border-radius:12px; border:1px solid rgba(0,0,0,0.05); margin-top:10px; margin-bottom:15px;">
-                            <div style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                <!-- FILA 4: CALCULADORA DE MÓDULOS & INGESTA ORAL (SIMÉTRICAS) -->
+                <div class="dashboard-row-2col">
+                    <!-- NEW V3.50: CALCULADORA DE MÓDULOS -->
+                    <section class="card simulator-card">
+                        <details class="folds-accordion" id="modulesAccordion">
+                            <summary style="font-weight:700; color:var(--primary);">➕ Calculadora de Módulos (Refuerzos)
+                            </summary>
+                            <div class="modules-grid"
+                                style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
                                 <div class="mini-input">
-                                    <label style="font-weight:700; color:var(--primary); font-size:0.75rem;">Seleccionar Régimen Clínico</label>
-                                    <select id="oralDietType" style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); width:100%; font-size:0.85rem;">
-                                        <option value="custom">-- Personalizado --</option>
-                                        <option value="blando_sin_residuos">Blando sin Residuos (1874 kcal)</option>
-                                        <option value="liviano">Liviano (2055 kcal)</option>
-                                        <option value="hiposodico">Hiposódico (2063 kcal)</option>
-                                        <option value="hypercalorico">Hipercalórico (2445 kcal)</option>
-                                        <option value="hyperproteico">Hiperproteico (2448 kcal)</option>
-                                        <option value="hipocalorico">Hipocalórico (1486 kcal)</option>
-                                        <option value="hipoproteico">Hipoproteico (1925 kcal)</option>
-                                        <option value="papilla_diabetico">Papilla Diabético (1537 kcal)</option>
-                                        <option value="papilla_liviana">Papilla Liviana (1587 kcal)</option>
-                                        <option value="hipoglucidico">Hipoglucídico (1480 kcal)</option>
-                                        <option value="isoglucidico_160">Iso Glucídico 160 (1530 kcal)</option>
-                                        <option value="isoglucidico_200">Isoglucídico 200 (1634 kcal)</option>
+                                    <label>Nessucar (%)</label>
+                                    <input type="number" id="modNessucar" class="input-module" placeholder="%">
+                                </div>
+                                <div class="mini-input">
+                                    <label>MCT Oil (%)</label>
+                                    <input type="number" id="modMCT" class="input-module" placeholder="%">
+                                </div>
+                                <div class="mini-input">
+                                    <label>Enterex Karb (%)</label>
+                                    <input type="number" id="modEnterex" class="input-module" placeholder="%">
+                                </div>
+                                <div class="mini-input">
+                                    <label>Banatrol Plus (%)</label>
+                                    <input type="number" id="modBanatrol" class="input-module" placeholder="%">
+                                </div>
+                                <div class="mini-input">
+                                    <label>Proteinex (%)</label>
+                                    <input type="number" id="modProteinex" class="input-module" placeholder="%">
+                                </div>
+                                <div class="mini-input">
+                                    <label>Fresubin Powder (%)</label>
+                                    <input type="number" id="modFresubin" class="input-module" placeholder="%">
+                                </div>
+                            </div>
+                            <small style="display:block; margin-top:8px; opacity:0.6; font-size:0.65rem;">Los módulos se
+                                suman al aporte total de la fórmula seleccionada.</small>
+                        </details>
+                    </section>
+
+                    <!-- NEW V3.60: INGESTA ORAL Y SUEROTERAPIA (Restored) -->
+                    <section class="card simulator-card">
+                        <details class="folds-accordion" id="oralIvAccordion">
+                            <summary style="font-weight:700; color:var(--primary);">🏥 Ingesta Oral y Sueroterapia</summary>
+
+                            <!-- Sueroterapia (IV Fluids) -->
+                            <h4
+                                style="font-size: 0.8rem; color: #555; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                                💧 Sueroterapia (Fluidos IV)</h4>
+                            <div class="modules-grid"
+                                style="display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap:10px; padding-top:10px;">
+                                <div class="mini-input">
+                                    <label>Tipo de Suero</label>
+                                    <select id="ivType"
+                                        style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); width:100%; font-size:0.85rem;">
+                                        <option value="none">Ninguno</option>
+                                        <option value="sg5">Suero Glucosado 5%</option>
+                                        <option value="sg10">Suero Glucosado 10%</option>
+                                        <option value="sf">Suero Fisiológico 0.9%</option>
+                                        <option value="ringer">Ringer Lactato</option>
                                     </select>
                                 </div>
-                                
-                                <div class="mini-input" style="margin-top:5px;">
-                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                                        <label style="font-weight:700; color:var(--primary); margin:0; font-size:0.75rem;">% de Ingesta Real (Consumo)</label>
-                                        <span id="oralIntakePercentBadge" style="background:var(--primary); color:white; font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:10px;">100%</span>
-                                    </div>
-                                    <input type="range" id="oralIntakePercent" min="0" max="100" value="100" step="5" style="width:100%; accent-color:var(--primary); cursor:pointer;">
+                                <div class="mini-input">
+                                    <label>Volumen Total (ml/día)</label>
+                                    <input type="number" id="ivVolume" class="input-iv" placeholder="ml">
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="modules-grid"
-                            style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
-                            <div class="mini-input">
-                                <label>Energía (kcal)</label>
-                                <input type="number" id="oralKcal" class="input-oral" placeholder="kcal">
+                            <!-- Ingesta Oral -->
+                            <h4
+                                style="font-size: 0.8rem; color: #555; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                                🍲 Ingesta Oral / Bandeja</h4>
+                            
+                            <!-- Panel de Regímenes Clínicos Predefinidos y Barra de Consumo -->
+                            <div style="background:#f8f9fa; padding:15px; border-radius:12px; border:1px solid rgba(0,0,0,0.05); margin-top:10px; margin-bottom:15px;">
+                                <div style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                                    <div class="mini-input">
+                                        <label style="font-weight:700; color:var(--primary); font-size:0.75rem;">Seleccionar Régimen Clínico</label>
+                                        <select id="oralDietType" style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); width:100%; font-size:0.85rem;">
+                                            <option value="custom">-- Personalizado --</option>
+                                            <option value="blando_sin_residuos">Blando sin Residuos (1874 kcal)</option>
+                                            <option value="liviano">Liviano (2055 kcal)</option>
+                                            <option value="hiposodico">Hiposódico (2063 kcal)</option>
+                                            <option value="hypercalorico">Hipercalórico (2445 kcal)</option>
+                                            <option value="hyperproteico">Hiperproteico (2448 kcal)</option>
+                                            <option value="hipocalorico">Hipocalórico (1486 kcal)</option>
+                                            <option value="hipoproteico">Hipoproteico (1925 kcal)</option>
+                                            <option value="papilla_diabetico">Papilla Diabético (1537 kcal)</option>
+                                            <option value="papilla_liviana">Papilla Liviana (1587 kcal)</option>
+                                            <option value="hipoglucidico">Hipoglucídico (1480 kcal)</option>
+                                            <option value="isoglucidico_160">Iso Glucídico 160 (1530 kcal)</option>
+                                            <option value="isoglucidico_200">Isoglucídico 200 (1634 kcal)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mini-input" style="margin-top:5px;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                            <label style="font-weight:700; color:var(--primary); margin:0; font-size:0.75rem;">% de Ingesta Real (Consumo)</label>
+                                            <span id="oralIntakePercentBadge" style="background:var(--primary); color:white; font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:10px;">100%</span>
+                                        </div>
+                                        <input type="range" id="oralIntakePercent" min="0" max="100" value="100" step="5" style="width:100%; accent-color:var(--primary); cursor:pointer;">
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mini-input">
-                                <label>Proteínas (g)</label>
-                                <input type="number" id="oralProt" class="input-oral" placeholder="g">
+
+                            <div class="modules-grid"
+                                style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; padding-top:10px;">
+                                <div class="mini-input">
+                                    <label>Energía (kcal)</label>
+                                    <input type="number" id="oralKcal" class="input-oral" placeholder="kcal">
+                                </div>
+                                <div class="mini-input">
+                                    <label>Proteínas (g)</label>
+                                    <input type="number" id="oralProt" class="input-oral" placeholder="g">
+                                </div>
+                                <div class="mini-input">
+                                    <label>H. de Carbono (g)</label>
+                                    <input type="number" id="oralCHO" class="input-oral" placeholder="g">
+                                </div>
+                                <div class="mini-input">
+                                    <label>Lípidos (g)</label>
+                                    <input type="number" id="oralLip" class="input-oral" placeholder="g">
+                                </div>
+                                <div class="mini-input">
+                                    <label>Agua / Líquidos (ml)</label>
+                                    <input type="number" id="oralWater" class="input-oral" placeholder="ml">
+                                </div>
                             </div>
-                            <div class="mini-input">
-                                <label>H. de Carbono (g)</label>
-                                <input type="number" id="oralCHO" class="input-oral" placeholder="g">
-                            </div>
-                            <div class="mini-input">
-                                <label>Lípidos (g)</label>
-                                <input type="number" id="oralLip" class="input-oral" placeholder="g">
-                            </div>
-                            <div class="mini-input">
-                                <label>Agua / Líquidos (ml)</label>
-                                <input type="number" id="oralWater" class="input-oral" placeholder="ml">
-                            </div>
-                        </div>
-                        <small style="display:block; margin-top:10px; opacity:0.6; font-size:0.65rem;">El suero y la vía
-                            oral se suman automáticamente al total de aportes contra los requerimientos.</small>
-                    </details>
-                </section>
+                            <small style="display:block; margin-top:10px; opacity:0.6; font-size:0.65rem;">El suero y la vía
+                                oral se suman automáticamente al total de aportes contra los requerimientos.</small>
+                        </details>
+                    </section>
+                </div>
 
 
             </main>
