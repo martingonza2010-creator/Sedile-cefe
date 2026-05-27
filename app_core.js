@@ -9,6 +9,52 @@ window.addEventListener('unhandledrejection', function (event) {
     console.error('⚠️ Unhandled Promise Rejection:', event.reason);
 });
 
+// --- 1. DATE UTILITIES & AUTO-MASK FOR SPANISH FORMAT ---
+window.parseSpanishDate = function(val) {
+    if (!val) return null;
+    let parts;
+    if (val.includes('/')) {
+        parts = val.split('/');
+        if (parts.length === 3) {
+            const d = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            const y = parseInt(parts[2], 10);
+            if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
+                const birth = new Date(y, m - 1, d);
+                birth.setHours(0,0,0,0);
+                return birth;
+            }
+        }
+    } else if (val.includes('-')) {
+        parts = val.split('-');
+        if (parts.length === 3) {
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            const d = parseInt(parts[2], 10);
+            if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                const birth = new Date(y, m - 1, d);
+                birth.setHours(0,0,0,0);
+                return birth;
+            }
+        }
+    }
+    return null;
+};
+
+window.formatDateInput = function(input) {
+    let v = input.value.replace(/\D/g, ''); // remove non-digits
+    if (v.length > 8) v = v.substring(0, 8);
+    
+    // Auto-insert slashes
+    if (v.length > 4) {
+        input.value = v.substring(0, 2) + '/' + v.substring(2, 4) + '/' + v.substring(4);
+    } else if (v.length > 2) {
+        input.value = v.substring(0, 2) + '/' + v.substring(2);
+    } else {
+        input.value = v;
+    }
+};
+
 // --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
 // --- 1. SUPABASE CONFIGURATION ---
 const supabaseUrl = 'https://qibkmvtbgauobedtjapg.supabase.co';
@@ -1931,8 +1977,9 @@ window.toggleQuemado = () => {
 
 window.calculatePediatricAge = () => {
     const fn = document.getElementById('fechaNacimiento').value;
-    if (!fn) {
-        // If birth date is not entered, hide panels
+    const birth = parseSpanishDate(fn);
+    if (!birth) {
+        // If birth date is not entered or invalid, hide panels
         const panelPeds = document.getElementById('pedsPrematurityPanel');
         if (panelPeds) panelPeds.style.display = 'none';
         const panelNeo = document.getElementById('neonateCorrectedAgePanel');
@@ -1940,13 +1987,9 @@ window.calculatePediatricAge = () => {
         return;
     }
 
-    // Fix TimeZone offset issues by parsing the date string directly
-    const [y, mm, d] = fn.split('-');
-    const birth = new Date(y, mm - 1, d);
     const now = new Date();
 
     // Clear hours to ensure exact day differences
-    birth.setHours(0,0,0,0);
     now.setHours(0,0,0,0);
 
     let years = now.getFullYear() - birth.getFullYear();
@@ -2440,9 +2483,8 @@ function renderPediatricZScores() {
 
         if (sem > 0 && sem < 37) {
             const fn = document.getElementById('fechaNacimiento').value;
-            if (fn) {
-                const [y, mm, d] = fn.split('-');
-                const birthDate = new Date(y, mm - 1, d);
+            const birthDate = parseSpanishDate(fn);
+            if (birthDate) {
                 const now = new Date();
 
                 const diffTime = now.getTime() - birthDate.getTime();
@@ -5709,9 +5751,8 @@ window.showCurve = function(type) {
     const fn = document.getElementById('fechaNacimiento').value;
     let agePostnatalDays = 0;
     
-    if (fn) {
-        const [y, mm, d] = fn.split('-');
-        const birth = new Date(y, mm - 1, d);
+    const birth = parseSpanishDate(fn);
+    if (birth) {
         const now = new Date();
         let months = (now.getFullYear() - birth.getFullYear()) * 12;
         months -= birth.getMonth();

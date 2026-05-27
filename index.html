@@ -240,8 +240,8 @@
                         <div id="rowPediatric"
                             style="display:none; gap:10px; margin-top:10px; background:#e8f4f8; padding:8px; border-radius:8px; flex-wrap:wrap;">
                             <div class="mini-input" style="flex:1; min-width:200px;">
-                                <label>Fecha Nacimiento</label>
-                                <input type="date" id="fechaNacimiento" onchange="calculatePediatricAge()">
+                                <label>Fecha Nacimiento (Día/Mes/Año)</label>
+                                <input type="text" id="fechaNacimiento" placeholder="Día/Mes/Año" maxlength="10" oninput="window.formatDateInput(this); calculatePediatricAge();">
                                 <div id="lblExactAge" style="font-size:0.65rem; color:#2980b9; margin-top:2px;"></div>
                             </div>
                             <!-- V4.60: Pediatric prematurity panel -->
