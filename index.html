@@ -277,16 +277,25 @@
                                 <label>Días extras (+)</label>
                                 <input type="number" id="egDias" placeholder="Días" oninput="calculateRequirements(); calculatePediatricAge();">
                             </div>
-                            <!-- NEW V3.95: Growth Velocity Inputs -->
-                            <div class="mini-input" style="flex:1; min-width: 110px;">
-                                <label style="color:#27ae60;">Peso Anterior (kg)</label>
-                                <input type="number" step="0.001" id="pesoAnterior" placeholder="kg"
-                                    oninput="calculateRequirements()">
-                            </div>
-                            <div class="mini-input" style="flex:1; min-width: 90px;">
-                                <label style="color:#27ae60;">Días Medición</label>
-                                <input type="number" id="diasMedicion" placeholder="Días"
-                                    oninput="calculateRequirements()">
+                            <!-- NEW V3.95: Premium Growth Velocity Panel -->
+                            <div id="growthVelocityPanel" style="width:100%; margin-top:10px; padding:12px; background:#e8f8f5; border:1px solid #a3e4d7; border-radius:10px; display:flex; flex-direction:column; gap:8px; transition: all 0.3s ease;">
+                                <h5 style="margin:0; color:#16a085; font-size:0.78rem; font-weight:700; display:flex; align-items:center; gap:6px;">📈 Cálculo de Velocidad de Crecimiento (Fórmula de Patel)</h5>
+                                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; width:100%;">
+                                    <div style="display:flex; gap:10px; flex:1; min-width:200px;">
+                                        <div class="mini-input" style="margin-bottom:0; flex:1;">
+                                            <label style="color:#16a085; font-size:0.68rem; font-weight:600;">Peso Anterior (kg)</label>
+                                            <input type="number" step="0.001" id="pesoAnterior" placeholder="kg" style="padding:6px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem; background:white; width:100%; box-sizing:border-box;" oninput="calculateRequirements()">
+                                        </div>
+                                        <div class="mini-input" style="margin-bottom:0; flex:1;">
+                                            <label style="color:#16a085; font-size:0.68rem; font-weight:600;">Días Medición</label>
+                                            <input type="number" id="diasMedicion" placeholder="Días" style="padding:6px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem; background:white; width:100%; box-sizing:border-box;" oninput="calculateRequirements()">
+                                        </div>
+                                    </div>
+                                    <div id="growthVelocityResult" style="flex:1; min-width:180px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(255,255,255,0.75); border-radius:8px; padding:6px 10px; min-height:48px; border:1px dashed #a3e4d7; text-align:center; transition: all 0.3s ease;">
+                                        <span style="font-size:0.6rem; color:#7f8c8d; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Velocidad de Crecimiento</span>
+                                        <strong id="valGrowthVelocity" style="font-size:1.15rem; color:#7f8c8d; font-weight:800; line-height:1.2; margin-top:2px;">-- g/kg/d</strong>
+                                    </div>
+                                </div>
                             </div>
                             <!-- V4.60: Neonato Age Calculation Display -->
                             <div id="neonateCorrectedAgePanel" style="width:100%; margin-top:8px; padding:10px; background:#fdf2e9; border:1px solid #fadbd8; border-radius:8px; font-size:0.75rem; color:#c0392b; font-weight:600; display:none; flex-direction:column; gap:4px;">
@@ -1172,7 +1181,8 @@
                         </div>
 
                         <div id="neoCurves" style="display:none; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:15px;">
-                            <button class="btn-assess" onclick="window.showCurve('pittaluga')" style="background:#8e44ad; min-width:200px;">📉 Curva de Pittaluga</button>
+                            <button class="btn-assess" onclick="window.showCurve('pittaluga_peso')" style="background:#8e44ad; min-width:180px;">📉 Curva Peso (Pittaluga)</button>
+                            <button class="btn-assess" onclick="window.showCurve('pittaluga_talla_pc')" style="background:#2980b9; min-width:180px;">📉 Curva Talla y PC (Pittaluga)</button>
                         </div>
 
                         <div id="adultCurves" style="display:none;">
@@ -1186,7 +1196,8 @@
                             <p>El gráfico se mostrará aquí.</p>
                         </div>
                         <img id="curveImg" src="" style="display:none; max-width:100%; border-radius:8px;">
-                        <div id="curveDot" style="display:none; position:absolute; width:12px; height:12px; background-color:red; border:2px solid white; border-radius:50%; transform:translate(-50%, 50%); z-index:10; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>
+                        <div id="curveDot" style="display:none; position:absolute; width:12px; height:12px; background-color:#27ae60; border:2px solid white; border-radius:50%; transform:translate(-50%, 50%); z-index:10; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>
+                        <div id="curveDot2" style="display:none; position:absolute; width:12px; height:12px; background-color:#8e44ad; border:2px solid white; border-radius:50%; transform:translate(-50%, 50%); z-index:10; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>
                     </div>
                 </section>
 

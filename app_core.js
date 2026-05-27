@@ -2345,22 +2345,64 @@ function renderPediatricZScores() {
         let ipDiag = null;
         let isPeg = false;
 
+        let clasTalla = 'Sin Datos';
+        let clasTallaColor = '#95a5a6';
+        let clasPC = 'Sin Datos';
+        let clasPCColor = '#95a5a6';
+        const pcInput = parseFloat(document.getElementById('pcefalico')?.value) || 0;
+
         if (sem >= 24 && sem <= 42 && window.PITTALUGA_DATA) {
+            // Peso / EG
             if (p.peso > 0) {
                 const wRefs = window.PITTALUGA_DATA.peso[sem];
-                if (wGrams < wRefs.p3) {
-                    clasD = 'PEG Severo'; clasColor = '#c0392b'; isPeg = true;
-                } else if (wGrams >= wRefs.p3 && wGrams < wRefs.p10) {
-                    clasD = 'PEG Leve'; clasColor = '#e67e22'; isPeg = true;
-                } else if (wGrams >= wRefs.p10 && wGrams <= wRefs.p90) {
-                    clasD = 'AEG'; clasColor = '#27ae60';
-                } else {
-                    clasD = 'GEG'; clasColor = '#2980b9';
+                if (wRefs) {
+                    if (wGrams < wRefs.p3) {
+                        clasD = 'PEG Severo'; clasColor = '#c0392b'; isPeg = true;
+                    } else if (wGrams >= wRefs.p3 && wGrams < wRefs.p10) {
+                        clasD = 'PEG Leve'; clasColor = '#e67e22'; isPeg = true;
+                    } else if (wGrams >= wRefs.p10 && wGrams <= wRefs.p90) {
+                        clasD = 'AEG'; clasColor = '#27ae60';
+                    } else {
+                        clasD = 'GEG'; clasColor = '#2980b9';
+                    }
                 }
             } else {
                 clasD = 'Falta Peso';
             }
 
+            // Talla / EG
+            if (cm > 0 && window.PITTALUGA_DATA.talla) {
+                const tRefs = window.PITTALUGA_DATA.talla[sem];
+                if (tRefs) {
+                    if (cm < tRefs.p10) {
+                        clasTalla = 'Talla Corta / EG'; clasTallaColor = '#c0392b';
+                    } else if (cm >= tRefs.p10 && cm <= tRefs.p90) {
+                        clasTalla = 'Talla Adecuada'; clasTallaColor = '#27ae60';
+                    } else {
+                        clasTalla = 'Talla Alta / EG'; clasTallaColor = '#2980b9';
+                    }
+                }
+            } else {
+                clasTalla = 'Falta Talla';
+            }
+
+            // PC / EG
+            if (pcInput > 0 && window.PITTALUGA_DATA.pc) {
+                const pcRefs = window.PITTALUGA_DATA.pc[sem];
+                if (pcRefs) {
+                    if (pcInput < pcRefs.p10) {
+                        clasPC = 'PC Bajo (Sosp. Microcefalia)'; clasPCColor = '#c0392b';
+                    } else if (pcInput >= pcRefs.p10 && pcInput <= pcRefs.p90) {
+                        clasPC = 'PC Adecuado'; clasPCColor = '#27ae60';
+                    } else {
+                        clasPC = 'PC Alto (Sosp. Macrocefalia)'; clasPCColor = '#c0392b';
+                    }
+                }
+            } else {
+                clasPC = 'Falta PC';
+            }
+
+            // Simetría (Índice Ponderal)
             if (isPeg && p.peso > 0 && cm > 0) {
                 const ipVal = (wGrams / Math.pow(cm, 3)) * 100;
 
@@ -2371,7 +2413,7 @@ function renderPediatricZScores() {
                     ipDiag = `Asimétrico Leve (IP: ${ipVal.toFixed(2)})`;
                     clasColor = '#d35400';
                 } else {
-                    ipDiag = `Asimétrico Severo (IP: ${ipVal.toFixed(2)}) ⚠️ Riesgo Hipoglicemia`;
+                    ipDiag = `Asimétrico Severo (IP: ${ipVal.toFixed(2)}) ⚠️ Riesgo Hipoglicemia`;
                     clasColor = '#c0392b';
                 }
             } else if (isPeg) {
@@ -2379,13 +2421,22 @@ function renderPediatricZScores() {
             }
         } else if (sem > 0) {
             clasD = '< 24 sem';
+            clasTalla = '< 24 sem';
+            clasPC = '< 24 sem';
         }
 
         let printClas = clasD;
         if (ipDiag !== null) {
             printClas = `<div style="line-height:1.2;"><b>${clasD}</b><br><span style="font-size:0.6rem; color:#fff; background:rgba(0,0,0,0.2); padding:2px 4px; border-radius:4px;">${ipDiag}</span></div>`;
         }
-        html += makeBadge('Nutricional (Nacer)', null, printClas, clasColor);
+        html += makeBadge('Peso / EG (Pittaluga)', null, printClas, clasColor);
+
+        if (cm > 0) {
+            html += makeBadge('Talla / EG (Pittaluga)', null, clasTalla, clasTallaColor);
+        }
+        if (pcInput > 0) {
+            html += makeBadge('PC / EG (Pittaluga)', null, clasPC, clasPCColor);
+        }
 
         if (sem > 0 && sem < 37) {
             const fn = document.getElementById('fechaNacimiento').value;
@@ -2536,13 +2587,52 @@ function renderPediatricZScores() {
     // NEW V3.95: Growth Velocity (g/kg/day) - Patel Formula
     const pesoAnterior = parseFloat(document.getElementById('pesoAnterior')?.value) || 0;
     const diasMedicion = parseFloat(document.getElementById('diasMedicion')?.value) || 0;
+    
+    // Explicit growth velocity calculator updating
+    const valGrowthEl = document.getElementById('valGrowthVelocity');
+    const resultBoxEl = document.getElementById('growthVelocityResult');
+    
+    let velGrowth = null;
+    let vColor = '#7f8c8d';
+    
     if (p.peso > 0 && pesoAnterior > 0 && diasMedicion > 0) {
-        const velGrowth = (1000 * Math.log(p.peso / pesoAnterior)) / diasMedicion;
-        let vColor = '#27ae60';
+        velGrowth = (1000 * Math.log(p.peso / pesoAnterior)) / diasMedicion;
         if (velGrowth < 0) vColor = '#c0392b';
-        else if (velGrowth < 15) vColor = '#f39c12';
-        else if (velGrowth > 20) vColor = '#2980b9'; // Normal preterms 15-20
+        else if (velGrowth < 15) vColor = '#d35400';
+        else if (velGrowth <= 20) vColor = '#16a085';
+        else vColor = '#2980b9';
+        
         html += makeBadge('Vel. Crecimiento', null, `${velGrowth.toFixed(1)} g/kg/d`, vColor);
+    }
+    
+    if (valGrowthEl && resultBoxEl) {
+        if (velGrowth !== null) {
+            valGrowthEl.innerText = `${velGrowth.toFixed(1)} g/kg/d`;
+            
+            // Premium non-offensive eye-friendly pastel colors for the dashboard panel
+            if (velGrowth < 0) {
+                resultBoxEl.style.background = '#fcd0cf'; // Soft red/pink pastel
+                resultBoxEl.style.borderColor = '#f5b7b1';
+                valGrowthEl.style.color = '#c0392b';
+            } else if (velGrowth < 15) {
+                resultBoxEl.style.background = '#fef9e7'; // Soft yellow/orange
+                resultBoxEl.style.borderColor = '#f9e79f';
+                valGrowthEl.style.color = '#d35400';
+            } else if (velGrowth <= 20) {
+                resultBoxEl.style.background = '#e8f8f5'; // Soft green mint
+                resultBoxEl.style.borderColor = '#a3e4d7';
+                valGrowthEl.style.color = '#16a085';
+            } else {
+                resultBoxEl.style.background = '#ebf5fb'; // Soft blue
+                resultBoxEl.style.borderColor = '#a9cce3';
+                valGrowthEl.style.color = '#2980b9';
+            }
+        } else {
+            valGrowthEl.innerText = '-- g/kg/d';
+            resultBoxEl.style.background = 'rgba(255,255,255,0.75)';
+            resultBoxEl.style.borderColor = '#a3e4d7';
+            valGrowthEl.style.color = '#7f8c8d';
+        }
     }
 
     // NEW V3.95: Neuro Classifier (Head Circumference)
@@ -5599,12 +5689,14 @@ window.showCurve = function(type) {
     const placeholder = document.getElementById('curveImagePlaceholder');
     const img = document.getElementById('curveImg');
     const dot = document.getElementById('curveDot');
+    const dot2 = document.getElementById('curveDot2');
     
     if(!area || !img || !placeholder || !dot) return;
     
     placeholder.style.display = 'none';
     img.style.display = 'block';
     dot.style.display = 'none'; // hide until plotted
+    if (dot2) dot2.style.display = 'none'; // default hide dot2
     
     // Data extraction
     const peso = parseFloat(document.getElementById('peso').value) || 0;
@@ -5615,6 +5707,8 @@ window.showCurve = function(type) {
     // Age calculation
     let edadMeses = parseFloat(document.getElementById('edad').value) || 0; 
     const fn = document.getElementById('fechaNacimiento').value;
+    let agePostnatalDays = 0;
+    
     if (fn) {
         const [y, mm, d] = fn.split('-');
         const birth = new Date(y, mm - 1, d);
@@ -5624,7 +5718,19 @@ window.showCurve = function(type) {
         months += now.getMonth();
         if (now.getDate() < birth.getDate()) months--;
         if (months >= 0) edadMeses = months;
+        
+        agePostnatalDays = Math.floor(Math.abs(now - birth) / (1000 * 60 * 60 * 24));
     }
+
+    // Neonatal Gestational Age corregida for curve X-axis
+    const semNac = parseInt(document.getElementById('egSemanas')?.value) || 0;
+    const diasNac = parseInt(document.getElementById('egDias')?.value) || 0;
+    let egNeonatal = semNac + (diasNac / 7);
+    if (agePostnatalDays > 0) {
+        egNeonatal = semNac + ((diasNac + agePostnatalDays) / 7);
+    }
+    if (egNeonatal < 24) egNeonatal = 24;
+    if (egNeonatal > 42) egNeonatal = 42;
 
     // IMC Calculation
     let imc = 0;
@@ -5682,6 +5788,14 @@ window.showCurve = function(type) {
             'm': [
                 { minAge: 60, maxAge: 228, url: 'assets/curvas/imc_m_5_19.png', xValue: edadMeses, yValue: imc, xMin: 60, xMax: 228, yMin: 12, yMax: 36, pxLeft: 6.7, pxRight: 85.4, pxBottom: 7.5, pxTop: 84.5, xName: 'Meses', yName: 'IMC (kg/m2)' }
             ]
+        },
+        'pittaluga_peso': {
+            'f': [{ url: 'assets/curvas/pittaluga_peso.png', xValue: egNeonatal, yValue: peso * 1000, xMin: 24, xMax: 42, yMin: 0, yMax: 4500, pxLeft: 8.5, pxRight: 94.5, pxBottom: 8.5, pxTop: 95.0, xName: 'EG Semanas', yName: 'Peso (g)' }],
+            'm': [{ url: 'assets/curvas/pittaluga_peso.png', xValue: egNeonatal, yValue: peso * 1000, xMin: 24, xMax: 42, yMin: 0, yMax: 4500, pxLeft: 8.5, pxRight: 94.5, pxBottom: 8.5, pxTop: 95.0, xName: 'EG Semanas', yName: 'Peso (g)' }]
+        },
+        'pittaluga_talla_pc': {
+            'f': [{ url: 'assets/curvas/pittaluga_talla_pc.png', xValue: egNeonatal, yValue: talla, yValue2: pc, xMin: 24, xMax: 42, yMin: 20, yMax: 55, pxLeft: 8.5, pxRight: 94.5, pxBottom: 8.5, pxTop: 95.0, xName: 'EG Semanas', yName: 'Talla/PC (cm)' }],
+            'm': [{ url: 'assets/curvas/pittaluga_talla_pc.png', xValue: egNeonatal, yValue: talla, yValue2: pc, xMin: 24, xMax: 42, yMin: 20, yMax: 55, pxLeft: 8.5, pxRight: 94.5, pxBottom: 8.5, pxTop: 95.0, xName: 'EG Semanas', yName: 'Talla/PC (cm)' }]
         }
     };
 
@@ -5692,34 +5806,50 @@ window.showCurve = function(type) {
         for (let opt of options) {
             if (opt.minAge !== undefined && edadMeses >= opt.minAge && edadMeses <= opt.maxAge) { c = opt; break; }
             if (opt.minTalla !== undefined && talla >= opt.minTalla && talla <= opt.maxTalla) { c = opt; break; }
+            if (type === 'pittaluga_peso' || type === 'pittaluga_talla_pc') { c = opt; break; } // Pittaluga always maps
         }
         // Fallback to the first one if no exact match (so it at least shows something)
         if (!c && options.length > 0) c = options[0];
     }
     
     if (c) {
-        // En desarrollo: Mostrar un placeholder si la URL es local y no existe, o simplemente usarla.
-        // Aquí debes reemplazar las URLs 'assets/curvas/...' por los links de imgur o locales reales.
         img.src = c.url;
         img.onerror = () => { img.src = `https://placehold.co/800x600/8e44ad/ffffff?text=Falta+Imagen:+${encodeURIComponent(c.url)}`; };
         
         img.onload = () => {
-            if (c.xValue > 0 && c.yValue > 0) {
-                // Limit to bounds for rendering
+            if (c.xValue > 0) {
                 let x = Math.max(c.xMin, Math.min(c.xMax, c.xValue));
-                let y = Math.max(c.yMin, Math.min(c.yMax, c.yValue));
-                
                 let xPct = c.pxLeft + ((x - c.xMin) / (c.xMax - c.xMin)) * (c.pxRight - c.pxLeft);
-                let yPct = c.pxBottom + ((y - c.yMin) / (c.yMax - c.yMin)) * (c.pxTop - c.pxBottom);
                 
-                dot.style.left = `${xPct}%`;
-                dot.style.bottom = `${yPct}%`;
-                dot.style.display = 'block';
-
-                // Auto-clasificación en el diagnóstico PES
+                // Plot dot 1 if yValue is provided and > 0
+                if (c.yValue > 0) {
+                    let y = Math.max(c.yMin, Math.min(c.yMax, c.yValue));
+                    let yPct = c.pxBottom + ((y - c.yMin) / (c.yMax - c.yMin)) * (c.pxTop - c.pxBottom);
+                    
+                    dot.style.left = `${xPct}%`;
+                    dot.style.bottom = `${yPct}%`;
+                    dot.style.display = 'block';
+                } else {
+                    dot.style.display = 'none';
+                }
+                
+                // Plot dot 2 if yValue2 is provided (e.g., PC on pittaluga_talla_pc)
+                if (type === 'pittaluga_talla_pc' && c.yValue2 > 0 && dot2) {
+                    let y2 = Math.max(c.yMin, Math.min(c.yMax, c.yValue2));
+                    let y2Pct = c.pxBottom + ((y2 - c.yMin) / (c.yMax - c.yMin)) * (c.pxTop - c.pxBottom);
+                    
+                    dot2.style.left = `${xPct}%`;
+                    dot2.style.bottom = `${y2Pct}%`;
+                    dot2.style.display = 'block';
+                }
+                
+                // Auto-classification in PES diagnostic textbox
                 let diag = document.getElementById('diagnosticoPES');
-                let interpStr = `\n[Gráfico ${type.toUpperCase()} - ${sexo.toUpperCase()}] ${c.xName}: ${c.xValue.toFixed(1)}, ${c.yName}: ${c.yValue.toFixed(1)}.`;
-                if (diag && !diag.value.includes(`[Gráfico ${type.toUpperCase()} - ${sexo.toUpperCase()}]`)) {
+                let interpStr = `\n[Gráfico ${type.toUpperCase()}] ${c.xName}: ${c.xValue.toFixed(1)}, ${c.yName}: ${c.yValue.toFixed(1)}`;
+                if (type === 'pittaluga_talla_pc') {
+                    interpStr = `\n[Gráfico Pittaluga Talla & PC] EG: ${c.xValue.toFixed(1)} sem, Talla: ${c.yValue.toFixed(1)} cm, PC: ${c.yValue2.toFixed(1)} cm`;
+                }
+                if (diag && !diag.value.includes(`[Gráfico ${type.toUpperCase()}]`) && !diag.value.includes('[Gráfico Pittaluga Talla & PC]')) {
                     diag.value += interpStr;
                 }
             }
