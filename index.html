@@ -739,7 +739,7 @@
                     </section>
 
                     <!-- SECCIÓN 2: RTH E INFUSIÓN (COMPACTA CENTRADA) -->
-                    <section class="card infusion-card" style="margin-bottom: 20px; background: rgba(231, 76, 60, 0.02); border: 1px solid rgba(231, 76, 60, 0.15); border-radius: 16px; padding: 15px;">
+                    <section class="card infusion-card" style="border-left: 5px solid #e74c3c;">
                         <div class="infusion-box-compact" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%;">
                             
                             <h4 style="margin: 0 0 15px 0; font-size: 0.95rem; color: var(--secondary); display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border-bottom: 1px dashed rgba(231, 76, 60, 0.2); padding-bottom: 10px;">
@@ -1148,7 +1148,7 @@
 
             <div class="assess-grid" id="curvesMainContainer">
                 <!-- 1. SECCIÓN DE CURVAS (DINÁMICA) -->
-                <section class="card assess-module" style="grid-column: 1 / -1; border-left: 5px solid var(--primary);">
+                <section id="growthCurvesCard" class="card assess-module" style="grid-column: 1 / -1; border-left: 5px solid var(--primary);">
                     <div class="module-head">
                         <h3>📈 Gráficos de Curvas de Crecimiento</h3>
                     </div>
@@ -1186,6 +1186,78 @@
                     </div>
                 </section>
 
+                <!-- EVOLUCIÓN CLÍNICA DE PESO (MOVIDO DE CÁLCULO NUTRICIONAL) -->
+                <section id="weightEvolutionCard" class="card assess-module" style="grid-column: 1 / -1; border-left: 5px solid #8e44ad;">
+                    <div class="module-head" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3>📈 Historial y Evolución de Peso</h3>
+                        <span style="font-size:0.75rem; background:#f39c12; color:white; padding:3px 8px; border-radius:12px;">Actualización Automática</span>
+                    </div>
+                    <div class="module-content" style="display: flex; flex-wrap: wrap; gap: 25px;">
+                        
+                        <!-- Columna Izquierda: Evolución y Tabla (ancho mayor) -->
+                        <div style="flex: 1 1 500px; display: flex; flex-direction: column; gap: 15px;">
+                            <!-- Gráfico de Evolución -->
+                            <div style="width:100%; height:160px; background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px; padding:10px; position:relative;">
+                                <canvas id="evolutionChart"></canvas>
+                            </div>
+                            <!-- Tabla de Historial -->
+                            <div style="background:white; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; max-height: 250px; overflow-y: auto;">
+                                <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                                    <thead style="background:#f1f5f9; color:#475569; text-align:left; position: sticky; top: 0;">
+                                        <tr>
+                                            <th style="padding:10px 15px; border-bottom:1px solid #e2e8f0;">Fecha</th>
+                                            <th style="padding:10px 15px; border-bottom:1px solid #e2e8f0; text-align:right;">Peso</th>
+                                            <th style="padding:10px 15px; border-bottom:1px solid #e2e8f0; text-align:center;">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="evolutionTableBody">
+                                        <!-- Datos dinámicos generados por JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Columna Derecha: Calculadora % Pérdida de Peso (ancho menor) -->
+                        <div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 15px; background: #fafafa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px;">
+                            <h4 style="margin: 0; color: #2c3e50; font-size: 0.95rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                                ⚖️ % Pérdida de Peso
+                            </h4>
+                            
+                            <p style="font-size: 0.75rem; color: #64748b; margin: 0; line-height: 1.4;">
+                                Fórmula: <code>%P = ((P.H - P.N) / P.H) * 100</code> <br>
+                                <span style="font-size: 0.7rem; color: #94a3b8;">* P.H: Peso Habitual | P.N: Peso Actual</span>
+                            </p>
+
+                            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: #475569;">P.H - Peso Habitual (kg)</label>
+                                    <input type="number" id="lossPesoHabitual" placeholder="Ej. 70" step="0.1" oninput="window.calculateWeightLoss()" style="padding: 8px 12px; font-size: 0.9rem; border: 1px solid #cbd5e1; border-radius: 8px;">
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: #475569;">P.N - Peso Actual (kg)</label>
+                                    <input type="number" id="lossPesoActual" placeholder="Ej. 65" step="0.1" oninput="window.calculateWeightLoss()" style="padding: 8px 12px; font-size: 0.9rem; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 700;">
+                                </div>
+                                
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: #475569;">Tiempo Transcurrido (Opcional)</label>
+                                    <select id="lossInterval" onchange="window.calculateWeightLoss()" style="padding: 8px 12px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; background: white;">
+                                        <option value="1w">1 semana</option>
+                                        <option value="1m" selected>1 mes</option>
+                                        <option value="3m">3 meses</option>
+                                        <option value="6m">6 meses</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+                                <span style="font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Pérdida Calculada</span>
+                                <strong id="lossPercentValue" style="font-size: 1.8rem; color: #2c3e50; line-height: 1;">0.0%</strong>
+                                <span id="lossClassificationBadge" style="font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; display: none;">-</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
 
                 <!-- 2. Antropometría Avanzada (RESTORED) -->
                 <section class="card assess-module" style="border-left-color: #f39c12;">
@@ -1304,7 +1376,7 @@
                 </section>
 
                 <!-- 5. Tamizaje de Riesgo Nutricional (STRONGkids) -->
-                <section id="strongKidsCard" class="card assess-module" style="border-left-color: #e67e22;">
+                <section id="strongKidsCard" class="card assess-module" style="border-left-color: #e67e22; display:none;">
                     <div class="module-head">
                         <h3>🛡️ Tamizaje de Riesgo Nutricional (STRONGkids)</h3>
                     </div>
@@ -1392,7 +1464,7 @@
                 </section>
 
                 <!-- 5.1. Tamizaje de Riesgo Nutricional (NRS 2002) -->
-                <section id="nrs2002Card" class="card assess-module" style="border-left-color: #1abc9c; display:none;">
+                <section id="nrs2002Card" class="card assess-module" style="border-left-color: #1abc9c;">
                     <div class="module-head">
                         <h3>🛡️ Tamizaje de Riesgo Nutricional (NRS 2002)</h3>
                     </div>

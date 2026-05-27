@@ -1298,15 +1298,30 @@ function renderEvolutionChart(history) {
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    // Get current weight from AppState / input
+    // Get weights from AppState / inputs
     const currentWeightInput = AppState.patient?.peso || parseFloat(document.getElementById('peso')?.value) || 0;
+    const pesoAnteriorInput = parseFloat(document.getElementById('pesoAnterior')?.value) || 0;
     
-    // Check if the current weight is already the latest in history
-    const isCurrentInHistory = history && history.length > 0 && history[history.length - 1].peso_kg === currentWeightInput;
+    // Prepare combined history to plot: previous weight + history + current weight
+    let plotData = [];
     
-    // Plot the history points + the current weight if it's not 0 and not already the latest
-    let plotData = [...(history || [])];
-    if (currentWeightInput > 0 && !isCurrentInHistory) {
+    // 1. Add Previous Weight as the starting point if valid and not already in history
+    if (pesoAnteriorInput > 0) {
+        plotData.push({ peso_kg: pesoAnteriorInput, isPrevious: true });
+    }
+    
+    // 2. Add recorded history points, skipping duplicates of Previous Weight
+    if (history && history.length > 0) {
+        history.forEach(h => {
+            if (h.peso_kg !== pesoAnteriorInput) {
+                plotData.push(h);
+            }
+        });
+    }
+    
+    // 3. Add Current Weight if it's set, not already in plotData, and different from Previous Weight
+    const isCurrentInHistory = plotData.length > 0 && plotData[plotData.length - 1].peso_kg === currentWeightInput;
+    if (currentWeightInput > 0 && !isCurrentInHistory && currentWeightInput !== pesoAnteriorInput) {
         plotData.push({ peso_kg: currentWeightInput, isCurrent: true });
     }
 
@@ -1339,9 +1354,14 @@ function renderEvolutionChart(history) {
 
                 if (h.isCurrent) {
                     dateStr = `<span style="color:#e74c3c; font-weight:700;">[Peso Actual (Temporal)]</span>`;
-                    statusBadge = `<span style="background:#fff3cd; color:#856404; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid #ffeeba; font-size:0.65rem; display:inline-block;">Temporal</span>`;
+                    statusBadge = `<span style="background:#fff3cd; color:#856404; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid #ffeeba; font-size:0.65rem; display:inline-block;">Actual</span>`;
                     tr.style.background = 'rgba(243, 156, 18, 0.05)';
                     tr.onmouseleave = () => tr.style.background = 'rgba(243, 156, 18, 0.05)';
+                } else if (h.isPrevious) {
+                    dateStr = `<span style="color:#3498db; font-weight:700;">[Peso Anterior]</span>`;
+                    statusBadge = `<span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid #bae6fd; font-size:0.65rem; display:inline-block;">Anterior</span>`;
+                    tr.style.background = 'rgba(52, 152, 219, 0.05)';
+                    tr.onmouseleave = () => tr.style.background = 'rgba(52, 152, 219, 0.05)';
                 } else {
                     const dateObj = h.created_at ? new Date(h.created_at) : (h.metadata?.logged_at ? new Date(h.metadata.logged_at) : new Date());
                     dateStr = dateObj.toLocaleString('es-CL', { 
@@ -1432,7 +1452,7 @@ function renderEvolutionChart(history) {
     // Draw Evolution Line
     if (plotData.length > 1) {
         ctx.beginPath();
-        ctx.strokeStyle = '#f39c12';
+        ctx.strokeStyle = '#8e44ad'; // Purple theme matching card color
         ctx.lineWidth = 2.5;
         plotData.forEach((h, i) => {
             const x = padding + i * xStep;
@@ -1448,21 +1468,135 @@ function renderEvolutionChart(history) {
         const x = (plotData.length > 1) ? padding + i * xStep : width / 2;
         const y = getY(h.peso_kg);
         
-        // RED dot for current unsaved point, Orange for history
-        ctx.fillStyle = h.isCurrent ? '#e74c3c' : '#f39c12'; 
+        // RED dot for current, Blue for previous, Purple/Orange for history
+        if (h.isCurrent) {
+            ctx.fillStyle = '#e74c3c';
+        } else if (h.isPrevious) {
+            ctx.fillStyle = '#3498db';
+        } else {
+            ctx.fillStyle = '#8e44ad'; 
+        }
+        
         ctx.beginPath();
-        ctx.arc(x, y, h.isCurrent ? 5 : 4, 0, Math.PI * 2);
+        ctx.arc(x, y, (h.isCurrent || h.isPrevious) ? 5.5 : 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
         // Label
-        ctx.fillStyle = h.isCurrent ? '#e74c3c' : '#333';
-        ctx.font = h.isCurrent ? 'bold 10px Arial' : 'bold 9px Arial';
+        ctx.fillStyle = h.isCurrent ? '#e74c3c' : (h.isPrevious ? '#3498db' : '#333');
+        ctx.font = (h.isCurrent || h.isPrevious) ? 'bold 10px Arial' : 'bold 9px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(h.peso_kg, x, y - 8);
     });
+}
+
+// === CALCULADORA DE % PÉRDIDA DE PESO ===
+window.calculateWeightLoss = () => {
+    const ph = parseFloat(document.getElementById('lossPesoHabitual')?.value) || 0;
+    const pn = parseFloat(document.getElementById('lossPesoActual')?.value) || 0;
+    const interval = document.getElementById('lossInterval')?.value || '1m';
+    
+    const pctValEl = document.getElementById('lossPercentValue');
+    const badgeEl = document.getElementById('lossClassificationBadge');
+    
+    if (!pctValEl || !badgeEl) return;
+    
+    if (ph <= 0 || pn <= 0) {
+        pctValEl.innerText = '0.0%';
+        badgeEl.style.display = 'none';
+        return;
+    }
+    
+    const pct = ((ph - pn) / ph) * 100;
+    pctValEl.innerText = pct.toFixed(1) + '%';
+    
+    if (pct < 0) {
+        badgeEl.innerText = 'Ganancia';
+        badgeEl.style.display = 'inline-block';
+        badgeEl.style.background = '#d1fae5';
+        badgeEl.style.color = '#0f5132';
+        badgeEl.style.border = '1px solid #badbcc';
+        return;
+    } else if (pct === 0) {
+        badgeEl.innerText = 'Sin cambio';
+        badgeEl.style.display = 'inline-block';
+        badgeEl.style.background = '#f1f5f9';
+        badgeEl.style.color = '#475569';
+        badgeEl.style.border = '1px solid #cbd5e1';
+        return;
+    }
+    
+    // ASPEN Clinical Criteria for Weight Loss Severity
+    let severity = 'Pérdida Leve';
+    let bgColor = '#dbeafe';
+    let textColor = '#1e40af';
+    let borderColor = '#bfdbfe';
+    
+    if (interval === '1w') {
+        if (pct > 2.0) {
+            severity = 'Severa (>2%)';
+            bgColor = '#fee2e2';
+            textColor = '#991b1b';
+            borderColor = '#fecaca';
+        } else if (pct >= 1.0) {
+            severity = 'Moderada (1-2%)';
+            bgColor = '#ffedd5';
+            textColor = '#c2410c';
+            borderColor = '#fed7aa';
+        } else {
+            severity = 'Leve (<1%)';
+        }
+    } else if (interval === '1m') {
+        if (pct > 5.0) {
+            severity = 'Severa (>5%)';
+            bgColor = '#fee2e2';
+            textColor = '#991b1b';
+            borderColor = '#fecaca';
+        } else if (pct >= 1.0) {
+            severity = 'Moderada (1-5%)';
+            bgColor = '#ffedd5';
+            textColor = '#c2410c';
+            borderColor = '#fed7aa';
+        } else {
+            severity = 'Leve (<1%)';
+        }
+    } else if (interval === '3m') {
+        if (pct > 7.5) {
+            severity = 'Severa (>7.5%)';
+            bgColor = '#fee2e2';
+            textColor = '#991b1b';
+            borderColor = '#fecaca';
+        } else if (pct >= 1.0) {
+            severity = 'Moderada (1-7.5%)';
+            bgColor = '#ffedd5';
+            textColor = '#c2410c';
+            borderColor = '#fed7aa';
+        } else {
+            severity = 'Leve (<1%)';
+        }
+    } else if (interval === '6m') {
+        if (pct > 10.0) {
+            severity = 'Severa (>10%)';
+            bgColor = '#fee2e2';
+            textColor = '#991b1b';
+            borderColor = '#fecaca';
+        } else if (pct >= 1.0) {
+            severity = 'Moderada (1-10%)';
+            bgColor = '#ffedd5';
+            textColor = '#c2410c';
+            borderColor = '#fed7aa';
+        } else {
+            severity = 'Leve (<1%)';
+        }
+    }
+    
+    badgeEl.innerText = severity;
+    badgeEl.style.display = 'inline-block';
+    badgeEl.style.background = bgColor;
+    badgeEl.style.color = textColor;
+    badgeEl.style.border = '1px solid ' + borderColor;
 }
 
 function initEvolutionLogic() {
@@ -1951,6 +2085,21 @@ function calculateRequirements() {
     if (typeof renderEvolutionChart === 'function') {
         renderEvolutionChart(AppState.currentEvolutionHistory || []);
     }
+
+    // Auto-sync % Weight Loss Calculator
+    const lossActualInput = document.getElementById('lossPesoActual');
+    const lossHabitualInput = document.getElementById('lossPesoHabitual');
+    const pesoAnteriorVal = parseFloat(document.getElementById('pesoAnterior')?.value) || 0;
+    
+    if (lossActualInput && p.peso > 0) {
+        lossActualInput.value = p.peso;
+    }
+    if (lossHabitualInput && pesoAnteriorVal > 0 && !lossHabitualInput.value) {
+        lossHabitualInput.value = pesoAnteriorVal;
+    }
+    if (typeof window.calculateWeightLoss === 'function') {
+        window.calculateWeightLoss();
+    }
 }
 
 function calcFactorialNoRecursion() {
@@ -1997,10 +2146,6 @@ window.togglePatientMode = () => {
     const iwRow = document.getElementById('valIdealWeight')?.parentElement?.parentElement;
     if (iwRow) iwRow.style.display = mode === 'adult' ? 'flex' : 'none';
 
-    calculateRequirements();
-    if (typeof window.updateInfusionProposal === 'function') window.updateInfusionProposal();
-    if (typeof window.updateCurveButtons === 'function') window.updateCurveButtons();
-
     // Alternar visibilidad de tamizajes condicionales (STRONGkids vs NRS 2002)
     const strongKidsCard = document.getElementById('strongKidsCard');
     const nrs2002Card = document.getElementById('nrs2002Card');
@@ -2013,6 +2158,20 @@ window.togglePatientMode = () => {
             window.calculateNRS2002();
         }
     }
+
+    // Toggle growth curves and weight evolution visibility in Evaluación Completa
+    const growthCurvesCard = document.getElementById('growthCurvesCard');
+    const weightEvolutionCard = document.getElementById('weightEvolutionCard');
+    if (growthCurvesCard) {
+        growthCurvesCard.style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
+    }
+    if (weightEvolutionCard) {
+        weightEvolutionCard.style.display = 'block';
+    }
+
+    calculateRequirements();
+    if (typeof window.updateInfusionProposal === 'function') window.updateInfusionProposal();
+    if (typeof window.updateCurveButtons === 'function') window.updateCurveButtons();
 };
 
 window.toggleQuemado = () => {
