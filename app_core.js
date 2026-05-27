@@ -1900,6 +1900,19 @@ window.togglePatientMode = () => {
     calculateRequirements();
     if (typeof window.updateInfusionProposal === 'function') window.updateInfusionProposal();
     if (typeof window.updateCurveButtons === 'function') window.updateCurveButtons();
+
+    // Alternar visibilidad de tamizajes condicionales (STRONGkids vs NRS 2002)
+    const strongKidsCard = document.getElementById('strongKidsCard');
+    const nrs2002Card = document.getElementById('nrs2002Card');
+    if (strongKidsCard) {
+        strongKidsCard.style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
+    }
+    if (nrs2002Card) {
+        nrs2002Card.style.display = mode === 'adult' ? 'block' : 'none';
+        if (mode === 'adult' && typeof window.calculateNRS2002 === 'function') {
+            window.calculateNRS2002();
+        }
+    }
 };
 
 window.toggleQuemado = () => {
@@ -2111,6 +2124,9 @@ window.calculatePediatricAge = () => {
     }
 
     calculateRequirements();
+    if (typeof window.calculateNRS2002 === 'function') {
+        window.calculateNRS2002();
+    }
 };
 
 function getLMSMedian(indicator, keyVal, sexo) {
@@ -4644,9 +4660,10 @@ ${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
             fNacStr = `${d}/${mm}/${y}`;
         }
 
-        // Obtener valores de la Anamnesis y STRONGkids
+        // Obtener valores de la Anamnesis y STRONGkids / NRS 2002
         const anam = p.anamnesis || {};
         const sk = p.strongkids || { score: 0, classification: 'Riesgo bajo' };
+        const nrs = p.nrs2002 || { score: 0, classification: 'Sin riesgo nutricional' };
 
         const nauseasVal = anam.sintomaNauseas || 'No';
         const vomitosVal = anam.sintomaVomitos || 'No';
@@ -4687,9 +4704,9 @@ Anamnesis:
 o Síntomas gastrointestinales: Nauseas (${nauseasVal}) Vómitos (${vomitosVal}) Reflujo gastroesofágico (${reflujoVal}) Deposiciones (${deposicionesVal}) Distensión abdominal (${distensionVal}) Gases (${gasesVal}).
 o Anamnesis alimentaria: Dentadura (${dentaduraVal}) Alergias/intolerancias alimentarias (${alergiasVal}) Trastorno de deglución (${deglucionVal}) Apetito (${apetitoVal}).
 
-Tamizaje: (STRONG KIDS)
-o Puntaje: ${sk.score} pts
-o Interpretación: ${sk.classification.toUpperCase()}
+Tamizaje: ${p.type === 'adult' ? '(NRS 2002)' : '(STRONG KIDS)'}
+o Puntaje: ${p.type === 'adult' ? nrs.score : sk.score} pts
+o Interpretación: ${p.type === 'adult' ? nrs.classification.toUpperCase() : sk.classification.toUpperCase()}
 
 Diagnóstico Nutricional Integrado:
 o ${des}
@@ -5727,6 +5744,77 @@ window.calculateStrongKids = () => {
     AppState.patient.strongkids.classification = classif;
 };
 
+window.calculateNRS2002 = () => {
+    const statusSelect = document.getElementById('nrsNutritionalStatus');
+    const severitySelect = document.getElementById('nrsDiseaseSeverity');
+    
+    if (!statusSelect || !severitySelect) return;
+    
+    const statusVal = parseInt(statusSelect.value) || 0;
+    const severityVal = parseInt(severitySelect.value) || 0;
+    
+    // Obtener edad del paciente desde el input de edad
+    const age = parseFloat(document.getElementById('edad')?.value) || 0;
+    
+    // Si edad >= 70 años, suma +1 punto automáticamente
+    const ageScore = age >= 70 ? 1 : 0;
+    
+    // Actualizar badge de bonificación por edad
+    const nrsAgeBonus = document.getElementById('nrsAgeBonus');
+    if (nrsAgeBonus) {
+        if (ageScore > 0) {
+            nrsAgeBonus.innerText = `+1 pt`;
+            nrsAgeBonus.style.background = '#fee2e2';
+            nrsAgeBonus.style.color = '#c0392b';
+        } else {
+            nrsAgeBonus.innerText = `+0 pts`;
+            nrsAgeBonus.style.background = '#f1f5f9';
+            nrsAgeBonus.style.color = '#64748b';
+        }
+    }
+    
+    const total = statusVal + severityVal + ageScore;
+    
+    // Clasificación y UI de NRS 2002
+    let classif = 'Sin riesgo';
+    let color = '#1abc9c';
+    let bg = 'rgba(26, 188, 156, 0.05)';
+    let border = 'rgba(26, 188, 156, 0.2)';
+    let recs = `• El paciente no presenta riesgo nutricional.\n• Reevaluar el tamizaje semanalmente durante la hospitalización.\n• Si el paciente está programado para una cirugía mayor, considerar plan preventivo.`;
+    
+    if (total >= 3) {
+        classif = 'Con riesgo';
+        color = '#c0392b';
+        bg = 'rgba(192, 57, 43, 0.05)';
+        border = 'rgba(192, 57, 43, 0.2)';
+        recs = `• El paciente presenta RIESGO NUTRICIONAL.\n• Iniciar plan de soporte nutricional formal según protocolo institucional.\n• Monitorear estrechamente la ingesta alimentaria y el peso.\n• Reevaluar periódicamente.`;
+    }
+    
+    const totalBadge = document.getElementById('nrsTotalScore');
+    const classifLabel = document.getElementById('nrsClassif');
+    const recsArea = document.getElementById('nrsRecs');
+    const panelBox = document.getElementById('nrsResultPanel');
+    
+    if (totalBadge) totalBadge.innerText = total + ' pts';
+    if (classifLabel) {
+        classifLabel.innerText = classif.toUpperCase() + ' NUTRICIONAL';
+        classifLabel.style.color = color;
+        classifLabel.style.borderColor = border;
+    }
+    if (recsArea) recsArea.innerText = recs;
+    if (panelBox) {
+        panelBox.style.background = bg;
+        panelBox.style.borderColor = border;
+    }
+    
+    if (!AppState.patient.nrs2002) AppState.patient.nrs2002 = {};
+    AppState.patient.nrs2002.score = total;
+    AppState.patient.nrs2002.classification = classif === 'Con riesgo' ? 'Con riesgo nutricional' : 'Sin riesgo nutricional';
+    AppState.patient.nrs2002.statusScore = statusVal;
+    AppState.patient.nrs2002.severityScore = severityVal;
+    AppState.patient.nrs2002.ageScore = ageScore;
+};
+
 window.initAnamnesisToggles = () => {
     if (!AppState.patient) AppState.patient = {};
     if (!AppState.patient.anamnesis) {
@@ -5749,6 +5837,15 @@ window.initAnamnesisToggles = () => {
             classification: 'Riesgo bajo'
         };
     }
+    if (!AppState.patient.nrs2002) {
+        AppState.patient.nrs2002 = {
+            score: 0,
+            classification: 'Sin riesgo nutricional',
+            statusScore: 0,
+            severityScore: 0,
+            ageScore: 0
+        };
+    }
 
     Object.entries(AppState.patient.anamnesis).forEach(([id, val]) => {
         window.setToggleState(id, val);
@@ -5758,6 +5855,8 @@ window.initAnamnesisToggles = () => {
     window.setSkState('q2', 'No', 1);
     window.setSkState('q3', 'No', 1);
     window.setSkState('q4', 'No', 1);
+    
+    window.calculateNRS2002();
 };
 
 

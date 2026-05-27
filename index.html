@@ -1221,8 +1221,6 @@
                     </details>
                 </section>
 
-                </section>
-
                 <!-- 4. Anamnesis y Síntomas Clínicos (Interactivo) -->
                 <section class="card assess-module" style="border-left-color: #2980b9;">
                     <div class="module-head">
@@ -1309,7 +1307,7 @@
                 </section>
 
                 <!-- 5. Tamizaje de Riesgo Nutricional (STRONGkids) -->
-                <section class="card assess-module" style="border-left-color: #e67e22;">
+                <section id="strongKidsCard" class="card assess-module" style="border-left-color: #e67e22;">
                     <div class="module-head">
                         <h3>🛡️ Tamizaje de Riesgo Nutricional (STRONGkids)</h3>
                     </div>
@@ -1392,6 +1390,63 @@
                             <div id="strongKidsRecs" style="font-size:0.75rem; color:#555; line-height:1.4; white-space:pre-wrap;">• No es necesaria una intervención nutricional.
 • Controlar el peso regularmente (según la política hospitalaria).
 • Evaluar el riesgo nutricional semanalmente.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5.1. Tamizaje de Riesgo Nutricional (NRS 2002) -->
+                <section id="nrs2002Card" class="card assess-module" style="border-left-color: #1abc9c; display:none;">
+                    <div class="module-head">
+                        <h3>🛡️ Tamizaje de Riesgo Nutricional (NRS 2002)</h3>
+                    </div>
+                    
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <!-- Estado Nutricional -->
+                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.85rem; font-weight:700; color:#2c3e50;">1. Alteración del Estado Nutricional</span>
+                            <select id="nrsNutritionalStatus" class="select-modern" onchange="window.calculateNRS2002()" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.85rem;">
+                                <option value="0">Ausente (0 pts) - Estado nutricional normal</option>
+                                <option value="1">Leve (1 pt) - Pérdida de peso >5% en 3 meses, o ingesta alimentaria 50-75% en última semana</option>
+                                <option value="2">Moderado (2 pts) - Pérdida de peso >5% en 2 meses, o IMC 18.5-20.5 + deterioro del estado general, o ingesta alimentaria 25-50% en última semana</option>
+                                <option value="3">Grave (3 pts) - Pérdida de peso >5% en 1 mes (>15% en 3 meses), o IMC <18.5 + deterioro del estado general, o ingesta alimentaria 0-25% en última semana</option>
+                            </select>
+                        </div>
+
+                        <!-- Severidad de la Enfermedad -->
+                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; flex-direction:column; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <span style="font-size:0.85rem; font-weight:700; color:#2c3e50;">2. Severidad de la Enfermedad (Requerimientos Aumentados)</span>
+                            <select id="nrsDiseaseSeverity" class="select-modern" onchange="window.calculateNRS2002()" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.85rem;">
+                                <option value="0">Ausente (0 pts) - Requerimientos nutricionales normales</option>
+                                <option value="1">Leve (1 pt) - Fractura de cadera, paciente crónico con complicaciones agudas (EPOC, hemodiálisis, diabetes, oncología)</option>
+                                <option value="2">Moderado (2 pts) - Cirugía abdominal mayor, ACV, neumonía grave, neoplasia hematológica</option>
+                                <option value="3">Grave (3 pts) - Traumatismo craneoencefálico, trasplante de médula ósea, paciente crítico en UCI (APACHE II > 10)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Ajuste por Edad -->
+                        <div style="padding:12px; background:white; border:1px solid #eee; border-radius:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                            <div>
+                                <span style="font-size:0.85rem; font-weight:700; color:#2c3e50; display:block;">3. Ajuste por Edad (>= 70 años)</span>
+                                <small style="font-size:0.7rem; color:#7f8c8d;">Se suma +1 punto automáticamente si el paciente tiene 70 años o más.</small>
+                            </div>
+                            <span id="nrsAgeBonus" style="font-size:0.8rem; font-weight:800; padding:4px 10px; border-radius:12px; background:#f1f5f9; color:#64748b;">+0 pts</span>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Resultados de NRS 2002 -->
+                    <div id="nrsResultPanel" style="margin-top:20px; padding:15px; border-radius:15px; border:1px solid rgba(26,188,156,0.2); background:rgba(26,188,156,0.05); display:flex; flex-direction:column; gap:10px; transition:all 0.3s ease;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <span style="font-size:0.85rem; font-weight:700; color:#333;">PUNTAJE NRS 2002 TOTAL:</span>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <strong id="nrsTotalScore" style="font-size:1.4rem; color:#1abc9c; font-weight:900;">0 pts</strong>
+                                <span id="nrsClassif" style="font-size:0.75rem; font-weight:800; background:white; padding:4px 10px; border-radius:30px; box-shadow:0 2px 5px rgba(0,0,0,0.03); color:#1abc9c; border:1px solid rgba(26, 188, 156, 0.2); transition:all 0.3s;">SIN RIESGO</span>
+                            </div>
+                        </div>
+                        <div style="border-top:1px dashed rgba(0,0,0,0.06); padding-top:8px;">
+                            <span style="font-size:0.7rem; font-weight:700; color:#333; display:block; text-transform:uppercase; margin-bottom:4px;">Recomendaciones Clínicas:</span>
+                            <div id="nrsRecs" style="font-size:0.75rem; color:#555; line-height:1.4; white-space:pre-wrap;">• El paciente no presenta riesgo nutricional.
+• Reevaluar el tamizaje semanalmente durante la hospitalización.
+• Si el paciente está programado para una cirugía mayor, considerar plan preventivo.</div>
                         </div>
                     </div>
                 </section>
