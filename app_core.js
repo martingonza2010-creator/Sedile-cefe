@@ -248,6 +248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     safelyInit(initNutriIA, "NutriIA");
     safelyInit(initVoiceDictation, "VoiceDictation");
     safelyInit(initWardKanban, "WardKanban");
+    safelyInit(initAdminPanel, "AdminPanel");
 
     updateFormulaSelect();
     initFormulaSearch();
@@ -377,6 +378,64 @@ async function showApp() {
     try {
         const authScreen = document.getElementById('auth-screen');
         if (authScreen) authScreen.style.display = 'none';
+
+        // --- AUTH CONTROL DE ACCESO (ADMIN APPROVAL FLOW) ---
+        const userEmail = AppState.user?.email || '';
+        const userName = AppState.user?.user_metadata?.full_name || AppState.user?.email || 'Colega';
+        const isAdmin = userEmail === 'martingonza2010@gmail.com';
+
+        // 1. Mostrar/Ocultar el botón de Administrador en el Header
+        const btnAdminPanel = document.getElementById('btnAdminPanel');
+        if (btnAdminPanel) {
+            btnAdminPanel.style.display = isAdmin ? 'inline-flex' : 'none';
+        }
+
+        if (isAdmin) {
+            // El administrador siempre tiene acceso directo y no es bloqueado
+            const blockedScreen = document.getElementById('access-blocked-screen');
+            if (blockedScreen) blockedScreen.style.display = 'none';
+        } else {
+            // Colegas regulares: Verificar autorización en Supabase
+            if (supabaseClient) {
+                const { data: record, error: fetchError } = await supabaseClient
+                    .from('acceso_usuarios')
+                    .select('*')
+                    .eq('email', userEmail)
+                    .maybeSingle();
+
+                if (fetchError) {
+                    console.error("Error al consultar control de acceso:", fetchError);
+                }
+
+                if (!record) {
+                    // Auto-registrar como PENDIENTE
+                    const { error: insertError } = await supabaseClient
+                        .from('acceso_usuarios')
+                        .insert([
+                            {
+                                email: userEmail,
+                                nombre: userName,
+                                user_id: AppState.user.id,
+                                acceso_permitido: false
+                            }
+                        ]);
+
+                    if (insertError) {
+                        console.error("Error al auto-registrar usuario:", insertError);
+                    }
+
+                    showAccessBlockedScreen(userName, userEmail);
+                    return;
+                } else if (!record.acceso_permitido) {
+                    showAccessBlockedScreen(userName, userEmail);
+                    return;
+                } else {
+                    const blockedScreen = document.getElementById('access-blocked-screen');
+                    if (blockedScreen) blockedScreen.style.display = 'none';
+                }
+            }
+        }
+        // --- FIN CONTROL DE ACCESO ---
 
         // Verificar si la sesión ya está desbloqueada por PIN en esta pestaña
         if (sessionStorage.getItem('sedile_unlocked') === 'true') {
@@ -515,6 +574,28 @@ function showLogin() {
     document.getElementById('main-app').style.display = 'none';
     const pinLock = document.getElementById('pin-lock-screen');
     if (pinLock) pinLock.style.display = 'none';
+    const blockedScreen = document.getElementById('access-blocked-screen');
+    if (blockedScreen) blockedScreen.style.display = 'none';
+}
+
+function showAccessBlockedScreen(name, email) {
+    const mainApp = document.getElementById('main-app');
+    const pinLock = document.getElementById('pin-lock-screen');
+    const authScreen = document.getElementById('auth-screen');
+    const blockedScreen = document.getElementById('access-blocked-screen');
+    
+    if (mainApp) mainApp.style.display = 'none';
+    if (pinLock) pinLock.style.display = 'none';
+    if (authScreen) authScreen.style.display = 'none';
+    
+    if (blockedScreen) {
+        blockedScreen.style.display = 'grid';
+        
+        const nameEl = document.getElementById('blockedUserName');
+        const emailEl = document.getElementById('blockedUserEmail');
+        if (nameEl) nameEl.innerText = name;
+        if (emailEl) emailEl.innerText = email;
+    }
 }
 
 // Escucha para enviar el PIN con la tecla Enter
@@ -590,6 +671,89 @@ function initHistoryModal() {
         window.loadHistoryList(true);
     });
 }
+
+function initAdminPanel() {
+    const modal = document.getElementById('adminModal');
+    const btnOpen = document.getElementById('btnAdminPanel');
+    const btnClose = document.getElementById('btnAdminClose');
+    
+    if (btnOpen && modal) {
+        btnOpen.onclick = () => {
+            modal.classList.add('active');
+            window.loadAdminUsersList();
+        };
+    }
+    if (btnClose && modal) {
+        btnClose.onclick = () => modal.classList.remove('active');
+    }
+}
+
+window.loadAdminUsersList = async () => {
+    const tableBody = document.getElementById('adminUsersTableBody');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; color:#64748b;">Cargando colegas...</td></tr>';
+    
+    try {
+        const { data: users, error } = await supabaseClient
+            .from('acceso_usuarios')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
+        if (error) throw error;
+        
+        tableBody.innerHTML = '';
+        
+        if (!users || users.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; color:#64748b; font-style:italic;">No hay colegas registrados aún.</td></tr>';
+            return;
+        }
+        
+        users.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #f1f5f9';
+            
+            const isApproved = u.acceso_permitido;
+            const statusBadge = isApproved 
+                ? `<span style="background:#d1fae5; color:#0f5132; padding:3px 8px; border-radius:12px; font-weight:700; font-size:0.7rem; border:1px solid #badbcc; display:inline-block;">Habilitado</span>` 
+                : `<span style="background:#fee2e2; color:#842029; padding:3px 8px; border-radius:12px; font-weight:700; font-size:0.7rem; border:1px solid #f5c2c7; display:inline-block;">Denegado</span>`;
+                
+            const actionButton = isApproved 
+                ? `<button class="btn-micro" onclick="window.toggleUserAccess('${u.id}', false)" style="background:rgba(231,76,60,0.08); color:#e74c3c; border:1px solid rgba(231,76,60,0.15); padding:4px 8px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.75rem;">Denegar</button>` 
+                : `<button class="btn-micro" onclick="window.toggleUserAccess('${u.id}', true)" style="background:rgba(46,204,113,0.08); color:#2ecc71; border:1px solid rgba(46,204,113,0.15); padding:4px 8px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.75rem;">Habilitar</button>`;
+                
+            tr.innerHTML = `
+                <td style="padding:10px 12px; font-weight:600; color:#1e293b;">
+                    <div style="font-size:0.85rem;">${u.nombre || 'Colega'}</div>
+                    <div style="font-size:0.7rem; color:#64748b; font-weight:400;">${u.email}</div>
+                </td>
+                <td style="padding:10px 12px; text-align:center;">${statusBadge}</td>
+                <td style="padding:10px 12px; text-align:center;">${actionButton}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error("Error al cargar lista de usuarios en admin:", err);
+        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:#e74c3c; font-weight:600;">Error: ${err.message}</td></tr>`;
+    }
+};
+
+window.toggleUserAccess = async (userId, newStatus) => {
+    try {
+        const { error } = await supabaseClient
+            .from('acceso_usuarios')
+            .update({ acceso_permitido: newStatus })
+            .eq('id', userId);
+            
+        if (error) throw error;
+        
+        showToast(newStatus ? "✔️ Colega habilitado para ingresar" : "❌ Acceso denegado para el colega");
+        window.loadAdminUsersList();
+    } catch (err) {
+        console.error("Error al cambiar acceso de usuario:", err);
+        showToast("⚠️ Error: " + err.message);
+    }
+};
 
 // --- 7. PATIENT & HISTORY LOGIC ---
 function initPatientLogic() {

@@ -32,6 +32,32 @@
         </div>
     </section>
 
+    <!-- PANTALLA ACCESO PENDIENTE (BLOQUEADO) -->
+    <section id="access-blocked-screen" class="auth-container" style="display: none;">
+        <div class="login-card" style="max-width: 450px; text-align: center; padding: 30px; border-radius: 20px;">
+            <img src="logo.png" alt="Logo NutriMartin" class="logo-entrance">
+            <h2 style="color: #e74c3c; margin: 15px 0 10px 0; font-size: 1.3rem;">⚠️ Acceso en Espera</h2>
+            
+            <p style="font-size: 0.9rem; color: #475569; line-height: 1.5; margin-bottom: 20px;">
+                Estimado colega, su cuenta ha sido autenticada correctamente, pero <b>requiere la autorización previa del Administrador</b> para poder ingresar a la plataforma.
+            </p>
+            
+            <div style="background: rgba(255,255,255,0.4); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 15px; margin-bottom: 25px; text-align: left; font-size: 0.85rem;">
+                <span style="display: block; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; margin-bottom: 5px;">Su Perfil:</span>
+                <span style="display: block; font-weight: 700; color: #1e293b;" id="blockedUserName">Cargando...</span>
+                <span style="display: block; color: #64748b; font-size: 0.8rem;" id="blockedUserEmail">Cargando...</span>
+            </div>
+            
+            <button class="btn-premium-toggle" onclick="window.logout()" style="background: rgba(231, 76, 60, 0.08); color: #eb5959; border-color: rgba(231, 76, 60, 0.15); width: 100%; justify-content: center; padding: 10px 0;">
+                Cerrar Sesión / Salir
+            </button>
+            
+            <small style="display: block; margin-top: 20px; color: #94a3b8; font-size: 0.75rem;">
+                Por favor, comuníquese con el Administrador para habilitar su acceso.
+            </small>
+        </div>
+    </section>
+
     <!-- PANTALLA DE BLOQUEO DE PIN (2FA LOCAL) -->
     <section id="pin-lock-screen" class="pin-container" style="display:none;">
         <div class="pin-card">
@@ -90,6 +116,7 @@
                         style="background:var(--primary); color:white; border-color:white;">
                         <span>🏥 Vista de Sala</span>
                     </button>
+                    <button class="btn-premium-toggle" id="btnAdminPanel" title="Administración de Usuarios" style="background: rgba(52, 152, 219, 0.08); color: #2980b9; border-color: rgba(52, 152, 219, 0.15); display: none;"><span>⚙️ Administrador</span></button>
                     <button class="btn-premium-toggle" id="btnLogoutHeader" title="Cerrar Sesión" onclick="window.logout()" style="background: rgba(231, 76, 60, 0.08); color: #eb5959; border-color: rgba(231, 76, 60, 0.15);"><span>Cerrar Sesión</span></button>
                 </div>
 
@@ -2056,6 +2083,38 @@
                                 <tr>
                                     <td><strong style="color:#2c3e50;">Horarios de PEG:</strong><br><span style="color:#16a085; font-size:1.1rem; font-weight:bold;">06 – 18</span></td>
                                 </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL ADMINISTRADOR (SLIDE-OUT DESDE LA DERECHA) -->
+        <div class="protocol-modal" id="adminModal">
+            <div class="modal-content" style="height: 100%; display: flex; flex-direction: column;">
+                <div class="modal-header" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0; color: #2c3e50; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+                        ⚙️ Administrador HRA
+                    </h3>
+                    <button class="btn-close" id="btnAdminClose" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #ccc;">&times;</button>
+                </div>
+                <div id="adminModalBody" style="flex: 1; overflow-y: auto; padding-right: 5px; font-size: 0.9rem;">
+                    <p style="font-size: 0.8rem; color: #64748b; margin: 0 0 15px 0; line-height: 1.4;">
+                        Habilita o deniega el acceso a los colegas que se registren en la plataforma. Solo tu correo (<b>martingonza2010@gmail.com</b>) tiene acceso a este panel.
+                    </p>
+                    
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 20px;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
+                            <thead style="background: #f8fafc; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                <tr>
+                                    <th style="padding: 10px 12px; font-weight: 700;">Nombre y Correo</th>
+                                    <th style="padding: 10px 12px; font-weight: 700; text-align: center;">Estado</th>
+                                    <th style="padding: 10px 12px; font-weight: 700; text-align: center;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUsersTableBody">
+                                <!-- Filas de usuarios inyectadas por JS -->
                             </tbody>
                         </table>
                     </div>
