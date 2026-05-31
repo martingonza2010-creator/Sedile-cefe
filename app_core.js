@@ -385,7 +385,7 @@ async function showApp() {
         if (authScreen) authScreen.style.display = 'none';
 
         // --- AUTH CONTROL DE ACCESO (ADMIN APPROVAL FLOW) ---
-        const userEmail = AppState.user?.email || '';
+        const userEmail = (AppState.user?.email || '').toLowerCase().trim();
         const userName = AppState.user?.user_metadata?.full_name || AppState.user?.email || 'Colega';
         const isAdmin = userEmail === 'martingonza2010@gmail.com';
 
