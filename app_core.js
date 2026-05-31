@@ -7,6 +7,10 @@ window.onerror = function (msg, url, line, col, error) {
 
 window.addEventListener('unhandledrejection', function (event) {
     console.error('⚠️ Unhandled Promise Rejection:', event.reason);
+    const reason = event.reason;
+    const msg = reason ? (reason.message || reason) : 'Error desconocido en Promesa';
+    const stack = reason ? (reason.stack || '') : '';
+    alert("⚠️  Error de Promesa (V4.52):\n" + msg + "\n\n" + stack);
 });
 
 // --- 1. DATE UTILITIES & AUTO-MASK FOR SPANISH FORMAT ---
@@ -249,19 +253,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     safelyInit(initVoiceDictation, "VoiceDictation");
     safelyInit(initWardKanban, "WardKanban");
     safelyInit(initAdminPanel, "AdminPanel");
+    safelyInit(updateFormulaSelect, "updateFormulaSelect");
+    safelyInit(initFormulaSearch, "initFormulaSearch");
+    safelyInit(applyCircularFavicon, "applyCircularFavicon");
 
-    updateFormulaSelect();
-    initFormulaSearch();
-    applyCircularFavicon();
-
-    console.log("âœ… Initialization complete. Formulas loaded:", AppState.formulas.length);
+    console.log("✅ Initialization complete. Formulas loaded:", AppState.formulas.length);
 
     // Force repopulating formulas after a delay
     setTimeout(() => {
         const sel = document.getElementById('formulaSelect');
         if (sel && sel.options.length <= 1) {
-            console.warn("⚠️ Dropdown empty, retrying updateFormulaSelect...");
-            updateFormulaSelect();
+            console.warn("⚠️  Dropdown empty, retrying updateFormulaSelect...");
+            safelyInit(updateFormulaSelect, "retryUpdateFormulaSelect");
         }
     }, 1560);
 });
@@ -3351,8 +3354,8 @@ function updateFormulaSelect(filter = "") {
     const normalizedFilter = filter.toLowerCase().trim();
 
     const sortedFormulas = [...AppState.formulas]
-        .filter(f => !f.cat.includes("RTH"))
-        .filter(f => !normalizedFilter || f.name.toLowerCase().includes(normalizedFilter) || f.cat.toLowerCase().includes(normalizedFilter))
+        .filter(f => f && f.cat && !f.cat.includes("RTH"))
+        .filter(f => !normalizedFilter || (f.name && f.name.toLowerCase().includes(normalizedFilter)) || (f.cat && f.cat.toLowerCase().includes(normalizedFilter)))
         .sort((a, b) => {
             const aFav = AppState.favorites.includes(a.id);
             const bFav = AppState.favorites.includes(b.id);
@@ -3361,7 +3364,7 @@ function updateFormulaSelect(filter = "") {
             return 0;
         });
 
-    const cats = [...new Set(sortedFormulas.map(i => i.cat))];
+    const cats = [...new Set(sortedFormulas.map(i => i.cat).filter(Boolean))];
 
     selects.forEach(sel => {
         if (!sel) return;
