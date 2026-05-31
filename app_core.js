@@ -385,9 +385,10 @@ async function showApp(isManualCheck = false) {
         }
 
         const authScreen = document.getElementById('auth-screen');
-        if (authScreen) authScreen.style.display = 'none';
+        const blockedScreen = document.getElementById('access-blocked-screen');
+        const pinLock = document.getElementById('pin-lock-screen');
+        const mainApp = document.getElementById('main-app');
 
-        // --- AUTH CONTROL DE ACCESO (ADMIN APPROVAL FLOW) ---
         const userEmail = AppState.user?.email || '';
         const userName = AppState.user?.user_metadata?.full_name || AppState.user?.email || 'Colega';
         const isAdmin = userEmail === 'martingonza2010@gmail.com';
@@ -398,49 +399,65 @@ async function showApp(isManualCheck = false) {
             btnAdminPanel.style.display = isAdmin ? 'inline-flex' : 'none';
         }
 
-        // Obtener elementos de feedback del bloqueo
-        const btnCheckAuth = document.getElementById('btnCheckAuth');
-        const feedbackEl = document.getElementById('blockedFeedbackMessage');
+        const isUnlocked = sessionStorage.getItem('sedile_unlocked') === 'true';
 
-        if (isManualCheck) {
-            // 1. Forzar una actualización de Service Worker para verificar archivos nuevos
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(registrations => {
-                    for (const r of registrations) {
-                        r.update().catch(err => console.error("SW manual update error:", err));
-                    }
-                });
+        // SI YA ESTÁ DESBLOQUEADO: Mostrar la App principal inmediatamente para evitar pantallas en blanco
+        if (isUnlocked) {
+            if (authScreen) authScreen.style.display = 'none';
+            if (blockedScreen) blockedScreen.style.display = 'none';
+            if (pinLock) pinLock.style.display = 'none';
+            if (mainApp) mainApp.style.display = 'block';
+
+            if (AppState.user && AppState.user.user_metadata) {
+                const name = AppState.user.user_metadata.full_name || AppState.user.email || 'Usuario';
+                const displayEl = document.getElementById('userNameDisplay');
+                if (displayEl) {
+                    displayEl.innerHTML = `Nutricionista <b>${name}</b>`;
+                }
             }
 
-            // 2. Mostrar estado visual de carga en el botón
-            if (btnCheckAuth) {
-                btnCheckAuth.disabled = true;
-                btnCheckAuth.innerHTML = "⏳ Verificando autorización...";
-                btnCheckAuth.style.opacity = "0.7";
-                btnCheckAuth.style.cursor = "not-allowed";
-            }
-
-            // Ocultar feedback anterior
-            if (feedbackEl) {
-                feedbackEl.style.display = 'none';
-            }
+            // Si es administrador, ya terminamos, no requiere validación de Supabase adicional
+            if (isAdmin) return;
         }
 
-        const restoreButtonState = () => {
-            if (btnCheckAuth) {
-                btnCheckAuth.disabled = false;
-                btnCheckAuth.innerHTML = "🔄 Comprobar Autorización";
-                btnCheckAuth.style.opacity = "1";
-                btnCheckAuth.style.cursor = "pointer";
-            }
-        };
+        // CONTROL DE ACCESO (ADMIN APPROVAL FLOW)
+        const runAccessCheck = async () => {
+            const btnCheckAuth = document.getElementById('btnCheckAuth');
+            const feedbackEl = document.getElementById('blockedFeedbackMessage');
 
-        if (isAdmin) {
-            // El administrador siempre tiene acceso directo y no es bloqueado
-            const blockedScreen = document.getElementById('access-blocked-screen');
-            if (blockedScreen) blockedScreen.style.display = 'none';
-        } else {
-            // Colegas regulares: Verificar autorización en Supabase
+            if (isManualCheck) {
+                // 1. Forzar una actualización de Service Worker para verificar archivos nuevos
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        for (const r of registrations) {
+                            r.update().catch(err => console.error("SW manual update error:", err));
+                        }
+                    });
+                }
+
+                // 2. Mostrar estado visual de carga en el botón
+                if (btnCheckAuth) {
+                    btnCheckAuth.disabled = true;
+                    btnCheckAuth.innerHTML = "⏳ Verificando autorización...";
+                    btnCheckAuth.style.opacity = "0.7";
+                    btnCheckAuth.style.cursor = "not-allowed";
+                }
+
+                // Ocultar feedback anterior
+                if (feedbackEl) {
+                    feedbackEl.style.display = 'none';
+                }
+            }
+
+            const restoreButtonState = () => {
+                if (btnCheckAuth) {
+                    btnCheckAuth.disabled = false;
+                    btnCheckAuth.innerHTML = "🔄 Comprobar Autorización";
+                    btnCheckAuth.style.opacity = "1";
+                    btnCheckAuth.style.cursor = "pointer";
+                }
+            };
+
             if (supabaseClient) {
                 const { data: records, error: fetchError } = await supabaseClient
                     .from('acceso_usuarios')
@@ -449,6 +466,9 @@ async function showApp(isManualCheck = false) {
 
                 if (fetchError) {
                     console.error("Error al consultar control de acceso:", fetchError);
+                    // Si ya estaba desbloqueado, no interrumpimos la sesión del usuario por un error temporal de conexión
+                    if (isUnlocked) return;
+
                     if (feedbackEl) {
                         feedbackEl.style.display = 'block';
                         feedbackEl.style.background = '#fde8e8';
@@ -481,39 +501,31 @@ async function showApp(isManualCheck = false) {
 
                     if (insertError) {
                         console.error("Error al auto-registrar usuario:", insertError);
-                        
-                        // Si ya existe en la base de datos por conflicto de mayúsculas/minúsculas o RLS
-                        if (insertError.code === '23505' || (insertError.message && insertError.message.includes('unique'))) {
-                            if (feedbackEl) {
-                                feedbackEl.style.display = 'block';
-                                feedbackEl.style.background = '#fef3c7';
-                                feedbackEl.style.color = '#d97706';
-                                feedbackEl.style.borderColor = '#fcd34d';
-                                feedbackEl.innerHTML = `⚠️ Tu correo ya está pre-registrado en el sistema.<br><small style="font-size: 0.75rem; color: #78350f; display: block; margin-top: 4px;">Contacta al Administrador para que apruebe tu correo exacto.</small>`;
-                            }
-                        } else {
-                            if (feedbackEl) {
-                                feedbackEl.style.display = 'block';
-                                feedbackEl.style.background = '#fde8e8';
-                                feedbackEl.style.color = '#e74c3c';
-                                feedbackEl.style.borderColor = '#f8b4b4';
-                                feedbackEl.innerHTML = `❌ Error al enviar solicitud: ${insertError.message}`;
-                            }
-                        }
-                    } else {
-                        if (feedbackEl) {
-                            feedbackEl.style.display = 'block';
-                            feedbackEl.style.background = '#fef3c7';
-                            feedbackEl.style.color = '#d97706';
-                            feedbackEl.style.borderColor = '#fcd34d';
-                            feedbackEl.innerHTML = `⏳ Solicitud de acceso enviada al Administrador. Por favor, espera su aprobación.`;
-                        }
                     }
 
+                    if (isUnlocked) {
+                        // Si estaba desbloqueado pero se eliminó de la BD, revocamos acceso
+                        sessionStorage.removeItem('sedile_unlocked');
+                    }
+
+                    if (feedbackEl) {
+                        feedbackEl.style.display = 'block';
+                        feedbackEl.style.background = '#fef3c7';
+                        feedbackEl.style.color = '#d97706';
+                        feedbackEl.style.borderColor = '#fcd34d';
+                        feedbackEl.innerHTML = `⏳ Solicitud de acceso enviada al Administrador. Por favor, espera su aprobación.`;
+                    }
                     restoreButtonState();
                     showAccessBlockedScreen(userName, userEmail);
                     return;
                 } else if (!record.acceso_permitido) {
+                    if (isUnlocked) {
+                        // Si estaba desbloqueado pero ahora fue denegado, revocamos el acceso de inmediato
+                        sessionStorage.removeItem('sedile_unlocked');
+                        window.location.reload();
+                        return;
+                    }
+
                     if (feedbackEl) {
                         feedbackEl.style.display = 'block';
                         feedbackEl.style.background = '#fef3c7';
@@ -534,35 +546,38 @@ async function showApp(isManualCheck = false) {
                         feedbackEl.innerHTML = `✅ ¡Acceso aprobado! Cargando pantalla de PIN...`;
                     }
                     restoreButtonState();
-                    const blockedScreen = document.getElementById('access-blocked-screen');
                     if (blockedScreen) blockedScreen.style.display = 'none';
+
+                    // Si no está desbloqueado, ocultar las demás y mostrar la pantalla de PIN
+                    if (!isUnlocked) {
+                        if (authScreen) authScreen.style.display = 'none';
+                        if (mainApp) mainApp.style.display = 'none';
+                        showPINLockScreen();
+                    }
                 }
             }
-        }
-        // --- FIN CONTROL DE ACCESO ---
+        };
 
-        // Verificar si la sesión ya está desbloqueada por PIN en esta pestaña
-        if (sessionStorage.getItem('sedile_unlocked') === 'true') {
-            const mainApp = document.getElementById('main-app');
-            const pinLock = document.getElementById('pin-lock-screen');
-            if (mainApp) mainApp.style.display = 'block';
-            if (pinLock) pinLock.style.display = 'none';
-
-            if (AppState.user && AppState.user.user_metadata) {
-                const name = AppState.user.user_metadata.full_name || AppState.user.email || 'Usuario';
-                const displayEl = document.getElementById('userNameDisplay');
-                if (displayEl) {
-                    displayEl.innerHTML = `Nutricionista <b>${name}</b>`;
-                }
+        if (isAdmin) {
+            // El administrador siempre tiene acceso directo y no es bloqueado en BD
+            if (blockedScreen) blockedScreen.style.display = 'none';
+            if (!isUnlocked) {
+                if (authScreen) authScreen.style.display = 'none';
+                if (mainApp) mainApp.style.display = 'none';
+                showPINLockScreen();
             }
-            return;
+        } else {
+            // Colegas regulares:
+            if (isUnlocked) {
+                // Si ya está desbloqueado, hacemos la validación en segundo plano sin interrumpir al usuario
+                runAccessCheck().catch(err => console.error("Error en validación en segundo plano:", err));
+            } else {
+                // Si no está desbloqueado, hacemos la verificación de forma bloqueante (con await)
+                // Manteniendo la pantalla actual visible mientras se consulta, para evitar pantallas en blanco.
+                await runAccessCheck();
+            }
         }
 
-        // Si no está desbloqueada, ocultamos el dashboard y mostramos el bloqueo de PIN
-        const mainApp = document.getElementById('main-app');
-        if (mainApp) mainApp.style.display = 'none';
-
-        showPINLockScreen();
     } catch (err) {
         console.error("🔴 Error displaying App:", err);
         alert("🔴 Error displaying App: " + err.message + "\n" + err.stack);
@@ -640,15 +655,20 @@ window.submitPIN = async function() {
         try {
             const hashed = await hashPIN(pinVal);
             
+            // Inmunizar estableciendo el estado de desbloqueado de antemano (evita colisiones con onAuthStateChange concurrente)
+            sessionStorage.setItem('sedile_unlocked', 'true');
+
             // Guardar en la metadata de Supabase Auth
             const { data, error } = await supabaseClient.auth.updateUser({
                 data: { pin_hash: hashed }
             });
 
-            if (error) throw error;
+            if (error) {
+                sessionStorage.removeItem('sedile_unlocked');
+                throw error;
+            }
 
             AppState.user = data.user;
-            sessionStorage.setItem('sedile_unlocked', 'true');
             
             const lockScreen = document.getElementById('pin-lock-screen');
             if (lockScreen) lockScreen.style.display = 'none';
