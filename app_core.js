@@ -555,6 +555,17 @@ async function showApp(isManualCheck = false) {
                         showPINLockScreen();
                     }
                 }
+            } else {
+                console.error("Supabase client is not loaded.");
+                if (feedbackEl) {
+                    feedbackEl.style.display = 'block';
+                    feedbackEl.style.background = '#fde8e8';
+                    feedbackEl.style.color = '#e74c3c';
+                    feedbackEl.style.borderColor = '#f8b4b4';
+                    feedbackEl.innerHTML = `❌ Error Crítico: No se pudo cargar el cliente de base de datos de Supabase. Revisa tu conexión a internet o intenta recargar la página.`;
+                }
+                restoreButtonState();
+                showAccessBlockedScreen(userName, userEmail);
             }
         };
 

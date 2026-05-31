@@ -1,11 +1,16 @@
-const CACHE_NAME = 'sedile-hra-v4.2';
+const CACHE_NAME = 'sedile-hra-v4.3';
 const ASSETS = [
     './',
     './index.html',
     './style.css?v=3.43',
-    './app_core.js?v=4.53',
+    './app_core.js?v=4.54',
     './manifest.json',
-    './logo.png'
+    './logo.png',
+    './libs/supabase.js',
+    './libs/chart.js',
+    './minsal_data.js',
+    './pittaluga_data.js',
+    './special_data.js'
 ];
 
 self.addEventListener('install', (e) => {
