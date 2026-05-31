@@ -48,9 +48,15 @@
                 <span style="display: block; color: #64748b; font-size: 0.8rem;" id="blockedUserEmail">Cargando...</span>
             </div>
             
-            <button class="btn-premium-toggle" onclick="window.logout()" style="background: rgba(231, 76, 60, 0.08); color: #eb5959; border-color: rgba(231, 76, 60, 0.15); width: 100%; justify-content: center; padding: 10px 0;">
-                Cerrar Sesión / Salir
-            </button>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="btn-premium-toggle" onclick="window.showApp()" style="background: var(--primary); color: white; border-color: var(--primary); width: 100%; justify-content: center; padding: 12px 0; font-size: 0.9rem; font-weight: 700; box-shadow: 0 4px 15px rgba(140, 79, 230, 0.25);">
+                    🔄 Comprobar Autorización
+                </button>
+                
+                <button class="btn-premium-toggle" onclick="window.logout()" style="background: rgba(231, 76, 60, 0.08); color: #eb5959; border-color: rgba(231, 76, 60, 0.15); width: 100%; justify-content: center; padding: 10px 0; font-size: 0.8rem;">
+                    Cerrar Sesión / Salir
+                </button>
+            </div>
             
             <small style="display: block; margin-top: 20px; color: #94a3b8; font-size: 0.75rem;">
                 Por favor, comuníquese con el Administrador para habilitar su acceso.

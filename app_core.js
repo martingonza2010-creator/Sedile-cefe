@@ -376,6 +376,11 @@ async function hashPIN(pin) {
 
 async function showApp() {
     try {
+        if (!AppState.user) {
+            showLogin();
+            return;
+        }
+
         const authScreen = document.getElementById('auth-screen');
         if (authScreen) authScreen.style.display = 'none';
 
@@ -397,15 +402,16 @@ async function showApp() {
         } else {
             // Colegas regulares: Verificar autorización en Supabase
             if (supabaseClient) {
-                const { data: record, error: fetchError } = await supabaseClient
+                const { data: records, error: fetchError } = await supabaseClient
                     .from('acceso_usuarios')
                     .select('*')
-                    .eq('email', userEmail)
-                    .maybeSingle();
+                    .eq('email', userEmail);
 
                 if (fetchError) {
                     console.error("Error al consultar control de acceso:", fetchError);
                 }
+
+                const record = (records && records.length > 0) ? records[0] : null;
 
                 if (!record) {
                     // Auto-registrar como PENDIENTE
@@ -463,6 +469,8 @@ async function showApp() {
         console.error("🔴 Error displaying App:", err);
     }
 }
+
+window.showApp = showApp;
 
 async function showPINLockScreen() {
     const lockScreen = document.getElementById('pin-lock-screen');
