@@ -405,13 +405,16 @@ async function showApp() {
                 const { data: records, error: fetchError } = await supabaseClient
                     .from('acceso_usuarios')
                     .select('*')
-                    .eq('email', userEmail);
+                    .ilike('email', userEmail);
 
                 if (fetchError) {
                     console.error("Error al consultar control de acceso:", fetchError);
                 }
 
-                const record = (records && records.length > 0) ? records[0] : null;
+                // Priorizar el registro habilitado si hay duplicados por discrepancias de mayúsculas/minúsculas
+                const record = (records && records.length > 0)
+                    ? (records.find(r => r.acceso_permitido === true) || records[0])
+                    : null;
 
                 if (!record) {
                     // Auto-registrar como PENDIENTE
