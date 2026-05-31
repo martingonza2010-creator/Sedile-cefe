@@ -385,7 +385,7 @@ async function showApp() {
         if (authScreen) authScreen.style.display = 'none';
 
         // --- AUTH CONTROL DE ACCESO (ADMIN APPROVAL FLOW) ---
-        const userEmail = (AppState.user?.email || '').toLowerCase().trim();
+        const userEmail = AppState.user?.email || '';
         const userName = AppState.user?.user_metadata?.full_name || AppState.user?.email || 'Colega';
         const isAdmin = userEmail === 'martingonza2010@gmail.com';
 
@@ -405,16 +405,13 @@ async function showApp() {
                 const { data: records, error: fetchError } = await supabaseClient
                     .from('acceso_usuarios')
                     .select('*')
-                    .ilike('email', userEmail);
+                    .eq('email', userEmail);
 
                 if (fetchError) {
                     console.error("Error al consultar control de acceso:", fetchError);
                 }
 
-                // Priorizar el registro habilitado si hay duplicados por discrepancias de mayúsculas/minúsculas
-                const record = (records && records.length > 0)
-                    ? (records.find(r => r.acceso_permitido === true) || records[0])
-                    : null;
+                const record = (records && records.length > 0) ? records[0] : null;
 
                 if (!record) {
                     // Auto-registrar como PENDIENTE
