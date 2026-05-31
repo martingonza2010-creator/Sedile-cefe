@@ -26,7 +26,7 @@ CREATE POLICY "Permitir lectura propia"
 ON public.acceso_usuarios 
 FOR SELECT 
 TO authenticated 
-USING (email = auth.jwt() ->> 'email' OR auth.jwt() ->> 'email' = 'martingonza2010@gmail.com');
+USING (lower(email) = lower(auth.jwt() ->> 'email') OR auth.jwt() ->> 'email' = 'martingonza2010@gmail.com');
 
 -- Política para registro propio: Los nuevos colegas al iniciar sesión con Google pueden auto-registrarse
 -- con acceso_permitido establecido en 'false' por defecto.
@@ -34,7 +34,7 @@ CREATE POLICY "Permitir registro propio"
 ON public.acceso_usuarios 
 FOR INSERT 
 TO authenticated 
-WITH CHECK (email = auth.jwt() ->> 'email' AND acceso_permitido = false);
+WITH CHECK (lower(email) = lower(auth.jwt() ->> 'email') AND acceso_permitido = false);
 
 -- Política para control total del Administrador: El usuario 'martingonza2010@gmail.com'
 -- tiene permisos totales para SELECT, INSERT, UPDATE y DELETE sobre cualquier registro de la tabla.
