@@ -562,43 +562,52 @@ async function showApp(isManualCheck = false) {
         showPINLockScreen();
     } catch (err) {
         console.error("🔴 Error displaying App:", err);
+        alert("🔴 Error displaying App: " + err.message + "\n" + err.stack);
     }
 }
 
 window.showApp = showApp;
 
 async function showPINLockScreen() {
-    const lockScreen = document.getElementById('pin-lock-screen');
-    if (!lockScreen) return;
-    lockScreen.style.display = 'flex';
+    try {
+        const lockScreen = document.getElementById('pin-lock-screen');
+        if (!lockScreen) {
+            console.error("Error: pin-lock-screen element not found");
+            return;
+        }
+        lockScreen.style.display = 'flex';
 
-    const pinInput = document.getElementById('pinInput');
-    const pinConfirmInput = document.getElementById('pinConfirmInput');
-    const pinConfirmGroup = document.getElementById('pinConfirmGroup');
-    const title = document.getElementById('pinWelcomeTitle');
-    const desc = document.getElementById('pinWelcomeDesc');
-    const errEl = document.getElementById('pinErrorMessage');
+        const pinInput = document.getElementById('pinInput');
+        const pinConfirmInput = document.getElementById('pinConfirmInput');
+        const pinConfirmGroup = document.getElementById('pinConfirmGroup');
+        const title = document.getElementById('pinWelcomeTitle');
+        const desc = document.getElementById('pinWelcomeDesc');
+        const errEl = document.getElementById('pinErrorMessage');
 
-    if (pinInput) {
-        pinInput.value = '';
-        pinInput.focus();
-    }
-    if (pinConfirmInput) pinConfirmInput.value = '';
-    if (errEl) errEl.style.display = 'none';
+        if (pinInput) {
+            pinInput.value = '';
+            pinInput.focus();
+        }
+        if (pinConfirmInput) pinConfirmInput.value = '';
+        if (errEl) errEl.style.display = 'none';
 
-    const name = AppState.user?.user_metadata?.full_name || AppState.user?.email || 'Usuario';
-    const pinHash = AppState.user?.user_metadata?.pin_hash;
+        const name = AppState.user?.user_metadata?.full_name || AppState.user?.email || 'Usuario';
+        const pinHash = AppState.user?.user_metadata?.pin_hash;
 
-    if (!pinHash) {
-        // Caso A: Primer acceso (Configurar PIN)
-        title.innerText = "🔒 Configura tu PIN";
-        desc.innerText = `¡Bienvenido, ${name}! Define tu código secreto de 4 a 6 dígitos para proteger tus datos.`;
-        if (pinConfirmGroup) pinConfirmGroup.style.display = 'block';
-    } else {
-        // Caso B: Usuario recurrente (Desbloqueo)
-        title.innerText = "🔒 Bloqueo de Seguridad";
-        desc.innerText = `Hola, ${name}. Ingresa tu código de acceso para continuar.`;
-        if (pinConfirmGroup) pinConfirmGroup.style.display = 'none';
+        if (title) {
+            title.innerText = !pinHash ? "🔒 Configura tu PIN" : "🔒 Bloqueo de Seguridad";
+        }
+        if (desc) {
+            desc.innerText = !pinHash 
+                ? `¡Bienvenido, ${name}! Define tu código secreto de 4 a 6 dígitos para proteger tus datos.`
+                : `Hola, ${name}. Ingresa tu código de acceso para continuar.`;
+        }
+        if (pinConfirmGroup) {
+            pinConfirmGroup.style.display = !pinHash ? 'block' : 'none';
+        }
+    } catch (e) {
+        console.error("Error in showPINLockScreen:", e);
+        alert("Error en pantalla de PIN: " + e.message + "\n" + e.stack);
     }
 }
 
