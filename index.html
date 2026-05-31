@@ -47,9 +47,12 @@
                 <span style="display: block; font-weight: 700; color: #1e293b;" id="blockedUserName">Cargando...</span>
                 <span style="display: block; color: #64748b; font-size: 0.8rem;" id="blockedUserEmail">Cargando...</span>
             </div>
+
+            <!-- Contenedor para feedback interactivo y visual de errores -->
+            <div id="blockedFeedbackMessage" style="display: none; padding: 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; margin-bottom: 20px; text-align: center; line-height: 1.4; border: 1px solid;"></div>
             
             <div style="display: flex; flex-direction: column; gap: 12px;">
-                <button class="btn-premium-toggle" onclick="window.showApp()" style="background: var(--primary); color: white; border-color: var(--primary); width: 100%; justify-content: center; padding: 12px 0; font-size: 0.9rem; font-weight: 700; box-shadow: 0 4px 15px rgba(140, 79, 230, 0.25);">
+                <button id="btnCheckAuth" class="btn-premium-toggle" onclick="window.showApp(true)" style="background: var(--primary); color: white; border-color: var(--primary); width: 100%; justify-content: center; padding: 12px 0; font-size: 0.9rem; font-weight: 700; box-shadow: 0 4px 15px rgba(140, 79, 230, 0.25);">
                     🔄 Comprobar Autorización
                 </button>
                 
@@ -2145,14 +2148,14 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.30
+            // EMERGENCY CACHE PURGE V4.50
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
                         const isAuthCallback = window.location.hash.includes('access_token') || window.location.hash.includes('error');
-                        if (!localStorage.getItem('sw_purged_4.30') && !isAuthCallback) {
+                        if (!localStorage.getItem('sw_purged_4.50') && !isAuthCallback) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.30', 'true');
+                            localStorage.setItem('sw_purged_4.50', 'true');
                             window.location.reload();
                         }
                     }
@@ -2162,7 +2165,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.49"></script>
+        <script src="app_core.js?v=4.50"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

@@ -374,7 +374,7 @@ async function hashPIN(pin) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function showApp() {
+async function showApp(isManualCheck = false) {
     try {
         if (!AppState.user) {
             showLogin();
@@ -395,6 +395,43 @@ async function showApp() {
             btnAdminPanel.style.display = isAdmin ? 'inline-flex' : 'none';
         }
 
+        // Obtener elementos de feedback del bloqueo
+        const btnCheckAuth = document.getElementById('btnCheckAuth');
+        const feedbackEl = document.getElementById('blockedFeedbackMessage');
+
+        if (isManualCheck) {
+            // 1. Forzar una actualización de Service Worker para verificar archivos nuevos
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for (const r of registrations) {
+                        r.update().catch(err => console.error("SW manual update error:", err));
+                    }
+                });
+            }
+
+            // 2. Mostrar estado visual de carga en el botón
+            if (btnCheckAuth) {
+                btnCheckAuth.disabled = true;
+                btnCheckAuth.innerHTML = "⏳ Verificando autorización...";
+                btnCheckAuth.style.opacity = "0.7";
+                btnCheckAuth.style.cursor = "not-allowed";
+            }
+
+            // Ocultar feedback anterior
+            if (feedbackEl) {
+                feedbackEl.style.display = 'none';
+            }
+        }
+
+        const restoreButtonState = () => {
+            if (btnCheckAuth) {
+                btnCheckAuth.disabled = false;
+                btnCheckAuth.innerHTML = "🔄 Comprobar Autorización";
+                btnCheckAuth.style.opacity = "1";
+                btnCheckAuth.style.cursor = "pointer";
+            }
+        };
+
         if (isAdmin) {
             // El administrador siempre tiene acceso directo y no es bloqueado
             const blockedScreen = document.getElementById('access-blocked-screen');
@@ -409,6 +446,16 @@ async function showApp() {
 
                 if (fetchError) {
                     console.error("Error al consultar control de acceso:", fetchError);
+                    if (feedbackEl) {
+                        feedbackEl.style.display = 'block';
+                        feedbackEl.style.background = '#fde8e8';
+                        feedbackEl.style.color = '#e74c3c';
+                        feedbackEl.style.borderColor = '#f8b4b4';
+                        feedbackEl.innerHTML = `❌ Error de red o base de datos: ${fetchError.message || 'Fallo de conexión'}`;
+                    }
+                    restoreButtonState();
+                    showAccessBlockedScreen(userName, userEmail);
+                    return;
                 }
 
                 // Priorizar el registro habilitado si hay duplicados por discrepancias de mayúsculas/minúsculas
@@ -431,14 +478,59 @@ async function showApp() {
 
                     if (insertError) {
                         console.error("Error al auto-registrar usuario:", insertError);
+                        
+                        // Si ya existe en la base de datos por conflicto de mayúsculas/minúsculas o RLS
+                        if (insertError.code === '23505' || (insertError.message && insertError.message.includes('unique'))) {
+                            if (feedbackEl) {
+                                feedbackEl.style.display = 'block';
+                                feedbackEl.style.background = '#fef3c7';
+                                feedbackEl.style.color = '#d97706';
+                                feedbackEl.style.borderColor = '#fcd34d';
+                                feedbackEl.innerHTML = `⚠️ Tu correo ya está pre-registrado en el sistema.<br><small style="font-size: 0.75rem; color: #78350f; display: block; margin-top: 4px;">Contacta al Administrador para que apruebe tu correo exacto.</small>`;
+                            }
+                        } else {
+                            if (feedbackEl) {
+                                feedbackEl.style.display = 'block';
+                                feedbackEl.style.background = '#fde8e8';
+                                feedbackEl.style.color = '#e74c3c';
+                                feedbackEl.style.borderColor = '#f8b4b4';
+                                feedbackEl.innerHTML = `❌ Error al enviar solicitud: ${insertError.message}`;
+                            }
+                        }
+                    } else {
+                        if (feedbackEl) {
+                            feedbackEl.style.display = 'block';
+                            feedbackEl.style.background = '#fef3c7';
+                            feedbackEl.style.color = '#d97706';
+                            feedbackEl.style.borderColor = '#fcd34d';
+                            feedbackEl.innerHTML = `⏳ Solicitud de acceso enviada al Administrador. Por favor, espera su aprobación.`;
+                        }
                     }
 
+                    restoreButtonState();
                     showAccessBlockedScreen(userName, userEmail);
                     return;
                 } else if (!record.acceso_permitido) {
+                    if (feedbackEl) {
+                        feedbackEl.style.display = 'block';
+                        feedbackEl.style.background = '#fef3c7';
+                        feedbackEl.style.color = '#d97706';
+                        feedbackEl.style.borderColor = '#fcd34d';
+                        feedbackEl.innerHTML = `⏳ Acceso en espera de aprobación. Comunícate con el Administrador para que te habilite.`;
+                    }
+                    restoreButtonState();
                     showAccessBlockedScreen(userName, userEmail);
                     return;
                 } else {
+                    // ¡Habilitado con éxito!
+                    if (feedbackEl) {
+                        feedbackEl.style.display = 'block';
+                        feedbackEl.style.background = '#d1fae5';
+                        feedbackEl.style.color = '#065f46';
+                        feedbackEl.style.borderColor = '#a7f3d0';
+                        feedbackEl.innerHTML = `✅ ¡Acceso aprobado! Cargando pantalla de PIN...`;
+                    }
+                    restoreButtonState();
                     const blockedScreen = document.getElementById('access-blocked-screen');
                     if (blockedScreen) blockedScreen.style.display = 'none';
                 }
