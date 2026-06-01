@@ -46,17 +46,74 @@ window.parseSpanishDate = function(val) {
 };
 
 window.formatDateInput = function(input) {
-    let v = input.value.replace(/\D/g, ''); // remove non-digits
-    if (v.length > 8) v = v.substring(0, 8);
+    let val = input.value;
+    let cursor = input.selectionStart;
     
-    // Auto-insert slashes
-    if (v.length > 4) {
-        input.value = v.substring(0, 2) + '/' + v.substring(2, 4) + '/' + v.substring(4);
-    } else if (v.length > 2) {
-        input.value = v.substring(0, 2) + '/' + v.substring(2);
-    } else {
-        input.value = v;
+    // We only allow digits and slashes
+    let cleanVal = val.replace(/[^0-9/]/g, '');
+    
+    // Split into parts by '/'
+    let parts = cleanVal.split('/');
+    
+    // If there are more than 3 parts, merge the extra ones
+    if (parts.length > 3) {
+        parts = [parts[0], parts[1], parts.slice(2).join('')];
     }
+    
+    // Clean and limit each part
+    if (parts[0] !== undefined) {
+        let d = parts[0].replace(/\D/g, '').substring(0, 2);
+        if (d.length === 2) {
+            let dVal = parseInt(d, 10);
+            if (dVal > 31) d = '31';
+            else if (dVal === 0) d = '01';
+        }
+        parts[0] = d;
+    }
+    
+    if (parts[1] !== undefined) {
+        let m = parts[1].replace(/\D/g, '').substring(0, 2);
+        if (m.length === 2) {
+            let mVal = parseInt(m, 10);
+            if (mVal > 12) m = '12';
+            else if (mVal === 0) m = '01';
+        }
+        parts[1] = m;
+    }
+    
+    if (parts[2] !== undefined) {
+        let y = parts[2].replace(/\D/g, '').substring(0, 4);
+        parts[2] = y;
+    }
+    
+    // Auto-advance/insert slashes as they type forward!
+    if (!input._lastVal) input._lastVal = "";
+    let isDeleting = val.length < input._lastVal.length;
+    
+    if (!isDeleting) {
+        if (parts[0] && parts[0].length === 2 && parts.length === 1) {
+            parts.push('');
+        }
+        if (parts[1] && parts[1].length === 2 && parts.length === 2) {
+            parts.push('');
+        }
+    }
+    
+    // Reconstruct newVal
+    let newVal = parts.join('/');
+    
+    if (newVal.length > 10) {
+        newVal = newVal.substring(0, 10);
+    }
+    
+    input.value = newVal;
+    input._lastVal = newVal;
+    
+    // Restore cursor position
+    if (newVal.length > val.length && newVal.charAt(cursor) === '/') {
+        cursor++;
+    }
+    input.setSelectionRange(cursor, cursor);
 };
 
 // --- SEDILE HRA V2.5 AUTH FIX - Build 20260128-1748 ---
