@@ -426,16 +426,7 @@ async function showApp(isManualCheck = false) {
             const feedbackEl = document.getElementById('blockedFeedbackMessage');
 
             if (isManualCheck) {
-                // 1. Forzar una actualización de Service Worker para verificar archivos nuevos
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.getRegistrations().then(registrations => {
-                        for (const r of registrations) {
-                            r.update().catch(err => console.error("SW manual update error:", err));
-                        }
-                    });
-                }
-
-                // 2. Mostrar estado visual de carga en el botón
+                // Mostrar estado visual de carga en el botón
                 if (btnCheckAuth) {
                     btnCheckAuth.disabled = true;
                     btnCheckAuth.innerHTML = "⏳ Verificando autorización...";

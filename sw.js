@@ -1,9 +1,9 @@
-const CACHE_NAME = 'sedile-hra-v4.3';
+const CACHE_NAME = 'sedile-hra-v4.5';
 const ASSETS = [
     './',
     './index.html',
     './style.css?v=3.43',
-    './app_core.js?v=4.54',
+    './app_core.js?v=4.56',
     './manifest.json',
     './logo.png',
     './libs/supabase.js',
@@ -35,6 +35,16 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+    // 1. ONLY intercept GET requests (ignore POST, PUT, DELETE, etc.)
+    if (e.request.method !== 'GET') {
+        return;
+    }
+
+    // 2. EXPLICITLY bypass cross-origin Supabase requests
+    if (e.request.url.includes('supabase.co') || e.request.url.includes('/rest/v1/')) {
+        return;
+    }
+
     e.respondWith(
         caches.match(e.request).then((response) => response || fetch(e.request))
     );
