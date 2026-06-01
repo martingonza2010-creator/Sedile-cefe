@@ -2545,6 +2545,9 @@ window.calculatePediatricAge = () => {
     if (months > 0 || years > 0) ageStr += `${months} mes${months !== 1 ? 'es' : ''}, `;
     ageStr += `${days} día${days !== 1 ? 's' : ''}`;
 
+    const d = String(birth.getDate()).padStart(2, '0');
+    const mm = String(birth.getMonth() + 1).padStart(2, '0');
+    const y = birth.getFullYear();
     const formattedDate = `${d}/${mm}/${y}`;
     document.getElementById('lblExactAge').innerHTML = `<span style="font-weight:700; color:#2c3e50;">F. Nacimiento: ${formattedDate}</span> | ${ageStr}`;
 
