@@ -206,22 +206,25 @@ let macroGoalMode = 'gkg'; // Global macro mode initialized
 let goalChartInstance = null; // Global chart instance
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("ðŸš€ SEDILE HRA: DOMContentLoaded initialized");
+    console.log("🚀 SEDILE HRA: DOMContentLoaded initialized");
 
     // --- AUTH REFACTOR V4.30 (Centralized) ---
-    supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        console.log("ðŸ”‘ Auth Event:", event);
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        console.log("🔑 Auth Event:", event);
         if (session) {
             AppState.user = session.user;
-            await showApp();
+            // Defer execution using setTimeout to break the call stack and avoid Supabase auth lock deadlock
+            setTimeout(() => showApp(), 0);
         } else if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
-            const { data } = await supabaseClient.auth.getSession();
-            if (data.session) {
-                AppState.user = data.session.user;
-                await showApp();
-            } else {
-                showLogin();
-            }
+            setTimeout(async () => {
+                const { data } = await supabaseClient.auth.getSession();
+                if (data.session) {
+                    AppState.user = data.session.user;
+                    showApp();
+                } else {
+                    showLogin();
+                }
+            }, 0);
         }
     });
 
