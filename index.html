@@ -907,17 +907,27 @@
                             </div>
                         </div>
 
-                        <div class="grid-col-2" style="position:relative;">
-                            <div class="input-group">
+                        <div id="simulationVolumeRow" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                            <!-- Volumen (ml) Input -->
+                            <div class="input-group" style="flex: 1; min-width: 100px; margin-bottom: 0;">
                                 <label id="lblVolume">Volumen (ml)</label>
                                 <input type="number" id="volume" placeholder="ml">
                             </div>
-                            <div class="input-group" id="dilutionWrapper">
+                            <!-- Veces (x) Input - Visible only for pediatric / neonate -->
+                            <div class="input-group" id="volumeTimesWrapper" style="flex: 0 0 80px; display: none; margin-bottom: 0;">
+                                <label>Veces (x)</label>
+                                <input type="number" id="volumeTimes" min="1" max="8" value="1" placeholder="1-8" oninput="window.updateVolumeTotal && window.updateVolumeTotal()">
+                            </div>
+                            <!-- Volumen Total Display - Visible only for pediatric / neonate -->
+                            <div class="input-group" id="volumeTotalDisplayWrapper" style="flex: 1; min-width: 90px; display: none; margin-bottom: 0;">
+                                <label>Vol. Total (ml)</label>
+                                <div id="volumeTotalDisplay" style="height: 38px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; font-weight: 800; color: #2c3e50; font-size: 0.95rem;">0 ml</div>
+                            </div>
+                            <!-- Dilución (%) Input -->
+                            <div class="input-group" id="dilutionWrapper" style="flex: 1; min-width: 100px; margin-bottom: 0;">
                                 <label id="lblDilution">Dilución (%)</label>
                                 <input type="number" id="dilution" placeholder="%">
                             </div>
-
-
                         </div>
 
                         <!-- NEW V3.95: Fortificante Neonatal (FM85) -->
@@ -2165,7 +2175,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.61"></script>
+        <script src="app_core.js?v=4.62"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

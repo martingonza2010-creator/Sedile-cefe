@@ -1005,6 +1005,7 @@ function initCompactLayout() {
                     simulator: {
                         formula: document.getElementById('formulaSelect')?.value || "",
                         volume: document.getElementById('volume')?.value || "",
+                        volume_times: document.getElementById('volumeTimes')?.value || "1",
                         dilution: document.getElementById('dilution')?.value || "",
                         goal_total: tmt,
                         macro_mode: macroGoalMode || 'gkg',
@@ -2061,6 +2062,7 @@ window.loadPatient = async (id) => {
                 renderFormulaInputs(formulaObj);
             }
             if (sim.volume) document.getElementById('volume').value = sim.volume;
+            if (sim.volume_times) document.getElementById('volumeTimes').value = sim.volume_times;
             if (sim.dilution) document.getElementById('dilution').value = sim.dilution;
             
             if (sim.modules) {
@@ -2525,6 +2527,23 @@ window.togglePatientMode = () => {
         if (ascitesGrade) ascitesGrade.value = '0';
         window.updateDryWeight();
     }
+
+    // Show/hide and reset frequency inputs for pediatric / neonate
+    const timesWrapper = document.getElementById('volumeTimesWrapper');
+    const totalWrapper = document.getElementById('volumeTotalDisplayWrapper');
+    if (timesWrapper && totalWrapper) {
+        if (mode === 'pediatric' || mode === 'neonate') {
+            timesWrapper.style.display = 'block';
+            totalWrapper.style.display = 'block';
+        } else {
+            timesWrapper.style.display = 'none';
+            totalWrapper.style.display = 'none';
+            // Reset to 1 for adults to prevent calculation issues
+            const timesInp = document.getElementById('volumeTimes');
+            if (timesInp) timesInp.value = '1';
+        }
+    }
+    window.updateVolumeTotal && window.updateVolumeTotal();
 
     document.getElementById('pediatricAssessmentResults').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
 
@@ -3368,14 +3387,61 @@ window.updateSelectedGET = () => {
 };
 
 // --- 8. SIMULATOR LOGIC ---
+// --- NEW V5.00: Neonatal & Pediatric Volume Frequency (Times) Helpers ---
+window.getEffectiveSimulationVolume = () => {
+    const rawVol = parseFloat(document.getElementById('volume')?.value) || 0;
+    const mode = document.querySelector('input[name="patientType"]:checked')?.value || 'adult';
+    let times = 1;
+    if (mode === 'pediatric' || mode === 'neonate') {
+        const tInp = document.getElementById('volumeTimes');
+        times = tInp ? parseFloat(tInp.value) : 1;
+        if (isNaN(times) || times < 1) times = 1;
+        if (times > 8) {
+            times = 8;
+            if (tInp) tInp.value = 8;
+        }
+    }
+    return rawVol * times;
+};
+
+window.updateVolumeTotal = () => {
+    const totalVolume = window.getEffectiveSimulationVolume();
+    const totalDisplay = document.getElementById('volumeTotalDisplay');
+    if (totalDisplay) {
+        totalDisplay.innerText = `${Math.round(totalVolume)} ml`;
+    }
+    return totalVolume;
+};
+
 function initSimulatorLogic() {
     const vol = document.getElementById('volume');
     const dil = document.getElementById('dilution');
     const btnSave = document.getElementById('btnSaveHistory');
+    const timesInp = document.getElementById('volumeTimes');
 
-    if (vol) vol.oninput = runSimulation;
+    if (vol) {
+        vol.oninput = () => {
+            window.updateVolumeTotal();
+            runSimulation();
+        };
+    }
     if (dil) dil.oninput = runSimulation;
     if (btnSave) btnSave.onclick = savePrescription;
+
+    if (timesInp) {
+        timesInp.addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value);
+            if (val > 8) e.target.value = 8;
+            window.updateVolumeTotal();
+            runSimulation();
+        });
+        timesInp.addEventListener('blur', (e) => {
+            let val = parseFloat(e.target.value);
+            if (isNaN(val) || val < 1) e.target.value = 1;
+            window.updateVolumeTotal();
+            runSimulation();
+        });
+    }
 
     // Trigger update on any module/oral/iv input change
     document.querySelectorAll('.input-module, .input-oral, .input-iv, #ivType').forEach(inp => {
@@ -3562,7 +3628,7 @@ function renderMinerals() {
         return;
     }
 
-    const v1 = parseFloat(document.getElementById('volume').value) || 0;
+    const v1 = window.getEffectiveSimulationVolume();
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
     const dilBInput = document.getElementById('dilutionB');
     const v2B = dilBInput && dilBInput.value !== "" ? parseFloat(dilBInput.value) : v2;
@@ -3722,7 +3788,7 @@ function updateOralIntakeSlider() {
 function runSimulation() {
     const isCustomMix = document.getElementById('customMixContainer') && document.getElementById('customMixContainer').style.display === 'block';
 
-    const v1 = parseFloat(document.getElementById('volume').value) || 0;
+    const v1 = window.getEffectiveSimulationVolume();
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
     const dilBInput = document.getElementById('dilutionB');
     const v2B = dilBInput && dilBInput.value !== "" ? parseFloat(dilBInput.value) : v2;
@@ -4110,7 +4176,7 @@ function initInfusionLogic() {
     // Bind inputs to global scope since we referenced it inline
     window.calcInfusion = function () {
         // We listen to the main prescribed volume! 
-        const totalVolPrescrito = parseFloat(document.getElementById('volume').value) || 0;
+        const totalVolPrescrito = window.getEffectiveSimulationVolume();
         const rate = parseFloat(document.getElementById('infusionRate').value) || 0;
         const sachetStartStr = document.getElementById('infusionStart')?.value;
         const selectedRthId = document.getElementById('infusionRTHSelect')?.value;
@@ -4339,7 +4405,7 @@ function resetPatientForm() {
 
 function calcHydration() {
     const p = AppState.patient;
-    const vol = parseFloat(document.getElementById('volume')?.value) || 0;
+    const vol = window.getEffectiveSimulationVolume();
     const dil = (parseFloat(document.getElementById('dilution')?.value) || 100) / 100;
     let realVol = vol * dil; // Effective volume from formula
 
@@ -4629,7 +4695,7 @@ function updateCompareResults(k1, p1, c1, l1) {
         return;
     }
 
-    const v1 = parseFloat(document.getElementById('volume').value) || 0;
+    const v1 = window.getEffectiveSimulationVolume();
     const v2 = parseFloat(document.getElementById('dilution').value) || 0;
     const dilBInput = document.getElementById('dilutionB');
     const v2B = dilBInput && dilBInput.value !== "" ? parseFloat(dilBInput.value) : v2;
@@ -5324,7 +5390,7 @@ function initGlobalEvents() {
 
         const fId = document.getElementById('formulaSelect')?.value;
         const formula = AppState.formulas ? AppState.formulas.find(f => f.id === fId) : null;
-        const vol = parseFloat(document.getElementById('volume')?.value) || 0;
+        const vol = window.getEffectiveSimulationVolume();
         const goal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
 
         let pTotal = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
@@ -5349,7 +5415,20 @@ function initGlobalEvents() {
         const sctVal = document.getElementById('valSCT')?.innerText || '-- mÂ²';
 
         const isBotellin = formula && formula.isBotellin;
-        const volText = isBotellin ? `${vol} Unidad(es) (${vol * formula.volUnit} ml totales)` : `${vol} ml`;
+        const rawVol = parseFloat(document.getElementById('volume')?.value) || 0;
+        const mode = AppState.patient.type || 'adult';
+        let volText = "";
+        if (mode === 'pediatric' || mode === 'neonate') {
+            const tInp = document.getElementById('volumeTimes');
+            const times = tInp ? parseInt(tInp.value) || 1 : 1;
+            if (times > 1) {
+                volText = `${rawVol} ml x ${times} veces (${rawVol * times} ml totales)`;
+            } else {
+                volText = `${rawVol} ml`;
+            }
+        } else {
+            volText = isBotellin ? `${vol} Unidad(es) (${vol * formula.volUnit} ml totales)` : `${vol} ml`;
+        }
 
         // Build ADIME Text
         const adimeText = `A - ANTROPOMETRÍA Y REQUERIMIENTOS:
