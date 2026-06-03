@@ -2164,13 +2164,22 @@ function calculateRequirements() {
     p.nombre = nombreEl.value;
     p.edad = parseFloat(edadEl.value) || 0;
     p.peso = parseFloat(pesoEl.value) || 0;
-    p.estatura = parseFloat(estaturaEl.value) || 0;
+    
+    // Normalize height/estatura: if entered in cm (e.g. > 3), convert to meters
+    const rawEst = parseFloat(estaturaEl.value) || 0;
+    p.estatura = rawEst > 3 ? rawEst / 100 : rawEst;
+    
     p.actividad = parseFloat(actividadEl.value) || 1.0;
     p.estres = parseFloat(estresEl?.value) || 1.0;
     p.sexo = sexoEl.value; // Store in AppState
     const sexo = p.sexo;
 
     p.type = document.querySelector('input[name="patientType"]:checked')?.value || 'adult';
+
+    // Freshly calculate BMI so Z-scores use the updated value immediately
+    if (p.peso > 0 && p.estatura > 0) {
+        p.bmi = p.peso / (p.estatura * p.estatura);
+    }
 
     // Pediatric Z-Score Execution Engine
     renderPediatricZScores();
@@ -3829,7 +3838,9 @@ function runSimulation() {
     animateValue("valLip", l.toFixed(1));
     animateValue("simCurrent", Math.round(k));
 
-    const goal = parseFloat(document.getElementById('goalTotal').value) || 2000;
+    const adeqMode = AppState.adequacyMode || 'goal';
+    const theoreticalGET = AppState.patient?.tmt || AppState.patient?.tmt_calculated || parseFloat(document.getElementById('valGET')?.innerText) || 2000;
+    const goal = (adeqMode === 'get') ? theoreticalGET : (parseFloat(document.getElementById('goalTotal').value) || theoreticalGET);
     document.getElementById('simBar').style.width = Math.min((k / goal) * 100, 100) + '%';
 
     // Animation: Stacked Bar (New)
@@ -3874,8 +3885,8 @@ function runSimulation() {
     const goalC = elC ? (parseFloat(elC.dataset.val) || 0) : 0;
     const goalL = elL ? (parseFloat(elL.dataset.val) || 0) : 0;
 
-    // Use AppState.officialGET for kcal goal
-    const officialKcalGoal = AppState.officialGET || parseFloat(document.getElementById('goalTotal').value) || 2000;
+    // Use selected adequacyMode (META vs GET)
+    const officialKcalGoal = goal;
 
     if (adeqCard) {
         // Redefined V4.27: Card is permanent. Values calculated if goals exist.
@@ -4854,6 +4865,7 @@ function initAssessmentLogic() {
 
         window.updatePrescriptionStrategy();
         updateMacroGoals();
+        runSimulation();
     };
 
     // --- NEW V4.23: Real-time Strategic Feedback (Intake vs Requirement) ---
@@ -5544,10 +5556,11 @@ function calcTMB_OMS() {
         }
     } else if (method === 'hb') {
         // Harris-Benedict (Original 1919 Clásica)
+        const heightCm = height > 3 ? height : height * 100;
         if (sexo === 'm') {
-            tmb = 66.47 + (13.75 * weight) + (5.0 * height) - (6.75 * age);
+            tmb = 66.47 + (13.75 * weight) + (5.0 * heightCm) - (6.75 * age);
         } else {
-            tmb = 655.09 + (9.56 * weight) + (1.84 * height) - (4.67 * age);
+            tmb = 655.09 + (9.56 * weight) + (1.84 * heightCm) - (4.67 * age);
         }
     } else if (method === 'schofield') {
         if (sexo === 'm') {
@@ -6236,7 +6249,9 @@ window.updateAdvancedNPT = (trigger) => {
         statusEl.style.background = osm > 800 ? "#e74c3c" : "#27ae60";
     }
     const entId = document.getElementById('advEnteralProduct').value;
-    const reqKcal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
+    const adeqMode = AppState.adequacyMode || 'goal';
+    const theoreticalGET = AppState.patient?.tmt || AppState.patient?.tmt_calculated || parseFloat(document.getElementById('valGET')?.innerText) || 2000;
+    const reqKcal = (adeqMode === 'get') ? theoreticalGET : (parseFloat(document.getElementById('goalTotal')?.value) || theoreticalGET);
     let entVolInput = document.getElementById('advEnteralVol');
     let entPctInput = document.getElementById('advEnteralPct');
     let entVol = parseFloat(entVolInput?.value) || 0;
@@ -6701,7 +6716,10 @@ window.showCurve = function(type) {
     
     // Data extraction
     const peso = parseFloat(document.getElementById('peso').value) || 0;
-    const talla = parseFloat(document.getElementById('estatura').value) || 0; // en cm
+    let talla = parseFloat(document.getElementById('estatura').value) || 0; // en cm (could be entered in meters)
+    if (talla > 0 && talla <= 3) {
+        talla = talla * 100;
+    }
     const pc = parseFloat(document.getElementById('pcefalico').value) || 0;
     const sexo = document.getElementById('sexo').value || 'f';
     
