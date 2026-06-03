@@ -2531,13 +2531,30 @@ window.togglePatientMode = () => {
     // Show/hide and reset frequency inputs for pediatric / neonate
     const timesWrapper = document.getElementById('volumeTimesWrapper');
     const totalWrapper = document.getElementById('volumeTotalDisplayWrapper');
+    const timesOp = document.getElementById('volumeTimesOperator');
+    const totalOp = document.getElementById('volumeTotalOperator');
+    const dilutionWrap = document.getElementById('dilutionWrapper');
     if (timesWrapper && totalWrapper) {
         if (mode === 'pediatric' || mode === 'neonate') {
             timesWrapper.style.display = 'block';
             totalWrapper.style.display = 'block';
+            if (timesOp) timesOp.style.display = 'flex';
+            if (totalOp) totalOp.style.display = 'flex';
+            if (dilutionWrap) {
+                dilutionWrap.style.flex = '1 1 100%';
+                dilutionWrap.style.maxWidth = '250px';
+                dilutionWrap.style.marginTop = '10px';
+            }
         } else {
             timesWrapper.style.display = 'none';
             totalWrapper.style.display = 'none';
+            if (timesOp) timesOp.style.display = 'none';
+            if (totalOp) totalOp.style.display = 'none';
+            if (dilutionWrap) {
+                dilutionWrap.style.flex = '1';
+                dilutionWrap.style.maxWidth = '';
+                dilutionWrap.style.marginTop = '0';
+            }
             // Reset to 1 for adults to prevent calculation issues
             const timesInp = document.getElementById('volumeTimes');
             if (timesInp) timesInp.value = '1';
