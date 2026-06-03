@@ -2511,6 +2511,21 @@ window.togglePatientMode = () => {
     const rowSpec = document.getElementById('rowSpecialPopulations');
     if (rowSpec) rowSpec.style.display = mode === 'pediatric' ? 'flex' : 'none';
 
+    // Hide edema panel drop button for Neonates
+    const btnEdemaDrop = document.getElementById('btnEdemaDrop');
+    const edemaPanel = document.getElementById('edemaPanel');
+    if (btnEdemaDrop) {
+        btnEdemaDrop.style.display = mode === 'neonate' ? 'none' : 'inline';
+    }
+    if (mode === 'neonate') {
+        if (edemaPanel) edemaPanel.style.display = 'none';
+        const edemaGrade = document.getElementById('edemaGrade');
+        const ascitesGrade = document.getElementById('ascitesGrade');
+        if (edemaGrade) edemaGrade.value = '0';
+        if (ascitesGrade) ascitesGrade.value = '0';
+        window.updateDryWeight();
+    }
+
     document.getElementById('pediatricAssessmentResults').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
 
     const iwRow = document.getElementById('valIdealWeight')?.parentElement?.parentElement;
@@ -2615,6 +2630,17 @@ window.calculatePediatricAge = () => {
     const mm = String(birth.getMonth() + 1).padStart(2, '0');
     const y = birth.getFullYear();
     const formattedDate = `${d}/${mm}/${y}`;
+    
+    if (AppState.patient.type === 'neonate') {
+        const semNac = parseInt(document.getElementById('egSemanas').value) || 0;
+        const diasNac = parseInt(document.getElementById('egDias').value) || 0;
+        const totalDaysChrono = Math.floor(Math.abs(now - birth) / (1000 * 60 * 60 * 24));
+        const totalDays = (semNac * 7) + diasNac + totalDaysChrono;
+        const semCorr = Math.floor(totalDays / 7);
+        const diasCorr = totalDays % 7;
+        ageStr += ` | <span style="color:#e74c3c; font-weight:700;">EG Corregida: ${semCorr} sem + ${diasCorr} d</span>`;
+    }
+    
     document.getElementById('lblExactAge').innerHTML = `<span style="font-weight:700; color:#2c3e50;">F. Nacimiento: ${formattedDate}</span> | ${ageStr}`;
 
     let evalMonths = totalMonths;
@@ -2981,8 +3007,23 @@ function renderPediatricZScores() {
     let ccBadge = window.evaluateWaist ? window.evaluateWaist(makeBadge) : '';
 
     if (p.type === 'neonate') {
-        const sem = parseInt(document.getElementById('egSemanas').value) || 0;
-        const dias = parseInt(document.getElementById('egDias').value) || 0;
+        const semNac = parseInt(document.getElementById('egSemanas').value) || 0;
+        const diasNac = parseInt(document.getElementById('egDias').value) || 0;
+        
+        let agePostnatalDays = 0;
+        const fn = document.getElementById('fechaNacimiento').value;
+        const birth = parseSpanishDate(fn);
+        if (birth) {
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            agePostnatalDays = Math.floor(Math.abs(now - birth) / (1000 * 60 * 60 * 24));
+        }
+        
+        const totalDays = (semNac * 7) + diasNac + agePostnatalDays;
+        let sem = Math.floor(totalDays / 7);
+        if (sem < 24) sem = 24;
+        if (sem > 42) sem = 42;
+        
         const wGrams = p.peso * 1000;
         const cm = p.estatura > 3 ? p.estatura : p.estatura * 100;
 
