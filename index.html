@@ -12,6 +12,54 @@
     <script src="libs/chart.js"></script>
     <link rel="stylesheet" href="style.css?v=3.43">
     <link rel="manifest" href="manifest.json">
+    <style>
+        #simulationVolumeRow.adult-mode {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 15px !important;
+        }
+        #simulationVolumeRow.adult-mode #volumeWrapper {
+            flex: 1 !important;
+            min-width: 140px !important;
+        }
+        #simulationVolumeRow.adult-mode #dilutionWrapper {
+            flex: 1 !important;
+            min-width: 140px !important;
+            margin-top: 0 !important;
+            max-width: none !important;
+        }
+        
+        #simulationVolumeRow.pediatric-mode {
+            display: grid !important;
+            grid-template-columns: 1.2fr auto 80px auto 1.4fr !important;
+            gap: 15px 12px !important;
+            align-items: flex-start !important;
+        }
+        #simulationVolumeRow.pediatric-mode #volumeWrapper {
+            grid-column: 1 !important;
+        }
+        #simulationVolumeRow.pediatric-mode #volumeTimesOperator {
+            grid-column: 2 !important;
+            display: flex !important;
+        }
+        #simulationVolumeRow.pediatric-mode #volumeTimesWrapper {
+            grid-column: 3 !important;
+            display: block !important;
+        }
+        #simulationVolumeRow.pediatric-mode #volumeTotalOperator {
+            grid-column: 4 !important;
+            display: flex !important;
+        }
+        #simulationVolumeRow.pediatric-mode #volumeTotalDisplayWrapper {
+            grid-column: 5 !important;
+            display: block !important;
+        }
+        #simulationVolumeRow.pediatric-mode #dilutionWrapper {
+            grid-column: 1 !important;
+            grid-row: 2 !important;
+            max-width: 100% !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -907,30 +955,36 @@
                             </div>
                         </div>
 
-                        <div id="simulationVolumeRow" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: flex-start;">
+                        <div id="simulationVolumeRow" class="adult-mode" style="margin-bottom: 15px;">
                             <!-- Volumen (ml) Input -->
-                            <div class="input-group" id="volumeWrapper" style="flex: 1; min-width: 100px; margin-bottom: 0;">
+                            <div class="input-group" id="volumeWrapper" style="margin-bottom: 0;">
                                 <label id="lblVolume">Volumen (ml)</label>
-                                <input type="number" id="volume" placeholder="ml">
+                                <input type="number" id="volume" placeholder="ml" style="height: 40px !important; padding: 8px 12px !important; border-radius: 12px !important; border: 2px solid rgba(44, 62, 80, 0.08) !important; box-sizing: border-box !important;">
                             </div>
                             <!-- Multiply Operator (×) -->
-                            <div id="volumeTimesOperator" style="display: none; align-items: center; justify-content: center; height: 38px; margin-top: 20px; font-size: 1.2rem; font-weight: 700; color: #a0aec0; user-select: none; padding: 0 2px;">×</div>
+                            <div id="volumeTimesOperator" style="display: none; flex-direction: column; align-items: center; justify-content: flex-start; user-select: none;">
+                                <span style="font-size: 0.8rem; margin-bottom: 5px; opacity: 0; display: block;">&nbsp;</span>
+                                <div style="height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: #a0aec0;">×</div>
+                            </div>
                             <!-- Veces (x) Input - Visible only for pediatric / neonate -->
-                            <div class="input-group" id="volumeTimesWrapper" style="flex: 0 0 80px; display: none; margin-bottom: 0;">
+                            <div class="input-group" id="volumeTimesWrapper" style="margin-bottom: 0;">
                                 <label>Veces (x)</label>
-                                <input type="number" id="volumeTimes" min="1" max="8" value="1" placeholder="1-8" oninput="window.updateVolumeTotal && window.updateVolumeTotal()">
+                                <input type="number" id="volumeTimes" min="1" max="8" value="1" placeholder="1-8" oninput="window.updateVolumeTotal && window.updateVolumeTotal()" style="height: 40px !important; padding: 8px 12px !important; border-radius: 12px !important; border: 2px solid rgba(44, 62, 80, 0.08) !important; text-align: center; box-sizing: border-box !important;">
                             </div>
                             <!-- Equals Operator (=) -->
-                            <div id="volumeTotalOperator" style="display: none; align-items: center; justify-content: center; height: 38px; margin-top: 20px; font-size: 1.2rem; font-weight: 700; color: #a0aec0; user-select: none; padding: 0 2px;">=</div>
+                            <div id="volumeTotalOperator" style="display: none; flex-direction: column; align-items: center; justify-content: flex-start; user-select: none;">
+                                <span style="font-size: 0.8rem; margin-bottom: 5px; opacity: 0; display: block;">&nbsp;</span>
+                                <div style="height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: #a0aec0;">=</div>
+                            </div>
                             <!-- Volumen Total Display - Visible only for pediatric / neonate -->
-                            <div class="input-group" id="volumeTotalDisplayWrapper" style="flex: 1.2; min-width: 100px; display: none; margin-bottom: 0;">
+                            <div class="input-group" id="volumeTotalDisplayWrapper" style="margin-bottom: 0;">
                                 <label>Vol. Total (ml)</label>
-                                <div id="volumeTotalDisplay" style="height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f5f3ff, #ede9fe); border: 1.5px solid #c084fc; border-radius: 8px; font-weight: 800; color: #6b21a8; font-size: 0.95rem; box-shadow: 0 2px 4px rgba(107,33,168,0.05);">0 ml</div>
+                                <div id="volumeTotalDisplay" style="height: 40px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f5f3ff, #ede9fe); border: 2px solid #c084fc !important; border-radius: 12px !important; font-weight: 800; color: #6b21a8; font-size: 0.95rem; box-shadow: 0 2px 4px rgba(107,33,168,0.05); box-sizing: border-box;">0 ml</div>
                             </div>
                             <!-- Dilución (%) Input -->
-                            <div class="input-group" id="dilutionWrapper" style="flex: 1; min-width: 100px; margin-bottom: 0; transition: all 0.2s ease;">
+                            <div class="input-group" id="dilutionWrapper" style="margin-bottom: 0; transition: all 0.2s ease;">
                                 <label id="lblDilution">Dilución (%)</label>
-                                <input type="number" id="dilution" placeholder="%">
+                                <input type="number" id="dilution" placeholder="%" style="height: 40px !important; padding: 8px 12px !important; border-radius: 12px !important; border: 2px solid rgba(44, 62, 80, 0.08) !important; box-sizing: border-box !important;">
                             </div>
                         </div>
 
@@ -2179,7 +2233,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.63"></script>
+        <script src="app_core.js?v=4.64"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
