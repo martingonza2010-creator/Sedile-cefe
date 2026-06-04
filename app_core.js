@@ -4628,6 +4628,57 @@ function attachSearch(inputId, selectId) {
 // --- 13.1 Update Formula Select (V3.62) ---
 // Removing inline version of this hook, we already have updateFormulaSelect and updateFormulaSelect2
 
+// --- 13.9 Custom Floating Tooltip (NEW) ---
+function showExternalTooltip(context) {
+    const { chart, tooltip } = context;
+    let tooltipEl = document.getElementById('chartjs-external-tooltip');
+    
+    if (!tooltipEl) {
+        tooltipEl = document.createElement('div');
+        tooltipEl.id = 'chartjs-external-tooltip';
+        tooltipEl.style.background = 'rgba(15, 23, 42, 0.95)';
+        tooltipEl.style.borderRadius = '8px';
+        tooltipEl.style.color = 'white';
+        tooltipEl.style.opacity = 0;
+        tooltipEl.style.pointerEvents = 'none';
+        tooltipEl.style.position = 'absolute';
+        tooltipEl.style.transform = 'translate(-50%, -100%)';
+        tooltipEl.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+        tooltipEl.style.padding = '8px 12px';
+        tooltipEl.style.fontSize = '11px';
+        tooltipEl.style.fontFamily = 'Inter, sans-serif';
+        tooltipEl.style.zIndex = '999999';
+        tooltipEl.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)';
+        tooltipEl.style.whiteSpace = 'nowrap';
+        document.body.appendChild(tooltipEl);
+    }
+    
+    if (tooltip.opacity === 0) {
+        tooltipEl.style.opacity = 0;
+        return;
+    }
+    
+    if (tooltip.body) {
+        const bodyLines = tooltip.body.map(b => b.lines);
+        let innerHtml = '';
+        
+        bodyLines.forEach((body, i) => {
+            const colors = tooltip.labelColors[i];
+            const color = colors ? colors.backgroundColor : '#333';
+            const text = Array.isArray(body) ? body.join(', ') : body;
+            const indicator = `<span style="display:inline-block; width:8px; height:8px; background:${color}; border-radius:50%; margin-right:6px;"></span>`;
+            innerHtml += `<div style="display:flex; align-items:center; font-weight:600; font-size:11px;">${indicator}${text}</div>`;
+        });
+        
+        tooltipEl.innerHTML = innerHtml;
+    }
+    
+    const rect = chart.canvas.getBoundingClientRect();
+    tooltipEl.style.opacity = 1;
+    tooltipEl.style.left = (rect.left + window.pageXOffset + tooltip.caretX) + 'px';
+    tooltipEl.style.top = (rect.top + window.pageYOffset + tooltip.caretY - 8) + 'px';
+}
+
 // --- 14. CHART LOGIC (NEW) ---
 function initChartSim() {
     const ctx = document.getElementById('macroChart')?.getContext('2d');
@@ -4659,11 +4710,8 @@ function initChartSim() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    enabled: true,
-                    padding: 5,
-                    titleFont: { size: 10, weight: 'bold' },
-                    bodyFont: { size: 10 },
-                    cornerRadius: 6,
+                    enabled: false,
+                    external: showExternalTooltip,
                     callbacks: {
                         label: function (context) {
                             let label = context.label || '';
@@ -6056,11 +6104,8 @@ function initGoalMacroChart() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    enabled: true,
-                    padding: 5,
-                    titleFont: { size: 10, weight: 'bold' },
-                    bodyFont: { size: 10 },
-                    cornerRadius: 6,
+                    enabled: false,
+                    external: showExternalTooltip,
                     callbacks: {
                         label: (ctx) => ` ${ctx.label}: ${Math.round(ctx.raw)} kcal`
                     }

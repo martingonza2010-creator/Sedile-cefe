@@ -1,9 +1,9 @@
-const CACHE_NAME = 'sedile-hra-v5.4';
+const CACHE_NAME = 'sedile-hra-v5.5';
 const ASSETS = [
     './',
     './index.html',
     './style.css?v=3.43',
-    './app_core.js?v=4.65',
+    './app_core.js?v=4.66',
     './manifest.json',
     './logo.png',
     './libs/supabase.js',
