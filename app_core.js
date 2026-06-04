@@ -3312,18 +3312,18 @@ function renderPediatricZScores() {
     let vColor = '#7f8c8d';
     
     if (p.peso > 0 && pesoAnterior > 0 && diasMedicion > 0) {
-        velGrowth = (1000 * Math.log(p.peso / pesoAnterior)) / diasMedicion;
+        velGrowth = ((p.peso - pesoAnterior) * 1000) / diasMedicion;
         if (velGrowth < 0) vColor = '#c0392b';
         else if (velGrowth < 15) vColor = '#d35400';
-        else if (velGrowth <= 20) vColor = '#16a085';
+        else if (velGrowth <= 30) vColor = '#16a085';
         else vColor = '#2980b9';
         
-        html += makeBadge('Vel. Crecimiento', null, `${velGrowth.toFixed(1)} g/kg/d`, vColor);
+        html += makeBadge('Vel. Crecimiento', null, `${velGrowth.toFixed(1)} g/d`, vColor);
     }
     
     if (valGrowthEl && resultBoxEl) {
         if (velGrowth !== null) {
-            valGrowthEl.innerText = `${velGrowth.toFixed(1)} g/kg/d`;
+            valGrowthEl.innerText = `${velGrowth.toFixed(1)} g/d`;
             
             // Premium non-offensive eye-friendly pastel colors for the dashboard panel
             if (velGrowth < 0) {
@@ -3334,7 +3334,7 @@ function renderPediatricZScores() {
                 resultBoxEl.style.background = '#fef9e7'; // Soft yellow/orange
                 resultBoxEl.style.borderColor = '#f9e79f';
                 valGrowthEl.style.color = '#d35400';
-            } else if (velGrowth <= 20) {
+            } else if (velGrowth <= 30) {
                 resultBoxEl.style.background = '#e8f8f5'; // Soft green mint
                 resultBoxEl.style.borderColor = '#a3e4d7';
                 valGrowthEl.style.color = '#16a085';
@@ -3344,7 +3344,7 @@ function renderPediatricZScores() {
                 valGrowthEl.style.color = '#2980b9';
             }
         } else {
-            valGrowthEl.innerText = '-- g/kg/d';
+            valGrowthEl.innerText = '-- g/d';
             resultBoxEl.style.background = 'rgba(255,255,255,0.75)';
             resultBoxEl.style.borderColor = '#a3e4d7';
             valGrowthEl.style.color = '#7f8c8d';
