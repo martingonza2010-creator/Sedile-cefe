@@ -3300,9 +3300,10 @@ function renderPediatricZScores() {
         }
     }
 
-    // NEW V3.95: Growth Velocity (g/kg/day) - Patel Formula
+    // NEW V3.95: Growth Velocity (g/kg/day) - Patel Formula / Net Growth
     const pesoAnterior = parseFloat(document.getElementById('pesoAnterior')?.value) || 0;
     const diasMedicion = parseFloat(document.getElementById('diasMedicion')?.value) || 0;
+    const method = document.getElementById('growthVelocityMethod')?.value || 'net';
     
     // Explicit growth velocity calculator updating
     const valGrowthEl = document.getElementById('valGrowthVelocity');
@@ -3310,31 +3311,40 @@ function renderPediatricZScores() {
     
     let velGrowth = null;
     let vColor = '#7f8c8d';
+    const unitStr = method === 'net' ? 'g/d' : 'g/kg/d';
+    const limitLow = method === 'net' ? 20 : 15;
+    const limitHigh = method === 'net' ? 30 : 20;
     
     if (p.peso > 0 && pesoAnterior > 0 && diasMedicion > 0) {
-        velGrowth = ((p.peso - pesoAnterior) * 1000) / diasMedicion;
+        if (method === 'net') {
+            velGrowth = ((p.peso - pesoAnterior) * 1000) / diasMedicion;
+        } else {
+            velGrowth = (1000 * Math.log(p.peso / pesoAnterior)) / diasMedicion;
+        }
+        
         if (velGrowth < 0) vColor = '#c0392b';
-        else if (velGrowth < 15) vColor = '#d35400';
-        else if (velGrowth <= 30) vColor = '#16a085';
+        else if (velGrowth < limitLow) vColor = '#d35400';
+        else if (velGrowth <= limitHigh) vColor = '#16a085';
         else vColor = '#2980b9';
         
-        html += makeBadge('Vel. Crecimiento', null, `${velGrowth.toFixed(1)} g/d`, vColor);
+        const labelText = method === 'net' ? 'Vel. Crec. (Neta)' : 'Vel. Crec. (Patel)';
+        html += makeBadge(labelText, null, `${velGrowth.toFixed(1)} ${unitStr}`, vColor);
     }
     
     if (valGrowthEl && resultBoxEl) {
         if (velGrowth !== null) {
-            valGrowthEl.innerText = `${velGrowth.toFixed(1)} g/d`;
+            valGrowthEl.innerText = `${velGrowth.toFixed(1)} ${unitStr}`;
             
             // Premium non-offensive eye-friendly pastel colors for the dashboard panel
             if (velGrowth < 0) {
                 resultBoxEl.style.background = '#fcd0cf'; // Soft red/pink pastel
                 resultBoxEl.style.borderColor = '#f5b7b1';
                 valGrowthEl.style.color = '#c0392b';
-            } else if (velGrowth < 15) {
+            } else if (velGrowth < limitLow) {
                 resultBoxEl.style.background = '#fef9e7'; // Soft yellow/orange
                 resultBoxEl.style.borderColor = '#f9e79f';
                 valGrowthEl.style.color = '#d35400';
-            } else if (velGrowth <= 30) {
+            } else if (velGrowth <= limitHigh) {
                 resultBoxEl.style.background = '#e8f8f5'; // Soft green mint
                 resultBoxEl.style.borderColor = '#a3e4d7';
                 valGrowthEl.style.color = '#16a085';
@@ -3344,7 +3354,7 @@ function renderPediatricZScores() {
                 valGrowthEl.style.color = '#2980b9';
             }
         } else {
-            valGrowthEl.innerText = '-- g/d';
+            valGrowthEl.innerText = `-- ${unitStr}`;
             resultBoxEl.style.background = 'rgba(255,255,255,0.75)';
             resultBoxEl.style.borderColor = '#a3e4d7';
             valGrowthEl.style.color = '#7f8c8d';

@@ -365,7 +365,14 @@
                             <div id="growthVelocityPanel" style="width:100%; margin-top:10px; padding:12px; background:#e8f8f5; border:1px solid #a3e4d7; border-radius:10px; display:flex; flex-direction:column; gap:8px; transition: all 0.3s ease;">
                                 <h5 style="margin:0; color:#16a085; font-size:0.78rem; font-weight:700; display:flex; align-items:center; gap:6px;">📈 Cálculo de Velocidad de Crecimiento</h5>
                                 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; width:100%;">
-                                    <div style="display:flex; gap:10px; flex:1; min-width:200px;">
+                                    <div style="display:flex; gap:10px; flex:2.2; min-width:320px;">
+                                        <div class="mini-input" style="margin-bottom:0; flex:1.2;">
+                                            <label style="color:#16a085; font-size:0.68rem; font-weight:600;">Método</label>
+                                            <select id="growthVelocityMethod" style="padding:5px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem; background:white; width:100%; height:29px; box-sizing:border-box;" onchange="calculateRequirements()">
+                                                <option value="net">Ganancia Neta (g/día)</option>
+                                                <option value="patel">Fórmula de Patel (g/kg/d)</option>
+                                            </select>
+                                        </div>
                                         <div class="mini-input" style="margin-bottom:0; flex:1;">
                                             <label style="color:#16a085; font-size:0.68rem; font-weight:600;">Peso Anterior (kg)</label>
                                             <input type="number" step="0.001" id="pesoAnterior" placeholder="kg" style="padding:6px; border:1px solid #bdc3c7; border-radius:6px; font-size:0.8rem; background:white; width:100%; box-sizing:border-box;" oninput="calculateRequirements()">
@@ -2233,7 +2240,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.68"></script>
+        <script src="app_core.js?v=4.69"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
