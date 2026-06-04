@@ -125,6 +125,8 @@ const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUr
 // --- 2. DATABASE (Vademécum HRA & RTH) ---
 const LOCAL_FORMULAS = [
     // --- FÓRMULAS EN POLVO ---
+    { cat: "Fórmulas en Polvo", id: "similac_neosure", name: "Similac Neosure", type: "p", k: 513, p: 13.3, c: 52.8, f: 28.2, lipids_profile: { dha: 40, ara: 0 }, minerals: { na: 169, k: 708, cl: 384, ca: 539, p: 318, mg: 46, mn: 0.051, se: 0.0107, fe: 9.2, i: 0.077, cu: 0.616, zn: 6.1, cr: 0, mo: 0 } },
+    { cat: "Fórmulas en Polvo", id: "lipidgen", name: "Lipidgen", type: "p", k: 436, p: 13, c: 67, f: 13, lipids_profile: { dha: 66, ara: 66 }, minerals: { na: 213, k: 428, cl: 339, ca: 353, p: 294, mg: 43, mn: 0.42, se: 0.013, fe: 7.4, i: 0.080, cu: 0.263, zn: 2.2, cr: 0.011, mo: 0.011 } },
     { cat: "Fórmulas en Polvo", id: "nan_comfort", name: "NAN ExpertPro Comfort", type: "p", k: 511, p: 9.8, c: 59.1, f: 26.1, lipids_profile: { dha: 48, ara: 48, cholesterol: 35 }, minerals: { na: 190, k: 520, cl: 610, ca: 330, p: 180, mg: 50, mn: 0.09, se: 0.009, fe: 4.9, i: 0.065, cu: 0.40, zn: 4.8 } },
     { cat: "Fórmulas en Polvo", id: "nan_1", name: "NAN 1", type: "p", k: 519, p: 9.6, c: 57.3, f: 27.7, lipids_profile: { dha: 60, ara: 60, cholesterol: 22 }, minerals: { na: 240, k: 520, cl: 300, ca: 300, p: 180, mg: 56, mn: 0.09, se: 0.018, fe: 5.9, i: 0.105, cu: 0.45, zn: 3.3 } },
     { cat: "Fórmulas en Polvo", id: "nido_1", name: "Nido +1", type: "p", k: 469, p: 12.0, c: 56.2, f: 20.0, lipids_profile: { dha: 0, ara: 0, cholesterol: 25 }, minerals: { na: 160, k: 540, cl: 0, ca: 650, p: 250, mg: 50, mn: 0, se: 0.012, fe: 6.8, i: 0, cu: 0, zn: 4.5 } },
@@ -3680,7 +3682,9 @@ function renderMinerals() {
         { id: "cu", name: "Cobre", icon: "⚡" },
         { id: "i", name: "Yodo", icon: "🌊" },
         { id: "mn", name: "Manganeso", icon: "🌰" },
-        { id: "se", name: "Selenio", icon: "🌾" }
+        { id: "se", name: "Selenio", icon: "🌾" },
+        { id: "cr", name: "Cromo", icon: "💎" },
+        { id: "mo", name: "Molibdeno", icon: "⚙️" }
     ];
 
     if (!fA.minerals || Object.keys(fA.minerals).length === 0) {
