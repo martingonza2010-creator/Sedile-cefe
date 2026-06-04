@@ -3164,7 +3164,7 @@ function renderPediatricZScores() {
                 const diffTime = now.getTime() - birthDate.getTime();
                 const chronDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
 
-                const gestDays = (sem * 7) + dias;
+                const gestDays = (semNac * 7) + diasNac;
                 const missingDays = 280 - gestDays;
 
                 let correctedDays = chronDays - missingDays;
