@@ -4660,6 +4660,10 @@ function initChartSim() {
                 legend: { display: false },
                 tooltip: {
                     enabled: true,
+                    padding: 5,
+                    titleFont: { size: 10, weight: 'bold' },
+                    bodyFont: { size: 10 },
+                    cornerRadius: 6,
                     callbacks: {
                         label: function (context) {
                             let label = context.label || '';
@@ -6052,8 +6056,13 @@ function initGoalMacroChart() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    enabled: true,
+                    padding: 5,
+                    titleFont: { size: 10, weight: 'bold' },
+                    bodyFont: { size: 10 },
+                    cornerRadius: 6,
                     callbacks: {
-                        label: (ctx) => `${ctx.label}: ${Math.round(ctx.raw)} kcal`
+                        label: (ctx) => ` ${ctx.label}: ${Math.round(ctx.raw)} kcal`
                     }
                 }
             }
