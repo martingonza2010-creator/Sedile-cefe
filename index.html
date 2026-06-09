@@ -287,6 +287,7 @@
                                 <option value="dry">Peso seco (Ajustado)</option>
                                 <option value="ideal">Peso ideal</option>
                                 <option value="ajustado">Peso ajustado</option>
+                                <option value="estimated">Peso Estimado (Pre-amp)</option>
                             </select>
                         </div>
 
@@ -461,18 +462,24 @@
                             <div
                                 style="flex:1; background:rgba(52, 152, 219, 0.05); padding:8px; border-radius:8px; border:1px solid rgba(52, 152, 219, 0.1);">
                                 <span
-                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">Peso
-                                    Ideal</span>
+                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">Peso Ideal</span>
                                 <strong style="font-size:1rem; color:#3498db;" id="valIdealWeight">-- kg</strong>
                             </div>
 
-                            <!-- NEW V3.90: Peso Final Descontado -->
+                            <!-- NEW V3.90: Peso Ideal Corregido (Descontado) -->
                             <div id="ampWeightAdjContainer"
                                 style="flex:1; display:none; background:rgba(155, 89, 182, 0.05); padding:8px; border-radius:8px; border:1px solid rgba(155, 89, 182, 0.1);">
                                 <span
-                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px; line-height:1.2;">Peso
-                                    Final Descontado</span>
+                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px; line-height:1.2;">Peso Ideal Corregido</span>
                                 <strong style="font-size:1rem; color:#8e44ad;" id="ampWeightAdj">-- kg</strong>
+                            </div>
+
+                            <!-- NEW: Peso Estimado Pre-amputación -->
+                            <div id="ampWeightEstContainer"
+                                style="flex:1; display:none; background:rgba(22, 160, 133, 0.05); padding:8px; border-radius:8px; border:1px solid rgba(22, 160, 133, 0.1);">
+                                <span
+                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px; line-height:1.2;">Peso Estimado (Pre-amp)</span>
+                                <strong style="font-size:1rem; color:#16a085;" id="ampWeightEst">-- kg</strong>
                             </div>
 
                             <div
@@ -2240,7 +2247,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.70"></script>
+        <script src="app_core.js?v=4.71"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

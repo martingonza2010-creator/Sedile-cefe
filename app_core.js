@@ -2182,7 +2182,9 @@ function calculateRequirements() {
 
     // Freshly calculate BMI so Z-scores use the updated value immediately
     if (p.peso > 0 && p.estatura > 0) {
-        p.bmi = p.peso / (p.estatura * p.estatura);
+        const ampFactor = window.calcAmputations ? window.calcAmputations() : 0;
+        const bmiWeight = ampFactor > 0 ? (p.peso / ((100 - ampFactor) / 100)) : p.peso;
+        p.bmi = bmiWeight / (p.estatura * p.estatura);
     }
 
     // Pediatric Z-Score Execution Engine
@@ -2238,13 +2240,29 @@ function calculateRequirements() {
         const ampFactor = window.calcAmputations ? window.calcAmputations() : 0;
         const ampContainer = document.getElementById('ampWeightAdjContainer');
         const ampValDisplay = document.getElementById('ampWeightAdj');
+        const ampEstContainer = document.getElementById('ampWeightEstContainer');
+        const ampEstDisplay = document.getElementById('ampWeightEst');
+
+        let pesoEstimado = p.peso;
 
         if (ampFactor > 0) {
             pesoIdeal = rawPesoIdeal * ((100 - ampFactor) / 100);
             if (ampContainer) ampContainer.style.display = 'block';
             if (ampValDisplay) ampValDisplay.innerText = pesoIdeal.toFixed(1) + ' kg';
+
+            if (p.peso > 0) {
+                pesoEstimado = p.peso / ((100 - ampFactor) / 100);
+                if (ampEstContainer) ampEstContainer.style.display = 'block';
+                if (ampEstDisplay) ampEstDisplay.innerText = pesoEstimado.toFixed(1) + ' kg';
+                p.peso_estimado_preamp = pesoEstimado;
+            } else {
+                if (ampEstContainer) ampEstContainer.style.display = 'none';
+                p.peso_estimado_preamp = 0;
+            }
         } else {
             if (ampContainer) ampContainer.style.display = 'none';
+            if (ampEstContainer) ampEstContainer.style.display = 'none';
+            p.peso_estimado_preamp = 0;
         }
 
         if (p.peso > 0) {
@@ -2307,8 +2325,22 @@ function calculateRequirements() {
     }
 
     if (p.peso > 0 && p.estatura > 0) {
-        p.bmi = p.peso / (p.estatura * p.estatura);
-        document.getElementById('valBMI').innerText = p.bmi.toFixed(1);
+        const ampFactor = window.calcAmputations ? window.calcAmputations() : 0;
+        const bmiWeight = ampFactor > 0 ? (p.peso / ((100 - ampFactor) / 100)) : p.peso;
+        p.bmi = bmiWeight / (p.estatura * p.estatura);
+        
+        const bmiEl = document.getElementById('valBMI');
+        if (bmiEl) {
+            bmiEl.innerText = p.bmi.toFixed(1);
+            const parentSmall = bmiEl.parentNode;
+            if (parentSmall) {
+                if (ampFactor > 0) {
+                    parentSmall.innerHTML = `IMC (Corr): <b id="valBMI">${p.bmi.toFixed(1)}</b>`;
+                } else {
+                    parentSmall.innerHTML = `IMC: <b id="valBMI">${p.bmi.toFixed(1)}</b>`;
+                }
+            }
+        }
     }
 
     // Call waist evaluation for all patient types
@@ -2322,6 +2354,8 @@ function calculateRequirements() {
             w = p.peso_ideal;
         } else if (selCalculo === 'ajustado' && p.peso_ajustado > 0) {
             w = p.peso_ajustado;
+        } else if (selCalculo === 'estimated' && p.peso_estimado_preamp > 0) {
+            w = p.peso_estimado_preamp;
         } else if (selCalculo === 'dry') {
             const edemaKg = parseFloat(document.getElementById('edemaGrade')?.value) || 0;
             const ascitisKg = parseFloat(document.getElementById('ascitesGrade')?.value) || 0;
