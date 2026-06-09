@@ -2414,6 +2414,7 @@ function calculateRequirements() {
                 }
             }
 
+            p.diagWeight = status;
             valIMCClass.innerText = status;
             valIMCClass.style.color = color;
         }
@@ -3371,6 +3372,8 @@ function renderPediatricZScores() {
             else if (zHFA >= +1) { diagHeight = 'Talla Normal Alta'; diagHColor = '#2980b9'; }
             else { diagHeight = 'Normal'; diagHColor = '#27ae60'; }
         }
+        p.diagWeight = diagWeight;
+        p.diagHeight = diagHeight;
 
         html += makeBadge('P/E (Peso/Edad)', zWFA);
         html += makeBadge('T/E (Talla/Edad)', zHFA);
@@ -5438,6 +5441,9 @@ function updateAnthropometry() {
         const resCB = getPercentileMatch('cb', cb);
         const resAG = getPercentileMatch('ag', ama);
 
+        p.cbStatus = resCB.status;
+        p.amaStatus = ama > 0 ? resAG.status : null;
+
         if (lblCB) lblCB.innerHTML = `<span style="color:${resCB.color}; font-size:1rem;">${resCB.status}</span><br><small style="color:#888; font-weight:400;">CB: ${cb} cm</small>`;
         if (lblAG && ama > 0) lblAG.innerHTML = `<span style="color:${resAG.color}; font-size:1rem;">${resAG.status}</span><br><small style="color:#888; font-weight:400;">AG: ${ama.toFixed(1)} cmÂ²</small>`;
         else if (lblAG) lblAG.innerHTML = "--";
@@ -5455,6 +5461,8 @@ function updateAnthropometry() {
             badgeDate.innerText = `Act: ${now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
         }
     } else {
+        p.cbStatus = null;
+        p.amaStatus = null;
         if (resBox) resBox.style.display = 'none';
     }
 }
@@ -5624,7 +5632,6 @@ function initGlobalEvents() {
         }
 
         // Build ADIME Text
-        const pName = document.getElementById('nombre')?.value || p.nombre || "Paciente";
         const pAgeVal = document.getElementById('edad')?.value || p.edad;
         const pAge = pAgeVal ? `${pAgeVal} años` : (p.exactMonths ? `${p.exactMonths.toFixed(1)} meses` : '--');
         const pSexVal = document.getElementById('sexo')?.value || p.sexo;
@@ -5652,12 +5659,82 @@ function initGlobalEvents() {
         if (modulesText) {
             dietoterapia += ` | Módulos: ${modulesText.slice(0, -2)}`;
         }
+
+        // Add oral diet details if entered
+        const dietSelect = document.getElementById('oralDietType');
+        const dietText = dietSelect && dietSelect.value !== 'custom' ? dietSelect.options[dietSelect.selectedIndex].text : 'Régimen Personalizado';
+        const oralKcalVal = parseFloat(document.getElementById('oralKcal')?.value) || 0;
+        const oralPct = parseFloat(document.getElementById('oralIntakePercent')?.value) || 100;
+        if (oralKcalVal > 0) {
+            dietoterapia += ` | Ingesta Oral: Régimen: ${dietText} (${Math.round(oralKcalVal)} kcal entregadas al ${oralPct}%)`;
+        }
         
         const userName = AppState.user?.user_metadata?.full_name || "[Nombre del Profesional]";
 
-        const adimeText = `-Datos del paciente: Nombre: ${pName} | Edad: ${pAge} | Sexo: ${pSex} | Cama: ${pCama}
+        // Gastrointestinal symptoms
+        const getToggleVal = (id) => {
+            const group = document.querySelector(`.toggle-btn-group[data-id="${id}"]`);
+            if (!group) return 'no';
+            const activeBtn = group.querySelector('.btn-toggle.active');
+            return activeBtn ? activeBtn.innerText.trim().toLowerCase() : 'no';
+        };
+
+        const nauseasStr = `Náuseas (${getToggleVal('sintomaNauseas')})`;
+        const vomitosStr = `Vómitos (${getToggleVal('sintomaVomitos')})`;
+        const reflujoStr = `Reflujo Gastroesofágico (${getToggleVal('sintomaReflujo')})`;
+        const deposicionesStr = `Deposiciones con Diarrea (${getToggleVal('sintomaDeposiciones')})`;
+        const distensionStr = `Distensión Abdominal (${getToggleVal('sintomaDistension')})`;
+        const gasesStr = `Gases/Flatulencia (${getToggleVal('sintomaGases')})`;
+        
+        const dentaduraStr = `Dentadura Adecuada (${getToggleVal('anamnesisDentadura')})`;
+        const alergiasStr = `Alergias Alimentarias (${getToggleVal('anamnesisAlergias')})`;
+        const deglucionStr = `Trastorno de Deglución (${getToggleVal('anamnesisDeglucion')})`;
+        const apetitoStr = `Buen Apetito (${getToggleVal('anamnesisApetito')})`;
+
+        const symptomsText = `${nauseasStr}, ${vomitosStr}, ${reflujoStr}, ${deposicionesStr}, ${distensionStr}, ${gasesStr}, ${dentaduraStr}, ${alergiasStr}, ${deglucionStr}, ${apetitoStr}`;
+
+        // DNI Breve construction
+        let ageCategory = "";
+        const patientType = p.type || 'adult';
+        if (patientType === 'adult') {
+            const ageVal = parseFloat(document.getElementById('edad')?.value) || p.edad || 0;
+            ageCategory = ageVal >= 65 ? "Adulto Mayor" : "Adulto";
+        } else {
+            const ageYears = parseFloat(document.getElementById('edad')?.value) || p.edad || 0;
+            if (ageYears < 2) {
+                ageCategory = "Lactante";
+            } else if (ageYears < 6) {
+                ageCategory = "Preescolar";
+            } else if (ageYears < 12) {
+                ageCategory = "Escolar";
+            } else {
+                ageCategory = "Adolescente";
+            }
+        }
+
+        const sexText = pSexVal === 'm' ? 'Masculino' : (pSexVal === 'f' ? 'Femenino' : '--');
+        const estadoNutricional = p.diagWeight || "Sin evaluar";
+
+        let compBraquialText = "";
+        const testStatus = p.amaStatus || p.cbStatus;
+        if (testStatus) {
+            if (testStatus === 'Normal') {
+                compBraquialText = "con compartimiento braquial adecuado o conservado";
+            } else if (testStatus === 'Disminuido' || testStatus === 'Muy Disminuido') {
+                compBraquialText = "con compartimiento braquial deficiente";
+            } else if (testStatus === 'Elevado' || testStatus === 'Muy Elevado') {
+                compBraquialText = "con compartimiento braquial elevado";
+            }
+        }
+
+        let dniBreve = `${ageCategory}, ${sexText}, ${estadoNutricional}`;
+        if (compBraquialText) {
+            dniBreve += ` ${compBraquialText}`;
+        }
+
+        const adimeText = `-Datos del paciente: Edad: ${pAge} | Sexo: ${pSex} | Cama: ${pCama}
 -Diagnostico medico: ${dxMedico}
-Anamnesis y sintomas: [Ingresar anamnesis y síntomas]
+Anamnesis y sintomas: ${symptomsText}
 Antecedentes morbidos: [Ingresar antecedentes mórbidos]
 
 Antropometria Basica:
@@ -5667,13 +5744,13 @@ Peso: ${pesoVal}
 CB: ${cbVal}
 
 DNI breve:
-${des}
+${dniBreve}
 
 NRS 2002: ${nrsString}
 
 Dietoterapia actual: ${dietoterapia}
 
-Nutricionista: ${userName}`;
+Nombre del nutricionista: ${userName}`;
 
         content.innerText = adimeText;
         const titleH4 = document.querySelector('#clinicalNoteContainer h4');
