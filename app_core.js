@@ -1014,6 +1014,7 @@ function initCompactLayout() {
                         goal_prot: document.getElementById('goalProtKg')?.value || "",
                         goal_cho: document.getElementById('goalCHOKg')?.value || "",
                         goal_lip: document.getElementById('goalLipKg')?.value || "",
+                        estres: document.getElementById('estres')?.value || "1.0",
                         modules: {
                             nessucar: document.getElementById('modNessucar')?.value || "",
                             mct: document.getElementById('modMCT')?.value || "",
@@ -2018,10 +2019,23 @@ window.loadPatient = async (id) => {
         AppState.patient.id = data.id;
         AppState.patient.ia_report = data.ia_report || null;
 
-        document.getElementById('nombre').value = data.nombre;
-        document.getElementById('edad').value = data.edad;
-        document.getElementById('peso').value = data.peso_kg;
-        document.getElementById('estatura').value = data.estatura_m;
+        document.getElementById('nombre').value = data.nombre || '';
+        document.getElementById('edad').value = data.edad || 0;
+        document.getElementById('peso').value = data.peso_kg || 0;
+        document.getElementById('estatura').value = data.estatura_m || 0;
+        if (document.getElementById('sexo')) document.getElementById('sexo').value = data.sexo || 'm';
+        if (document.getElementById('actividad')) document.getElementById('actividad').value = data.actividad || '1.2';
+        if (document.getElementById('diagnostico')) document.getElementById('diagnostico').value = data.diagnostico || '';
+        if (document.getElementById('cama')) document.getElementById('cama').value = data.cama || '';
+
+        // Restore stress factor before running calculations
+        if (data.metadata && data.metadata.simulator && data.metadata.simulator.estres) {
+            if (document.getElementById('estres')) {
+                document.getElementById('estres').value = data.metadata.simulator.estres;
+            }
+        } else if (document.getElementById('estres')) {
+            document.getElementById('estres').value = '1.0';
+        }
 
         // Restore IA report if exists
         const resultBox = document.getElementById('iaResultContainer');
@@ -5610,24 +5624,56 @@ function initGlobalEvents() {
         }
 
         // Build ADIME Text
-        const adimeText = `A - ANTROPOMETRÍA Y REQUERIMIENTOS:
-- Peso Real: ${pesoFisico} kg | Talla: ${cm} cm
-- Peso de Cálculo: ${pesoCalc.toFixed(1)} kg | Superficie Corp: ${sctVal}
-- Meta Energética: ${Math.round(goal)} kcal/día (${pesoCalc > 0 ? (goal / pesoCalc).toFixed(1) : 0} kcal/kg)
-- Meta Proteínas: ${Math.round(pTotal)} g/día (${pesoCalc > 0 ? (pTotal / pesoCalc).toFixed(1) : 0} g/kg)
-- Meta CHOs: ${Math.round(cTotal)} g/día | Líp: ${Math.round(lTotal)} g/día
+        const pName = document.getElementById('nombre')?.value || p.nombre || "Paciente";
+        const pAgeVal = document.getElementById('edad')?.value || p.edad;
+        const pAge = pAgeVal ? `${pAgeVal} años` : (p.exactMonths ? `${p.exactMonths.toFixed(1)} meses` : '--');
+        const pSexVal = document.getElementById('sexo')?.value || p.sexo;
+        const pSex = pSexVal === 'm' ? 'Masculino' : (pSexVal === 'f' ? 'Femenino' : '--');
+        const pCama = document.getElementById('cama')?.value || p.cama || 'S/N';
+        
+        const dxMedico = document.getElementById('diagnostico')?.value || p.diagnostico || 'Sin diagnóstico médico';
+        
+        const imcNum = p.bmi || (pesoFisico > 0 && p.estatura > 0 ? (pesoFisico / (p.estatura * p.estatura)) : 0);
+        const imcValText = imcNum > 0 ? `${imcNum.toFixed(1)}` : '--';
+        const tallaVal = cm > 0 ? `${cm} cm` : '--';
+        const pesoVal = pesoFisico > 0 ? `${pesoFisico} kg` : '--';
+        const cbVal = document.getElementById('cbraquial')?.value || '--';
+        
+        const nrsTotal = document.getElementById('nrsTotalScore')?.innerText || 'No evaluado';
+        const nrsClassif = document.getElementById('nrsClassif')?.innerText || '';
+        const nrsString = nrsClassif ? `${nrsTotal} (${nrsClassif})` : nrsTotal;
+        
+        const formulaName = formula ? formula.name : 'No indicada';
+        let dietoterapia = `Fórmula: ${formulaName} | Volumen: ${volText}`;
+        const dilVal = document.getElementById('dilution')?.value;
+        if (dilVal && parseFloat(dilVal) > 0) {
+            dietoterapia += ` | Dilución: ${dilVal}%`;
+        }
+        if (modulesText) {
+            dietoterapia += ` | Módulos: ${modulesText.slice(0, -2)}`;
+        }
+        
+        const userName = AppState.user?.user_metadata?.full_name || "[Nombre del Profesional]";
 
-B - BIOQUÍMICA Y CLÍNICA (TOLERANCIA):
-- Exámenes Clave: ${examenes}
-- Tolerancia Subjetiva: ${tolerancia}
+        const adimeText = `-Datos del paciente: Nombre: ${pName} | Edad: ${pAge} | Sexo: ${pSex} | Cama: ${pCama}
+-Diagnostico medico: ${dxMedico}
+Anamnesis y sintomas: [Ingresar anamnesis y síntomas]
+Antecedentes morbidos: [Ingresar antecedentes mórbidos]
 
-D - DIAGNÃ“STICO NUTRICIONAL INTEGRADO:
-- ${des}
+Antropometria Basica:
+IMC: ${imcValText}
+Talla: ${tallaVal}
+Peso: ${pesoVal}
+CB: ${cbVal}
 
-I - INTERVENCIÃ“N Y PRESCRIPCIÃ“N:
-- Fórmula Indicada: ${formula ? formula.name : 'N/A'}
-- Volumen Prescrito: ${volText}
-${modulesText ? `- Módulos Añadidos: ${modulesText.slice(0, -2)}` : ''}`;
+DNI breve:
+${des}
+
+NRS 2002: ${nrsString}
+
+Dietoterapia actual: ${dietoterapia}
+
+Nutricionista: ${userName}`;
 
         content.innerText = adimeText;
         const titleH4 = document.querySelector('#clinicalNoteContainer h4');
