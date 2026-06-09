@@ -7338,6 +7338,16 @@ window.updateCurveButtons = function() {
     }
 };
 
+window.showFrisanchoHelp = () => {
+    const modal = document.getElementById('frisanchoHelpModal');
+    if (modal) modal.classList.add('active');
+};
+
+window.closeFrisanchoHelp = () => {
+    const modal = document.getElementById('frisanchoHelpModal');
+    if (modal) modal.classList.remove('active');
+};
+
 
 
 
