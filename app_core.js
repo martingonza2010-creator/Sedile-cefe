@@ -2324,6 +2324,17 @@ function calculateRequirements() {
         }
     }
 
+    const adultIMCContainer = document.getElementById('adultIMCContainer');
+    const lblAdultIMC = document.getElementById('lblAdultIMC');
+    const valAdultIMC = document.getElementById('valAdultIMC');
+    const valIMCClass = document.getElementById('valIMCClass');
+
+    if (p.type === 'adult') {
+        if (adultIMCContainer) adultIMCContainer.style.display = 'block';
+    } else {
+        if (adultIMCContainer) adultIMCContainer.style.display = 'none';
+    }
+
     if (p.peso > 0 && p.estatura > 0) {
         const ampFactor = window.calcAmputations ? window.calcAmputations() : 0;
         const bmiWeight = ampFactor > 0 ? (p.peso / ((100 - ampFactor) / 100)) : p.peso;
@@ -2340,6 +2351,63 @@ function calculateRequirements() {
                     parentSmall.innerHTML = `IMC: <b id="valBMI">${p.bmi.toFixed(1)}</b>`;
                 }
             }
+        }
+
+        if (p.type === 'adult' && valAdultIMC && valIMCClass) {
+            valAdultIMC.innerText = p.bmi.toFixed(1) + ' kg/m²';
+            if (lblAdultIMC) {
+                lblAdultIMC.innerText = ampFactor > 0 ? 'IMC (Corregido)' : 'IMC';
+            }
+
+            let status = "";
+            let color = "#27ae60";
+
+            if (p.edad >= 65) {
+                // Older Adult (EMPAM Chile)
+                if (p.bmi < 23.0) {
+                    status = "Bajo Peso (Desnutrido)";
+                    color = "#c0392b";
+                } else if (p.bmi < 28.0) {
+                    status = "Normal (Eutrófico)";
+                    color = "#27ae60";
+                } else if (p.bmi < 32.0) {
+                    status = "Sobrepeso";
+                    color = "#f39c12";
+                } else {
+                    status = "Obesidad";
+                    color = "#c0392b";
+                }
+            } else {
+                // Adult (OMS)
+                if (p.bmi < 18.5) {
+                    status = "Bajo Peso (Desnutrido)";
+                    color = "#c0392b";
+                } else if (p.bmi < 25.0) {
+                    status = "Normal (Eutrófico)";
+                    color = "#27ae60";
+                } else if (p.bmi < 30.0) {
+                    status = "Sobrepeso";
+                    color = "#f39c12";
+                } else if (p.bmi < 35.0) {
+                    status = "Obesidad Clase I";
+                    color = "#c0392b";
+                } else if (p.bmi < 40.0) {
+                    status = "Obesidad Clase II";
+                    color = "#c0392b";
+                } else {
+                    status = "Obesidad Clase III (Mórbida)";
+                    color = "#8e44ad";
+                }
+            }
+
+            valIMCClass.innerText = status;
+            valIMCClass.style.color = color;
+        }
+    } else {
+        if (valAdultIMC) valAdultIMC.innerText = '--';
+        if (valIMCClass) {
+            valIMCClass.innerText = '--';
+            valIMCClass.style.color = '#888';
         }
     }
 

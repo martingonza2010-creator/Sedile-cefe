@@ -482,6 +482,16 @@
                                 <strong style="font-size:1rem; color:#16a085;" id="ampWeightEst">-- kg</strong>
                             </div>
 
+                            <!-- NEW: IMC Adulto con clasificación en tiempo real -->
+                            <div id="adultIMCContainer"
+                                style="flex:1; background:rgba(243, 156, 18, 0.05); padding:8px; border-radius:8px; border:1px solid rgba(243, 156, 18, 0.15); display:none;">
+                                <span id="lblAdultIMC"
+                                    style="font-size:0.6rem; color:#888; display:block; text-transform:uppercase; letter-spacing:0.5px;">IMC</span>
+                                <strong style="font-size:1rem; color:#d35400;" id="valAdultIMC">--</strong>
+                                <div id="valIMCClass"
+                                    style="font-size:0.65rem; color:#e67e22; margin-top:2px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px;">--</div>
+                            </div>
+
                             <div
                                 style="flex:1; background:rgba(231, 76, 60, 0.05); padding:8px; border-radius:8px; border:1px solid rgba(231, 76, 60, 0.1);">
                                 <span
@@ -2247,7 +2257,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.71"></script>
+        <script src="app_core.js?v=4.72"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
