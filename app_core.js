@@ -5375,7 +5375,8 @@ function updateAnthropometry() {
 
     const resBox = document.getElementById('frisanchoContainer');
     const lblCB = document.getElementById('lblCBStatus');
-    const lblAG = document.getElementById('lblAGStatus');
+    const lblAMB = document.getElementById('lblAMBStatus');
+    const lblAGB = document.getElementById('lblAGBStatus');
     const indicator = document.getElementById('anthIndicator');
     const badgeDate = document.getElementById('valAnthDate');
     if (cb > 0 || pt > 0) {
@@ -5444,9 +5445,23 @@ function updateAnthropometry() {
         p.cbStatus = resCB.status;
         p.amaStatus = ama > 0 ? resAG.status : null;
 
-        if (lblCB) lblCB.innerHTML = `<span style="color:${resCB.color}; font-size:1rem;">${resCB.status}</span><br><small style="color:#888; font-weight:400;">CB: ${cb} cm</small>`;
-        if (lblAG && ama > 0) lblAG.innerHTML = `<span style="color:${resAG.color}; font-size:1rem;">${resAG.status}</span><br><small style="color:#888; font-weight:400;">AG: ${ama.toFixed(1)} cmÂ²</small>`;
-        else if (lblAG) lblAG.innerHTML = "--";
+        // Calculate Arm Fat Area (AGB)
+        let agb = 0;
+        if (cb > 0 && pt > 0) {
+            const atb = Math.pow(cb, 2) / (4 * Math.PI);
+            agb = atb - ama;
+            if (agb < 0) agb = 0;
+        }
+
+        if (lblCB) lblCB.innerHTML = `<span style="color:${resCB.color}; font-size:0.85rem;">${resCB.status}</span><br><small style="color:#888; font-weight:400;">CB: ${cb} cm</small>`;
+        if (lblAMB && ama > 0) lblAMB.innerHTML = `<span style="color:${resAG.color}; font-size:0.85rem;">${resAG.status}</span><br><small style="color:#888; font-weight:400;">AMB: ${ama.toFixed(1)} cm²</small>`;
+        else if (lblAMB) lblAMB.innerHTML = "--";
+
+        if (lblAGB && agb > 0) {
+            lblAGB.innerHTML = `<span style="color:#e67e22; font-size:0.85rem;">Calculado</span><br><small style="color:#888; font-weight:400;">AGB: ${agb.toFixed(1)} cm²</small>`;
+        } else if (lblAGB) {
+            lblAGB.innerHTML = "--";
+        }
 
         // 3. Update Graphical Indicator
         if (indicator) {

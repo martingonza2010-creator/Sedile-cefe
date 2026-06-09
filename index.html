@@ -1441,18 +1441,25 @@
                     <!-- Frisancho/NHANES Box -->
                     <div id="frisanchoContainer" style="margin-top:15px; display:none; background:rgba(231, 76, 60, 0.05); padding:15px; border-radius:12px; border:1px solid rgba(231, 76, 60, 0.15);">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h5 style="color:#c0392b; margin:0; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">📍 Clasificación Frisancho / NHANES</h5>
+                            <div>
+                                <h5 style="color:#c0392b; margin:0; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">📍 Clasificación Frisancho / NHANES</h5>
+                                <span style="font-size:0.55rem; color:#7f8c8d; display:block; font-weight:500; margin-top:2px;">Estándar de Referencia: Frisancho 1990</span>
+                            </div>
                             <div id="valAnthDate" style="font-size:0.65rem; color:#7f8c8d; font-style:italic;">Última act: --</div>
                         </div>
 
-                        <div class="anth-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
-                            <div style="border-right: 1px solid rgba(231, 76, 60, 0.15); padding-right:10px;">
-                                <label style="font-size:0.6rem; color:#7f8c8d; text-transform:uppercase; display:block; margin-bottom:2px; font-weight:600;">Circ. Braquial (CB)</label>
-                                <div id="lblCBStatus" style="font-weight:700; color:#c0392b; font-size:0.85rem; line-height:1.2;">--</div>
+                        <div class="anth-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:12px;">
+                            <div style="border-right: 1px solid rgba(231, 76, 60, 0.15); padding-right:5px;">
+                                <label style="font-size:0.55rem; color:#7f8c8d; text-transform:uppercase; display:block; margin-bottom:2px; font-weight:600; line-height:1.1;">Circ. Braquial (CB)</label>
+                                <div id="lblCBStatus" style="font-weight:700; color:#c0392b; font-size:0.8rem; line-height:1.2;">--</div>
                             </div>
-                            <div style="padding-left:10px;">
-                                <label style="font-size:0.6rem; color:#7f8c8d; text-transform:uppercase; display:block; margin-bottom:2px; font-weight:600;">Área Muscular (AG)</label>
-                                <div id="lblAGStatus" style="font-weight:700; color:#c0392b; font-size:0.85rem; line-height:1.2;">--</div>
+                            <div style="border-right: 1px solid rgba(231, 76, 60, 0.15); padding-left:5px; padding-right:5px;">
+                                <label style="font-size:0.55rem; color:#7f8c8d; text-transform:uppercase; display:block; margin-bottom:2px; font-weight:600; line-height:1.1;">Área Muscular (AMB)</label>
+                                <div id="lblAMBStatus" style="font-weight:700; color:#c0392b; font-size:0.8rem; line-height:1.2;">--</div>
+                            </div>
+                            <div style="padding-left:5px;">
+                                <label style="font-size:0.55rem; color:#7f8c8d; text-transform:uppercase; display:block; margin-bottom:2px; font-weight:600; line-height:1.1;">Área Grasa (AGB)</label>
+                                <div id="lblAGBStatus" style="font-weight:700; color:#e67e22; font-size:0.8rem; line-height:1.2;">--</div>
                             </div>
                         </div>
 
@@ -2317,7 +2324,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.75"></script>
+        <script src="app_core.js?v=4.76"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
