@@ -2405,14 +2405,14 @@
         </div>
 
         <script>
-            // EMERGENCY CACHE PURGE V4.50
+            // EMERGENCY CACHE PURGE V4.79
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     for (let registration of registrations) {
                         const isAuthCallback = window.location.hash.includes('access_token') || window.location.hash.includes('error');
-                        if (!localStorage.getItem('sw_purged_4.50') && !isAuthCallback) {
+                        if (!localStorage.getItem('sw_purged_4.79') && !isAuthCallback) {
                             registration.unregister();
-                            localStorage.setItem('sw_purged_4.50', 'true');
+                            localStorage.setItem('sw_purged_4.79', 'true');
                             window.location.reload();
                         }
                     }
@@ -2422,7 +2422,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.78"></script>
+        <script src="app_core.js?v=4.79"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

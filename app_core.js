@@ -1004,6 +1004,8 @@ function initCompactLayout() {
 
                 // FULL STATE PERSISTENCE V3.51
                 const metadata = {
+                    patient_type: AppState.patient.type || 'adult',
+                    weight_history: AppState.patient.weight_history || [],
                     simulator: {
                         formula: document.getElementById('formulaSelect')?.value || "",
                         volume: document.getElementById('volume')?.value || "",
@@ -1964,6 +1966,45 @@ window.calculateWeightLoss = () => {
     badgeEl.style.border = '1px solid ' + borderColor;
 }
 
+function logWeightToHistory(weight) {
+    if (weight <= 0) return;
+    const p = AppState.patient;
+    if (!p) return;
+
+    if (!p.weight_history) {
+        p.weight_history = [];
+    }
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateKey = `${year}-${month}-${day}`;
+    const timestamp = now.toISOString();
+
+    const todayIndex = p.weight_history.findIndex(item => {
+        const itemDate = new Date(item.created_at || item.date);
+        const iy = itemDate.getFullYear();
+        const im = String(itemDate.getMonth() + 1).padStart(2, '0');
+        const id = String(itemDate.getDate()).padStart(2, '0');
+        return `${iy}-${im}-${id}` === dateKey;
+    });
+
+    if (todayIndex > -1) {
+        p.weight_history[todayIndex].peso_kg = weight;
+        p.weight_history[todayIndex].created_at = timestamp;
+    } else {
+        p.weight_history.push({
+            peso_kg: weight,
+            created_at: timestamp
+        });
+    }
+
+    p.weight_history.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+    renderEvolutionChart(p.weight_history);
+}
+
 function initEvolutionLogic() {
     const btnLog = document.getElementById('btnLogEvolution');
     if (btnLog) {
@@ -2018,6 +2059,37 @@ window.loadPatient = async (id) => {
     if (data) {
         AppState.patient.id = data.id;
         AppState.patient.ia_report = data.ia_report || null;
+
+        if (data.metadata && data.metadata.patient_type) {
+            const pType = data.metadata.patient_type;
+            AppState.patient.type = pType;
+            if (pType === 'adult') {
+                const el = document.getElementById('ptAdult');
+                if (el) el.checked = true;
+            } else if (pType === 'pediatric') {
+                const el = document.getElementById('ptPediatric');
+                if (el) el.checked = true;
+            } else if (pType === 'neonate') {
+                const el = document.getElementById('ptNeonate');
+                if (el) el.checked = true;
+            }
+            if (typeof window.updatePatientModeUI === 'function') {
+                window.updatePatientModeUI(pType);
+            }
+        }
+
+        if (data.metadata && data.metadata.weight_history) {
+            AppState.patient.weight_history = data.metadata.weight_history;
+        } else {
+            AppState.patient.weight_history = [];
+            if (data.peso_kg > 0) {
+                AppState.patient.weight_history.push({
+                    peso_kg: data.peso_kg,
+                    created_at: data.created_at || new Date().toISOString()
+                });
+            }
+        }
+        renderEvolutionChart(AppState.patient.weight_history);
 
         document.getElementById('nombre').value = data.nombre || '';
         document.getElementById('edad').value = data.edad || 0;
@@ -2120,13 +2192,22 @@ window.loadPatient = async (id) => {
 
 window.updatePatientEvolutionChart = async (nombre) => {
     if (!nombre) return;
+    
+    const chartSection = document.getElementById('chartContainer');
+    if (!chartSection) return;
+
+    const p = AppState.patient;
+    if (p && p.nombre && p.nombre.trim() === nombre.trim() && p.weight_history && p.weight_history.length > 0) {
+        renderEvolutionChart(p.weight_history);
+        const lbl = document.getElementById('lblChartPatientName');
+        if (lbl) lbl.innerText = nombre;
+        return;
+    }
+
     if (!AppState.user || !AppState.user.id) {
         console.warn("updatePatientEvolutionChart: AppState.user not loaded.");
         return;
     }
-
-    const chartSection = document.getElementById('chartContainer');
-    if (!chartSection) return;
 
     // Decoupled: Only fetch records that are explicitly evolution points
     const { data: records, error } = await supabaseClient
@@ -2607,10 +2688,7 @@ function calcFactorialNoRecursion() {
 
 // === NEW V3.80: PEDIATRIC & NEONATAL ENGINE ===
 
-window.togglePatientMode = () => {
-    const mode = document.querySelector('input[name="patientType"]:checked').value;
-    AppState.patient.type = mode;
-
+window.updatePatientModeUI = (mode) => {
     const colEdad = document.getElementById('colEdad');
     if (colEdad) colEdad.style.display = mode === 'adult' ? 'block' : 'none';
     
@@ -2706,6 +2784,12 @@ window.togglePatientMode = () => {
     calculateRequirements();
     if (typeof window.updateInfusionProposal === 'function') window.updateInfusionProposal();
     if (typeof window.updateCurveButtons === 'function') window.updateCurveButtons();
+};
+
+window.togglePatientMode = () => {
+    const mode = document.querySelector('input[name="patientType"]:checked').value;
+    clearAllInputsForMode(mode);
+    window.updatePatientModeUI(mode);
 };
 
 window.toggleQuemado = () => {
@@ -4475,11 +4559,102 @@ function toggleHydMethod() {
     calcHydration();
 }
 
+function clearAllInputsForMode(mode) {
+    AppState.patient = { 
+        id: null, 
+        nombre: '', 
+        edad: 0, 
+        sexo: 'm', 
+        peso: 0, 
+        estatura: 0, 
+        actividad: 1.2, 
+        bmi: 0, 
+        tmt: 0, 
+        ia_report: null, 
+        type: mode,
+        weight_history: [],
+        anamnesis: {},
+        strongkids: {},
+        nrs2002: { initialAnswers: {} }
+    };
+    AppState.userOverridesGoal = false;
+
+    const idsToClear = [
+        'nombre', 'edad', 'peso', 'estatura', 'diagnostico', 'cama',
+        'formulaSearch', 'formulaSelect', 'volume', 'dilution',
+        'modNessucar', 'modMCT', 'modEnterex', 'modBanatrol', 'modProteinex', 'modFresubin',
+        'oralKcal', 'oralProt', 'oralCHO', 'oralLip', 'oralWater',
+        'ivType', 'ivVolume',
+        'ccintura', 'cbraquial', 'cpantorrilla', 'altrodilla',
+        'ptricipital', 'pbicipital', 'piliaco', 'pabdominal',
+        'mediaenv', 'envcomp', 'edemaGrade', 'diagPES', 'diagnosticoPES',
+        'residuo', 'diarrea', 'distension', 'accesoTipo', 'accesoFecha',
+        'goalProtKg', 'goalCHOKg', 'goalLipKg', 'valNUU', 'valNFactor',
+        'altrodilla', 'cpantorrilla', 'pcefalico', 'gestacional_nacimiento_semanas', 
+        'gestacional_nacimiento_dias'
+    ];
+    
+    idsToClear.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.tagName === 'SELECT') {
+                if (id === 'sexo') el.value = 'm';
+                else if (id === 'actividad') el.value = '1.2';
+                else if (id === 'edemaGrade') el.value = '0';
+                else if (id === 'ivType') el.value = 'none';
+                else el.selectedIndex = 0;
+            } else {
+                el.value = '';
+            }
+        }
+    });
+
+    const clinicalCheckboxes = document.querySelectorAll('.grid-col-2 input[type="checkbox"], .grid-col-3 input[type="checkbox"]');
+    clinicalCheckboxes.forEach(chk => chk.checked = false);
+
+    const activeButtons = document.querySelectorAll('.history-btn.active');
+    activeButtons.forEach(btn => btn.classList.remove('active'));
+
+    const badges = [
+        'valBMI', 'resTMB', 'valIdealWeight', 'valIPT', 'valIPTClass', 
+        'simGoal', 'simCurrent', 'valKcal', 'valProt', 'valCHO', 'valLip',
+        'lblCBStatus', 'lblAMBStatus', 'lblAGBStatus', 'valRossStatureBadge', 
+        'valChumleaWeightBadge', 'resFactorial', 'resBN', 'growthVelocityResult'
+    ];
+    badges.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === 'simGoal' || id === 'simCurrent') {
+                el.innerText = '0';
+            } else {
+                el.innerText = '--';
+            }
+        }
+    });
+
+    const indicator = document.getElementById('anthIndicator');
+    if (indicator) indicator.style.left = '50%';
+
+    const badgeDate = document.getElementById('valAnthDate');
+    if (badgeDate) badgeDate.innerText = 'Última act: --';
+
+    const examsContainer = document.getElementById('examsContainer');
+    if (examsContainer) examsContainer.innerHTML = '';
+
+    const iaResult = document.getElementById('iaResultContainer');
+    if (iaResult) iaResult.innerHTML = '';
+    const iaInitial = document.getElementById('iaInitialState');
+    if (iaInitial) iaInitial.style.display = 'block';
+
+    updateFormulaSelect();
+    runSimulation();
+}
+
 function resetPatientForm() {
     if (!confirm("¿Deseas limpiar todos los campos para un nuevo paciente?")) return;
 
     // Reset Global State
-    AppState.patient = { id: null, nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0, ia_report: null };
+    AppState.patient = { id: null, nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0, ia_report: null, weight_history: [] };
     AppState.userOverridesGoal = false;
 
     // 1. Dashboard Inputs
@@ -6518,6 +6693,12 @@ function initGoalMacroChart() {
         updateFinalMeta();
         if (typeof calcTMB_OMS === 'function') calcTMB_OMS();
         if (typeof calcFactorial === 'function') calcFactorial();
+    });
+    document.getElementById('peso')?.addEventListener('change', () => {
+        const pesoVal = parseFloat(document.getElementById('peso')?.value) || 0;
+        if (pesoVal > 0) {
+            logWeightToHistory(pesoVal);
+        }
     });
 
     // NEW V4.39: Macro Presets
