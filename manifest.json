@@ -1,6 +1,6 @@
 {
-    "name": "SEDILE-HRA NutriMartin",
-    "short_name": "NutriMartin",
+    "name": "NutriClinicoApp - Hospital de Antofagasta",
+    "short_name": "NutriClinicoApp",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",

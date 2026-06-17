@@ -6,7 +6,7 @@
     --success: hsl(145, 63%, 42%);        /* Verde Esmeralda Clínico (#27ae60) */
     
     /* Gradiente Aurora Ultra-Suave */
-    --bg-gradient: linear-gradient(135deg, #f4f6fa 0%, #e8ecf4 50%, #e0e5ed 100%);
+    --bg-gradient: linear-gradient(135deg, #fbfaff 0%, #f5f3ff 50%, #ede9fe 100%);
     
     /* Variables de Vidrio Esmerilado (Glassmorphic) Refinadas */
     --glass: rgba(255, 255, 255, 0.72);
@@ -1451,3 +1451,406 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:foc
 .tab-btn:active, .btn-primary:active, .btn-micro:active, .btn-google:active, .btn-save-small:active, .btn-assess:active {
     transform: scale(0.96) !important;
 }
+
+/* --- CLINICAL LOCATION SELECTOR & BEDS GRID STYLES (v4.80) --- */
+.location-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #f8f7ff 0%, #f1edfa 100%);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.location-container {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(168, 85, 247, 0.15);
+    border-radius: 30px;
+    padding: 35px 30px;
+    width: 100%;
+    max-width: 650px;
+    box-shadow: 0 20px 50px rgba(139, 92, 246, 0.1);
+    animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: center;
+    position: relative;
+}
+
+.mascot-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.mascot-otter {
+    font-size: 3rem;
+    animation: waveMascot 3s infinite ease-in-out;
+}
+
+@keyframes waveMascot {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(10deg); }
+}
+
+.location-container h2 {
+    color: #312e81;
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 5px;
+}
+
+.location-container p {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+}
+
+.selector-step-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #4f46e5;
+    margin-bottom: 12px;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Steps grids */
+.hospital-card {
+    background: white;
+    border: 2px solid var(--primary-light);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.05);
+    font-weight: 700;
+    color: #312e81;
+    margin-bottom: 25px;
+    transition: all 0.25s ease;
+}
+
+.hospital-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.12);
+}
+
+.floor-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.floor-btn {
+    background: white;
+    border: 2px solid rgba(168, 85, 247, 0.1);
+    color: #4f46e5;
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.floor-btn:hover {
+    background: #f5f3ff;
+    border-color: var(--primary-light);
+}
+
+.floor-btn.active {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 15px rgba(174, 131, 250, 0.4);
+}
+
+.services-container {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(168, 85, 247, 0.08);
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 25px;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.back-btn-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 12px;
+}
+
+.btn-back-floor {
+    background: transparent;
+    border: none;
+    color: #4f46e5;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.btn-back-floor:hover {
+    color: var(--primary);
+    transform: translateX(-3px);
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 480px) {
+    .services-grid {
+        grid-template-columns: 1fr;
+    }
+    .floor-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.service-btn {
+    background: white;
+    border: 2px solid rgba(168, 85, 247, 0.08);
+    border-radius: 12px;
+    padding: 12px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #312e81;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: center;
+}
+
+.service-btn:hover {
+    border-color: var(--primary-light);
+    background: #fcfbfe;
+}
+
+.service-btn.active {
+    border-color: var(--primary);
+    background: rgba(174, 131, 250, 0.08);
+    color: var(--primary);
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(174, 131, 250, 0.1);
+}
+
+.btn-confirm-location {
+    width: 100%;
+    padding: 14px;
+    border-radius: 15px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    box-shadow: 0 10px 25px rgba(139, 92, 246, 0.25);
+    transition: all 0.3s ease;
+}
+
+.btn-confirm-location:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* WARD BEDS GRID SYSTEM */
+.ward-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    border: 1px solid rgba(168, 85, 247, 0.08);
+    border-radius: 20px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+}
+
+.active-service-badge {
+    background: rgba(174, 131, 250, 0.12);
+    color: var(--primary);
+    border-radius: 30px;
+    padding: 6px 15px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ward-beds-container {
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 25px;
+    box-shadow: var(--shadow);
+}
+
+.beds-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.bed-card-item {
+    background: white;
+    border: 2px solid rgba(168, 85, 247, 0.06);
+    border-radius: 18px;
+    padding: 18px 15px;
+    text-align: center;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 160px;
+}
+
+.bed-card-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(139, 92, 246, 0.08);
+    border-color: rgba(174, 131, 250, 0.3);
+}
+
+.bed-card-item.occupied {
+    border-color: rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.02);
+}
+
+.bed-card-item.occupied:hover {
+    border-color: #10b981;
+}
+
+.bed-card-item.empty {
+    border-style: dashed;
+    border-color: #cbd5e1;
+    background: rgba(248, 250, 252, 0.55);
+}
+
+.bed-number-lbl {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 5px;
+}
+
+.bed-status-icon {
+    font-size: 2.2rem;
+    margin: 10px 0;
+    display: block;
+}
+
+.bed-patient-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #4f46e5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.bed-patient-info {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+.bed-btn-action {
+    display: block;
+    width: 100%;
+    padding: 6px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.bed-card-item.occupied .bed-btn-action {
+    background: rgba(139, 92, 246, 0.08);
+    color: var(--primary);
+}
+
+.bed-card-item.occupied .bed-btn-action:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.bed-card-item.empty .bed-btn-action {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px dashed #cbd5e1;
+}
+
+.bed-card-item.empty .bed-btn-action:hover {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+/* Admin controls on Bed Card */
+.btn-delete-bed {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    border: none;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-delete-bed:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Admin Add Bed Row */
+.admin-bed-controls {
+    background: rgba(139, 92, 246, 0.03);
+    border: 1px solid rgba(168, 85, 247, 0.1);
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}

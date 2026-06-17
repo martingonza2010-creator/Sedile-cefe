@@ -5,12 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="logo.png" type="image/png">
-    <title>Nutri Apoyo Clínico HRA | Dashboard</title>
+    <title>NutriClinicoApp - Hospital de Antofagasta</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <script src="libs/supabase.js"></script>
     <script src="libs/chart.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.43">
+    <link rel="stylesheet" href="style.css?v=4.80">
     <link rel="manifest" href="manifest.json">
     <style>
         #simulationVolumeRow.adult-mode {
@@ -66,12 +66,61 @@
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
 
+    <!-- PANTALLA SELECTOR DE UBICACIÓN (NEW V4.80) -->
+    <div id="location-selector-screen" class="location-overlay" style="display: none;">
+        <div class="location-container">
+            <div class="mascot-container">
+                <span class="mascot-otter" title="Nutri IA Otter">🦦</span>
+                <div>
+                    <h2>Selector de Entorno</h2>
+                    <p style="margin: 0; text-align: left;">NutriClinicoApp - Hospital de Antofagasta</p>
+                </div>
+            </div>
+            
+            <div class="selector-step-title">📍 Paso 1: Seleccionar Hospital</div>
+            <div class="hospital-card" onclick="selectHospitalCard()">
+                <span style="font-size: 1.5rem;">🏥</span>
+                <span style="text-align: left;">Hospital Regional de Antofagasta (HRA)</span>
+            </div>
+
+            <div id="floor-select-section" style="display:none;">
+                <div class="selector-step-title">🏢 Paso 2: Seleccionar Piso</div>
+                <div class="floor-grid">
+                    <button class="floor-btn" onclick="selectFloorBtn(1)">Piso 1</button>
+                    <button class="floor-btn" onclick="selectFloorBtn(2)">Piso 2</button>
+                    <button class="floor-btn" onclick="selectFloorBtn(3)">Piso 3</button>
+                    <button class="floor-btn" onclick="selectFloorBtn(4)">Piso 4</button>
+                    <button class="floor-btn" onclick="selectFloorBtn(5)">Piso 5</button>
+                    <button class="floor-btn" onclick="selectFloorBtn(6)">Piso 6</button>
+                    <button class="floor-btn" onclick="selectFloorBtn(7)">Piso 7</button>
+                    <button class="floor-btn" onclick="selectFloorBtn(8)">Piso 8</button>
+                </div>
+            </div>
+
+            <div id="service-select-section" style="display:none;">
+                <div class="back-btn-wrapper">
+                    <button class="btn-back-floor" onclick="goBackToFloors()">← Volver a elegir piso</button>
+                </div>
+                <div class="selector-step-title">🩺 Paso 3: Seleccionar Ala / Servicio</div>
+                <div class="services-container">
+                    <div id="servicesGrid" class="services-grid">
+                        <!-- Cargar dinámicamente por JS -->
+                    </div>
+                </div>
+            </div>
+
+            <button id="btnConfirmLocation" class="btn-confirm-location" disabled onclick="confirmLocationSelection()">
+                🚀 Ingresar a la Sala
+            </button>
+        </div>
+    </div>
+
     <!-- PANTALLA DE ACCESO (LOGIN) -->
     <section id="auth-screen" class="auth-container">
         <div class="login-card">
             <img src="logo.png" alt="Logo NutriMartin" class="logo-entrance">
-            <h1>Nutri Apoyo Clínico HRA</h1>
-            <p>Dashboard Institucional</p>
+            <h1>NutriClinicoApp</h1>
+            <p>Hospital de Antofagasta</p>
             <button id="btnLoginGoogle" class="btn-google" onclick="window.login()">
                 <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="G">
                 Entrar con Google
@@ -119,7 +168,7 @@
     <section id="pin-lock-screen" class="pin-container" style="display:none;">
         <div class="pin-card">
             <img src="logo.png" alt="Logo HRA" class="logo-entrance">
-            <h2 id="pinWelcomeTitle">🔒 Desbloquear SEDILE</h2>
+            <h2 id="pinWelcomeTitle">🔒 Desbloquear NutriClinicoApp</h2>
             <p id="pinWelcomeDesc">Hola. Ingresa tu código de acceso para continuar.</p>
             
             <!-- Contenedor del input del PIN -->
@@ -158,8 +207,10 @@
             <div class="brand-box">
                 <img src="logo.png" alt="Logo" class="logo-small">
                 <div>
-                    <h1>Nutri Apoyo Clínico</h1>
-                    <p id="userNameDisplay">HRA</p>
+                    <h1 style="font-size:1.3rem; margin-bottom: 2px;">NutriClinicoApp</h1>
+                    <small style="display:block; opacity:0.75; font-size:0.72rem; margin-bottom:2px; font-weight:600;">Hospital de Antofagasta</small>
+                    <p id="userNameDisplay" style="font-size:0.8rem; margin-top:2px; display:inline-block; margin-right:8px;">Cargando...</p>
+                    <span id="activeLocationBadge" class="active-service-badge" style="margin-top: 5px; cursor: pointer; display: inline-flex;" onclick="window.openLocationSelector(true)">📍 Seleccionar Servicio</span>
                 </div>
             </div>
 
@@ -168,6 +219,9 @@
                 <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; justify-content: flex-end;">
                     <button class="btn-premium-toggle" id="btnOpenPurpose" title="Propósito y Protocolos">
                         <span>📋 Protocolos V.Infusion</span>
+                    </button>
+                    <button class="btn-premium-toggle" id="btnChangeServiceHeader" title="Cambiar de servicio" style="background:#8e44ad; color:white; border-color:white;" onclick="window.openLocationSelector(true)">
+                        <span>🔄 Cambiar de servicio</span>
                     </button>
                     <button class="btn-premium-toggle" id="btnOpenWard" title="Vista Kanban de Sala"
                         style="background:var(--primary); color:white; border-color:white;">
@@ -2071,46 +2125,29 @@
             </span>
         </div> <!-- End Main App -->
 
-        <!-- VISTA KANBAN DE SALA (NEW V3.60) -->
+        <!-- VISTA INTERACTIVA DE SALA (NEW V4.80) -->
         <div id="view-ward" class="view-section">
-            <div class="card" style="margin-bottom: 20px;">
-                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                    <h2>🏥 Gestión de Sala (Pacientes Activos)</h2>
-                    <div style="display:flex; gap:10px;">
-                        <button id="btnPrintHandoff" class="btn-micro" style="background:#27ae60; color:white;">🖨️
-                            Imprimir Entrega</button>
-                        <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;">🔄
-                            Actualizar</button>
-                    </div>
+            <div class="ward-header-bar">
+                <div>
+                    <h2 style="margin:0; font-size:1.3rem; color:#312e81;">🏥 Gestión de Camas de la Sala</h2>
+                    <p style="margin:5px 0 0 0; font-size:0.82rem; color:#64748b;" id="activeWardSubLabel">Cargando ubicación...</p>
                 </div>
-                <!-- Kanban Board -->
-                <div class="kanban-board"
-                    style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; margin-top: 15px;">
-                    <!-- Columna: Activos / Prioritarios -->
-                    <div class="kanban-column"
-                        style="background:#f8f9fa; border-radius:15px; padding:15px; border-top: 4px solid #3498db;">
-                        <h3 style="font-size:0.95rem; margin-bottom:15px; display:flex; justify-content:space-between;">
-                            En Curso <span id="countActivos"
-                                style="background:#eee; padding:2px 8px; border-radius:12px; font-size:0.8rem;">0</span>
-                        </h3>
-                        <div id="colActivos" class="kanban-list"
-                            style="display:flex; flex-direction:column; gap:10px; min-height:200px;">
-                            <!-- Cards inserted here by JS -->
-                        </div>
-                    </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button id="btnPrintHandoff" class="btn-micro" style="background:#27ae60; color:white;">🖨️ Imprimir Entrega</button>
+                    <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;" onclick="window.renderWardBedsGrid()">🔄 Actualizar</button>
+                </div>
+            </div>
 
-                    <!-- Columna: Observación / Críticos -->
-                    <div class="kanban-column"
-                        style="background:#f8f9fa; border-radius:15px; padding:15px; border-top: 4px solid #e74c3c;">
-                        <h3 style="font-size:0.95rem; margin-bottom:15px; display:flex; justify-content:space-between;">
-                            Críticos / Alertas <span id="countCriticos"
-                                style="background:#eee; padding:2px 8px; border-radius:12px; font-size:0.8rem;">0</span>
-                        </h3>
-                        <div id="colCriticos" class="kanban-list"
-                            style="display:flex; flex-direction:column; gap:10px; min-height:200px;">
-                            <!-- Cards inserted here by JS -->
-                        </div>
-                    </div>
+            <!-- Panel de Administrador (Oculto por defecto, se activa en JS) -->
+            <div id="adminBedControlRow" class="admin-bed-controls" style="display:none;">
+                <span style="font-weight:700; color:#312e81; font-size:0.85rem;">🛠️ Gestión de Camas (Admin):</span>
+                <input type="text" id="txtNewBedName" placeholder="Ej: Cama 301-3 o Box 15" style="padding:6px 12px; font-size:0.8rem; width:180px;">
+                <button class="btn-micro" style="background:#27ae60; color:white;" onclick="window.addBedToActiveService()">➕ Agregar Cama</button>
+            </div>
+
+            <div class="ward-beds-container">
+                <div id="wardBedsGrid" class="beds-grid">
+                    <!-- Camas/Cupos renderizados aquí dinámicamente -->
                 </div>
             </div>
         </div>
@@ -2422,7 +2459,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.79"></script>
+        <script src="app_core.js?v=4.80"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>

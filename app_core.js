@@ -463,23 +463,37 @@ async function showApp(isManualCheck = false) {
 
         const isUnlocked = sessionStorage.getItem('sedile_unlocked') === 'true';
 
-        // SI YA ESTÁ DESBLOQUEADO: Mostrar la App principal inmediatamente para evitar pantallas en blanco
-        if (isUnlocked) {
-            if (authScreen) authScreen.style.display = 'none';
-            if (blockedScreen) blockedScreen.style.display = 'none';
-            if (pinLock) pinLock.style.display = 'none';
-            if (mainApp) mainApp.style.display = 'block';
-
-            if (AppState.user && AppState.user.user_metadata) {
-                const name = AppState.user.user_metadata.full_name || AppState.user.email || 'Usuario';
-                const displayEl = document.getElementById('userNameDisplay');
-                if (displayEl) {
-                    displayEl.innerHTML = `Nutricionista <b>${name}</b>`;
-                }
+        // SI YA ESTÁ DESBLOQUEADO O ES ADMIN: Validar ubicación obligatoria
+        if (isUnlocked || isAdmin) {
+            const activeLoc = localStorage.getItem('activeLocation');
+            if (!activeLoc) {
+                if (authScreen) authScreen.style.display = 'none';
+                if (blockedScreen) blockedScreen.style.display = 'none';
+                if (pinLock) pinLock.style.display = 'none';
+                if (mainApp) mainApp.style.display = 'none';
+                window.openLocationSelector(false); // Forzar selección obligatoria
+                return;
+            } else {
+                window.updateActiveLocationBadge();
             }
 
-            // Si es administrador, ya terminamos, no requiere validación de Supabase adicional
-            if (isAdmin) return;
+            if (isUnlocked) {
+                if (authScreen) authScreen.style.display = 'none';
+                if (blockedScreen) blockedScreen.style.display = 'none';
+                if (pinLock) pinLock.style.display = 'none';
+                if (mainApp) mainApp.style.display = 'block';
+
+                if (AppState.user && AppState.user.user_metadata) {
+                    const name = AppState.user.user_metadata.full_name || AppState.user.email || 'Usuario';
+                    const displayEl = document.getElementById('userNameDisplay');
+                    if (displayEl) {
+                        displayEl.innerHTML = `Nutricionista <b>${name}</b>`;
+                    }
+                }
+
+                // Si es administrador, ya terminamos, no requiere validación de Supabase adicional
+                if (isAdmin) return;
+            }
         }
 
         // CONTROL DE ACCESO (ADMIN APPROVAL FLOW)
@@ -1003,9 +1017,11 @@ function initCompactLayout() {
                 const tmt = parseFloat(document.getElementById('goalTotal')?.value) || 0;
 
                 // FULL STATE PERSISTENCE V3.51
+                const activeLocStr = localStorage.getItem('activeLocation');
                 const metadata = {
                     patient_type: AppState.patient.type || 'adult',
                     weight_history: AppState.patient.weight_history || [],
+                    location: activeLocStr ? JSON.parse(activeLocStr) : null,
                     simulator: {
                         formula: document.getElementById('formulaSelect')?.value || "",
                         volume: document.getElementById('volume')?.value || "",
@@ -1283,112 +1299,7 @@ function initWardKanban() {
 }
 
 async function loadWardKanban() {
-    // Guard clause for uninitialized user session
-    if (!AppState.user || !AppState.user.id) {
-        console.warn("loadWardKanban: AppState.user is not loaded yet. Skipping load.");
-        const colActivos = document.getElementById('colActivos');
-        const colCriticos = document.getElementById('colCriticos');
-        if (colActivos) colActivos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
-        if (colCriticos) colCriticos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
-        return;
-    }
-
-    const colActivos = document.getElementById('colActivos');
-    const colCriticos = document.getElementById('colCriticos');
-    const cntActivos = document.getElementById('countActivos');
-    const cntCriticos = document.getElementById('countCriticos');
-
-    if (!colActivos || !colCriticos) return;
-
-    colActivos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
-    colCriticos.innerHTML = '<p style="opacity:0.5; text-align:center;">Cargando...</p>';
-
-    // Fetch patients that are not discharged OR where estado_sala is null
-    const { data, error } = await supabaseClient
-        .from('pacientes')
-        .select('*')
-        .eq('user_id', AppState.user.id)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Error loading ward:", error);
-        colActivos.innerHTML = '<p style="color:red;">Error al cargar</p>';
-        return;
-    }
-
-    // Filter to latest entry per patient conceptually, 
-    // but usually in a ward list you only have one active entry per patient.
-    // For safety, we keep only the latest row per 'nombre' if they create duplicates without discharging.
-    const activeMap = new Map();
-    data.forEach(p => {
-        // Enforce exclusion of discharged or deleted patients
-        if (p.estado_sala === 'de_alta' || p.estado_sala === 'eliminado') return;
-
-        if (!activeMap.has(p.nombre) || new Date(p.created_at) > new Date(activeMap.get(p.nombre).created_at)) {
-            activeMap.set(p.nombre, p);
-        }
-    });
-
-    const uniqueActivePatients = Array.from(activeMap.values());
-
-    const actHTML = [];
-    const critHTML = [];
-
-    uniqueActivePatients.forEach(p => {
-        const isCritico = p.estado_sala === 'critico' || p.requiere_atencion;
-
-        // Automated Alert Logic
-        let alertBadge = '';
-        if (p.fecha_dispositivo) {
-            const dateSNG = new Date(p.fecha_dispositivo);
-            const today = new Date();
-            const diffTime = Math.abs(today - dateSNG);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            if (diffDays >= 30) {
-                alertBadge += `<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem; margin-right:5px;">⚠️  Sonda > 30d</span>`;
-            }
-        }
-
-        // Fast Check Weight drop (simulate if multiple histories exist but for now simple badge)
-        if (p.requiere_atencion) {
-            alertBadge += `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:10px; font-size:0.6rem;">⚠️  Revisar Peso</span>`;
-        }
-
-        const cardHTML = `
-            <div class="ward-card" style="background:white; border-radius:10px; padding:12px; box-shadow:0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid ${isCritico ? '#e74c3c' : '#3498db'}; cursor:pointer;" onclick="loadPatient('${p.id}')">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <h4 style="margin:0; font-size:0.9rem; color:#333;">${p.nombre}</h4>
-                    <span style="font-size:0.75rem; color:#888; font-weight:600; background:#eee; padding:2px 6px; border-radius:6px;">Cama ${p.cama || '--'}</span>
-                </div>
-                <div style="font-size:0.75rem; color:#666; margin:4px 0;">${p.diagnostico || 'Sin Dx'}</div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-                    <span style="font-size:0.75rem; font-weight:600; color:var(--primary);">${p.peso_kg} kg | ${p.tmt ? Math.round(p.tmt) + ' kcal' : '--'}</span>
-                    <button onclick="event.stopPropagation(); window.openQuickView('${p.id}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Resumen de Bolsillo">
-                        \u{1F50D}
-                    </button>
-                    <button onclick="event.stopPropagation(); window.togglePatientState('${p.id}', '${isCritico ? 'activo' : 'critico'}')" style="background:none; border:none; cursor:pointer; font-size:0.9rem;" title="Cambiar a ${isCritico ? 'En Curso' : 'Crítico'}">
-                        ${isCritico ? '\u{21A9}\u{FE0F}' : '\u{1F6A8}'}
-                    </button>
-                    <button onclick="event.stopPropagation(); window.dischargePatient('${p.id}')" style="background:none; border:none; color:#27ae60; cursor:pointer;" title="Dar de Alta">
-                        âœ”ï¸
-                    </button>
-                </div>
-                <div style="margin-top:6px;">${alertBadge}</div>
-            </div>
-        `;
-
-        if (isCritico) {
-            critHTML.push(cardHTML);
-        } else {
-            actHTML.push(cardHTML);
-        }
-    });
-
-    colActivos.innerHTML = actHTML.join('') || '<p style="opacity:0.5; font-size:0.8rem;">No hay pacientes</p>';
-    colCriticos.innerHTML = critHTML.join('') || '<p style="opacity:0.5; font-size:0.8rem;">No hay pacientes críticos</p>';
-
-    if (cntActivos) cntActivos.innerText = actHTML.length;
-    if (cntCriticos) cntCriticos.innerText = critHTML.length;
+    await window.renderWardBedsGrid();
 }
 
 window.togglePatientState = async (id, newState) => {
@@ -7604,6 +7515,498 @@ window.closeFrisanchoHelp = () => {
     const modal = document.getElementById('frisanchoHelpModal');
     if (modal) modal.classList.remove('active');
 };
+
+
+// ==========================================
+// ENVIRONMENT SELECTOR & BEDS GRID SYSTEM (V4.80)
+// ==========================================
+
+const SERVICES_BY_FLOOR = {
+    1: [
+        { id: 'urgencias_ped', name: '🏥 Urgencias Pediátricas', type: 'pediatric' },
+        { id: 'urgencias_ad', name: '🏥 Urgencias Adulto', type: 'adult' }
+    ],
+    2: [
+        { id: 'cefe', name: '🧪 CEFE / Central Fórmulas', type: 'comm' }
+    ],
+    3: [
+        { id: 'pediatria', name: '👶 Pediatría Lactantes', type: 'pediatric' },
+        { id: 'upip', name: '🧸 UPIP (Pacientes Críticos)', type: 'pediatric' },
+        { id: 'cirugia_infantil', name: '🍼 Cirugía Infantil', type: 'pediatric' }
+    ],
+    4: [
+        { id: 'neonatologia', name: '👶 Neonatología (UCI/UTI)', type: 'neonate' },
+        { id: 'puerperio', name: '🤱 Puerperio / Maternidad', type: 'neonate' }
+    ],
+    5: [
+        { id: 'medicina_ad', name: '🩺 Medicina Adulto', type: 'adult' },
+        { id: 'upc_adulto', name: '🩺 UPC Adulto', type: 'adult' }
+    ],
+    6: [
+        { id: 'cirugia_ad', name: '🔪 Cirugía Adulto', type: 'adult' },
+        { id: 'traumatologia', name: '🦴 Traumatología', type: 'adult' }
+    ],
+    7: [
+        { id: 'pensionado', name: '🏨 Pensionado', type: 'adult' }
+    ],
+    8: [
+        { id: 'oncologia', name: '🎗️ Oncología', type: 'adult' }
+    ]
+};
+
+let selectedHospital = 'hra';
+let selectedFloor = null;
+let selectedService = null;
+let canCancelSelection = false;
+
+window.openLocationSelector = function(allowCancel = false) {
+    canCancelSelection = allowCancel;
+    const overlay = document.getElementById('location-selector-screen');
+    if (!overlay) return;
+    
+    overlay.style.display = 'flex';
+    
+    // Reset floor select & service select UI
+    selectedFloor = null;
+    selectedService = null;
+    
+    const floorSelectSection = document.getElementById('floor-select-section');
+    const serviceSelectSection = document.getElementById('service-select-section');
+    const btnConfirm = document.getElementById('btnConfirmLocation');
+    
+    if (floorSelectSection) floorSelectSection.style.display = 'none';
+    if (serviceSelectSection) serviceSelectSection.style.display = 'none';
+    if (btnConfirm) {
+        btnConfirm.disabled = true;
+        btnConfirm.style.opacity = '0.5';
+    }
+    
+    // Reset active floor buttons
+    const floorBtns = document.querySelectorAll('.floor-btn');
+    floorBtns.forEach(btn => btn.classList.remove('active'));
+
+    // Highlight selected hospital card
+    const hospitalCards = document.querySelectorAll('.hospital-card');
+    hospitalCards.forEach(c => c.classList.remove('active'));
+};
+
+window.selectHospitalCard = function() {
+    const card = document.querySelector('.hospital-card');
+    if (card) card.classList.add('active');
+    
+    const floorSelectSection = document.getElementById('floor-select-section');
+    if (floorSelectSection) {
+        floorSelectSection.style.display = 'block';
+        floorSelectSection.scrollIntoView({ behavior: 'smooth' });
+    }
+};
+
+window.selectFloorBtn = function(floor) {
+    selectedFloor = floor;
+    
+    // Highlight floor button
+    const floorBtns = document.querySelectorAll('.floor-btn');
+    floorBtns.forEach(btn => {
+        if (btn.innerText.includes(floor)) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Render services for this floor
+    const servicesGrid = document.getElementById('servicesGrid');
+    const floorSelectSection = document.getElementById('floor-select-section');
+    const serviceSelectSection = document.getElementById('service-select-section');
+    
+    if (servicesGrid) {
+        servicesGrid.innerHTML = '';
+        const services = SERVICES_BY_FLOOR[floor] || [];
+        
+        services.forEach(srv => {
+            const card = document.createElement('div');
+            card.className = 'service-card';
+            card.innerHTML = `
+                <div style="font-weight:700; font-size:0.95rem;">${srv.name}</div>
+                <span class="patient-type-badge ${srv.type}">${srv.type === 'pediatric' ? '👶 Pediátrico' : srv.type === 'neonate' ? '👶 Neonato' : srv.type === 'comm' ? '🧪 CEFE' : '🩺 Adulto'}</span>
+            `;
+            card.onclick = () => window.selectServiceCard(srv.id, srv.name, srv.type);
+            servicesGrid.appendChild(card);
+        });
+    }
+    
+    if (floorSelectSection) floorSelectSection.style.display = 'none';
+    if (serviceSelectSection) {
+        serviceSelectSection.style.display = 'block';
+        serviceSelectSection.scrollIntoView({ behavior: 'smooth' });
+    }
+};
+
+window.goBackToFloors = function() {
+    const floorSelectSection = document.getElementById('floor-select-section');
+    const serviceSelectSection = document.getElementById('service-select-section');
+    if (floorSelectSection) floorSelectSection.style.display = 'block';
+    if (serviceSelectSection) serviceSelectSection.style.display = 'none';
+};
+
+window.selectServiceCard = function(serviceId, serviceName, patientType) {
+    selectedService = { id: serviceId, name: serviceName, type: patientType };
+    
+    // Highlight selected service card
+    const cards = document.querySelectorAll('.service-card');
+    cards.forEach(card => {
+        if (card.innerText.includes(serviceName)) {
+            card.classList.add('active');
+        } else {
+            card.classList.remove('active');
+        }
+    });
+    
+    const btnConfirm = document.getElementById('btnConfirmLocation');
+    if (btnConfirm) {
+        btnConfirm.disabled = false;
+        btnConfirm.style.opacity = '1';
+        btnConfirm.scrollIntoView({ behavior: 'smooth' });
+    }
+};
+
+window.confirmLocationSelection = async function() {
+    if (!selectedFloor || !selectedService) return;
+    
+    const locationObj = {
+        hospitalId: 'hra',
+        floor: selectedFloor,
+        serviceId: selectedService.id,
+        serviceName: selectedService.name,
+        type: selectedService.type
+    };
+    
+    localStorage.setItem('activeLocation', JSON.stringify(locationObj));
+    
+    // Sync patient type in main app
+    if (selectedService.type === 'pediatric') {
+        AppState.patient.type = 'pediatric';
+        if (typeof window.setPatientTypeUI === 'function') window.setPatientTypeUI('pediatric');
+    } else if (selectedService.type === 'neonate') {
+        AppState.patient.type = 'neonate';
+        if (typeof window.setPatientTypeUI === 'function') window.setPatientTypeUI('neonate');
+    } else {
+        AppState.patient.type = 'adult';
+        if (typeof window.setPatientTypeUI === 'function') window.setPatientTypeUI('adult');
+    }
+    
+    window.updateActiveLocationBadge();
+    
+    const overlay = document.getElementById('location-selector-screen');
+    if (overlay) overlay.style.display = 'none';
+    
+    // Refresh main app screen layout
+    const mainApp = document.getElementById('main-app');
+    if (mainApp) mainApp.style.display = 'block';
+    
+    // Reload the Interactive Bed Grid!
+    await window.renderWardBedsGrid();
+    
+    showToast(`📍 Ubicación cambiada a: ${selectedService.name}`);
+};
+
+window.updateActiveLocationBadge = function() {
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) return;
+    
+    const activeLoc = JSON.parse(activeLocStr);
+    
+    const badge = document.getElementById('activeLocationBadge');
+    if (badge) {
+        badge.innerHTML = `📍 HRA: ${activeLoc.serviceName} (Piso ${activeLoc.floor})`;
+    }
+    
+    const subLabel = document.getElementById('activeWardSubLabel');
+    if (subLabel) {
+        subLabel.innerHTML = `Visualizando camas del servicio <b>${activeLoc.serviceName}</b> en el Piso ${activeLoc.floor}.`;
+    }
+};
+
+function getDefaultBeds(floor, serviceId) {
+    if (serviceId === 'cefe') {
+        return ['Cabina 1', 'Cabina 2', 'Área Envasado'];
+    }
+    const list = [];
+    const rooms = [1, 2, 3, 4, 5];
+    rooms.forEach(r => {
+        const roomNum = floor * 100 + r;
+        list.push(`Cama ${roomNum}-1`);
+        list.push(`Cama ${roomNum}-2`);
+        if (r === 1 || r === 2) list.push(`Cama ${roomNum}-3`);
+    });
+    return list;
+}
+
+window.renderWardBedsGrid = async function() {
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) return;
+    const activeLoc = JSON.parse(activeLocStr);
+    
+    const grid = document.getElementById('wardBedsGrid');
+    if (!grid) return;
+    
+    grid.innerHTML = '<p style="opacity:0.5; text-align:center; padding: 40px;">Cargando camas...</p>';
+    
+    // Check if admin is logged in to show bed tools
+    const userEmail = AppState.user?.email || '';
+    const isAdmin = userEmail === 'martingonza2010@gmail.com';
+    const adminControls = document.getElementById('adminBedControlRow');
+    if (adminControls) {
+        adminControls.style.display = isAdmin ? 'flex' : 'none';
+    }
+    
+    try {
+        const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+        
+        // 1. Fetch customized beds config
+        let bedsList = getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
+        if (supabaseClient) {
+            const { data: configRecord } = await supabaseClient
+                .from('config_camas')
+                .select('*')
+                .eq('location_key', locationKey)
+                .maybeSingle();
+                
+            if (configRecord && configRecord.beds) {
+                bedsList = configRecord.beds;
+            }
+        }
+        
+        // 2. Fetch active patients
+        let activePatients = [];
+        if (supabaseClient) {
+            const { data: patients, error } = await supabaseClient
+                .from('pacientes')
+                .select('*')
+                .order('created_at', { ascending: false });
+                
+            if (!error && patients) {
+                // Keep only those that are active (not discharged or deleted)
+                activePatients = patients.filter(p => p.estado_sala !== 'de_alta' && p.estado_sala !== 'eliminado');
+            }
+        }
+        
+        // Filter patients matched to this service
+        const matchedPatients = activePatients.filter(p => {
+            if (p.metadata && p.metadata.location && p.metadata.location.serviceId) {
+                return p.metadata.location.serviceId === activeLoc.serviceId;
+            }
+            return bedsList.includes(p.cama);
+        });
+        
+        grid.innerHTML = '';
+        
+        bedsList.forEach(bedName => {
+            // Find active patient assigned to this bed
+            const patient = matchedPatients.find(p => p.cama === bedName);
+            
+            const card = document.createElement('div');
+            
+            if (patient) {
+                const isCritico = patient.estado_sala === 'critico' || patient.requiere_atencion;
+                card.className = `bed-card occupied ${isCritico ? 'critical' : 'active'}`;
+                
+                // Construct metrics display
+                const tmtKcal = patient.tmt || '--';
+                const weight = patient.peso_kg || '--';
+                const dx = patient.diagnostico || 'Sin diagnóstico';
+                const formula = patient.metadata?.simulator?.formula || 'Ninguna';
+                
+                card.innerHTML = `
+                    <div class="bed-header">
+                        <span class="bed-badge occupied">🛏️ ${bedName}</span>
+                        ${isCritico ? '<span class="status-alert-badge">🚨 CRÍTICO</span>' : '<span class="status-alert-badge normal">🟢 EN CURSO</span>'}
+                    </div>
+                    <div class="bed-patient-info" onclick="loadPatient('${patient.id}')" style="cursor:pointer;" title="Haga clic para editar ficha">
+                        <div class="patient-name">${patient.nombre}</div>
+                        <div class="patient-dx">${dx}</div>
+                        <div class="patient-details">${patient.edad} años | ${weight} kg</div>
+                        <div class="patient-regime">🍼 Fórmula: <b>${formula}</b></div>
+                        <div class="patient-adequacy">⚡ Requerimiento: <b>${tmtKcal} kcal/día</b></div>
+                    </div>
+                    <div class="bed-actions">
+                        <button class="action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
+                        <button class="action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
+                        <button class="action-btn" title="Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
+                        <button class="action-btn" title="Dar de Alta" style="color: #27ae60;" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
+                        ${isAdmin ? `<button class="action-btn delete-bed" title="Eliminar Cama del Servicio" style="color: #e74c3c; margin-left:auto;" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
+                    </div>
+                `;
+            } else {
+                card.className = 'bed-card empty';
+                card.innerHTML = `
+                    <div class="bed-header">
+                        <span class="bed-badge empty">🛏️ ${bedName}</span>
+                        <span style="font-size:0.7rem; color:#94a3b8; font-weight:600;">DISPONIBLE</span>
+                    </div>
+                    <div class="empty-bed-placeholder">
+                        <span class="bed-icon">🛏️</span>
+                        <button class="btn-micro" style="background:#e0e7ff; color:#4f46e5; font-weight:700;" onclick="window.registerPatientInBed('${bedName}')">
+                            ➕ Registrar Paciente
+                        </button>
+                    </div>
+                    ${isAdmin ? `
+                    <div style="display:flex; justify-content:flex-end; margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0;">
+                        <button class="action-btn" title="Eliminar Cama del Servicio" style="color: #e74c3c;" onclick="window.removeBedFromService('${bedName}')">🗑️ Eliminar</button>
+                    </div>` : ''}
+                `;
+            }
+            
+            grid.appendChild(card);
+        });
+        
+    } catch (err) {
+        console.error("Error rendering beds grid:", err);
+        grid.innerHTML = `<p style="color:red; text-align:center; padding:40px;">Error al cargar la sala: ${err.message}</p>`;
+    }
+};
+
+window.registerPatientInBed = function(bedName) {
+    // Fill the bed name in the left panel form
+    const camaInput = document.getElementById('cama');
+    if (camaInput) {
+        camaInput.value = bedName;
+    }
+    
+    // Focus on the patient name input
+    const nameInput = document.getElementById('nombre');
+    if (nameInput) {
+        nameInput.focus();
+    }
+    
+    showToast(`📝 Registrando paciente en la cama: ${bedName}`);
+};
+
+window.togglePatientStateGrid = async function(id, newState) {
+    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: newState }).eq('id', id);
+    if (!error) {
+        showToast("✅ Estado de paciente actualizado.");
+        await window.renderWardBedsGrid();
+    } else {
+        alert("Error al actualizar estado: " + error.message);
+    }
+};
+
+window.dischargePatientGrid = async function(id) {
+    if (!confirm("¿Está seguro de dar de alta a este paciente?")) return;
+    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', id);
+    if (!error) {
+        showToast("✅ Paciente dado de alta.");
+        await window.renderWardBedsGrid();
+    } else {
+        alert("Error al dar de alta: " + error.message);
+    }
+};
+
+window.transferPatientGrid = async function(id) {
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) return;
+    const activeLoc = JSON.parse(activeLocStr);
+    
+    // Fetch customized beds list to show options
+    const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+    let bedsList = getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
+    if (supabaseClient) {
+        const { data: configRecord } = await supabaseClient
+            .from('config_camas')
+            .select('*')
+            .eq('location_key', locationKey)
+            .maybeSingle();
+            
+        if (configRecord && configRecord.beds) {
+            bedsList = configRecord.beds;
+        }
+    }
+    
+    const newBed = prompt(`Ingrese la nueva cama para el traslado.\nOpciones disponibles en este servicio:\n${bedsList.join(', ')}`, "");
+    if (newBed === null) return;
+    const bedClean = newBed.trim();
+    if (!bedClean) return;
+    
+    const { error } = await supabaseClient.from('pacientes').update({ cama: bedClean }).eq('id', id);
+    if (!error) {
+        showToast(`✅ Trasladado con éxito a: ${bedClean}`);
+        await window.renderWardBedsGrid();
+    } else {
+        alert("Error al trasladar paciente: " + error.message);
+    }
+};
+
+window.addBedToActiveService = async function() {
+    const txtNewBedName = document.getElementById('txtNewBedName');
+    const newBedName = txtNewBedName ? txtNewBedName.value.trim() : '';
+    if (!newBedName) return;
+
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) return;
+    const activeLoc = JSON.parse(activeLocStr);
+    const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+
+    // Fetch existing configuration
+    let { data: configRecord } = await supabaseClient.from('config_camas').select('*').eq('location_key', locationKey).maybeSingle();
+    let bedsList = configRecord ? configRecord.beds : getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
+
+    if (bedsList.includes(newBedName)) {
+        alert("La cama ya existe en este servicio.");
+        return;
+    }
+
+    bedsList.push(newBedName);
+
+    // Save back to Supabase config_camas
+    let saveError;
+    if (configRecord) {
+        const { error: updErr } = await supabaseClient.from('config_camas').update({ beds: bedsList, updated_at: new Date() }).eq('id', configRecord.id);
+        saveError = updErr;
+    } else {
+        const { error: insErr } = await supabaseClient.from('config_camas').insert([{ location_key: locationKey, beds: bedsList }]);
+        saveError = insErr;
+    }
+
+    if (!saveError) {
+        showToast(`✅ Cama "${newBedName}" agregada.`);
+        if (txtNewBedName) txtNewBedName.value = '';
+        await window.renderWardBedsGrid();
+    } else {
+        alert("Error al guardar configuración de cama: " + saveError.message);
+    }
+};
+
+window.removeBedFromService = async function(bedName) {
+    if (!confirm(`¿Estás seguro de que deseas eliminar la cama "${bedName}" de este servicio?`)) return;
+
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) return;
+    const activeLoc = JSON.parse(activeLocStr);
+    const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+
+    let { data: configRecord } = await supabaseClient.from('config_camas').select('*').eq('location_key', locationKey).maybeSingle();
+    let bedsList = configRecord ? configRecord.beds : getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
+
+    bedsList = bedsList.filter(b => b !== bedName);
+
+    let saveError;
+    if (configRecord) {
+        const { error: updErr } = await supabaseClient.from('config_camas').update({ beds: bedsList, updated_at: new Date() }).eq('id', configRecord.id);
+        saveError = updErr;
+    } else {
+        const { error: insErr } = await supabaseClient.from('config_camas').insert([{ location_key: locationKey, beds: bedsList }]);
+        saveError = insErr;
+    }
+
+    if (!saveError) {
+        showToast(`✅ Cama "${bedName}" eliminada.`);
+        await window.renderWardBedsGrid();
+    } else {
+        alert("Error al eliminar cama: " + saveError.message);
+    }
+};
+
 
 
 
