@@ -463,8 +463,8 @@ async function showApp(isManualCheck = false) {
 
         const isUnlocked = sessionStorage.getItem('sedile_unlocked') === 'true';
 
-        // SI YA ESTÁ DESBLOQUEADO O ES ADMIN: Validar ubicación obligatoria
-        if (isUnlocked || isAdmin) {
+        // SI YA ESTÁ DESBLOQUEADO: Validar ubicación obligatoria
+        if (isUnlocked) {
             const activeLoc = localStorage.getItem('activeLocation');
             if (!activeLoc) {
                 if (authScreen) authScreen.style.display = 'none';
@@ -477,23 +477,21 @@ async function showApp(isManualCheck = false) {
                 window.updateActiveLocationBadge();
             }
 
-            if (isUnlocked) {
-                if (authScreen) authScreen.style.display = 'none';
-                if (blockedScreen) blockedScreen.style.display = 'none';
-                if (pinLock) pinLock.style.display = 'none';
-                if (mainApp) mainApp.style.display = 'block';
+            if (authScreen) authScreen.style.display = 'none';
+            if (blockedScreen) blockedScreen.style.display = 'none';
+            if (pinLock) pinLock.style.display = 'none';
+            if (mainApp) mainApp.style.display = 'block';
 
-                if (AppState.user && AppState.user.user_metadata) {
-                    const name = AppState.user.user_metadata.full_name || AppState.user.email || 'Usuario';
-                    const displayEl = document.getElementById('userNameDisplay');
-                    if (displayEl) {
-                        displayEl.innerHTML = `Nutricionista <b>${name}</b>`;
-                    }
+            if (AppState.user && AppState.user.user_metadata) {
+                const name = AppState.user.user_metadata.full_name || AppState.user.email || 'Usuario';
+                const displayEl = document.getElementById('userNameDisplay');
+                if (displayEl) {
+                    displayEl.innerHTML = `Nutricionista <b>${name}</b>`;
                 }
-
-                // Si es administrador, ya terminamos, no requiere validación de Supabase adicional
-                if (isAdmin) return;
             }
+
+            // Si es administrador, ya terminamos, no requiere validación de Supabase adicional
+            if (isAdmin) return;
         }
 
         // CONTROL DE ACCESO (ADMIN APPROVAL FLOW)
@@ -7523,34 +7521,53 @@ window.closeFrisanchoHelp = () => {
 
 const SERVICES_BY_FLOOR = {
     1: [
-        { id: 'urgencias_ped', name: '🏥 Urgencias Pediátricas', type: 'pediatric' },
-        { id: 'urgencias_ad', name: '🏥 Urgencias Adulto', type: 'adult' }
+        { id: 'neonatologia_uci', name: '👶 Neonatología UCI', type: 'neonate' },
+        { id: 'neonatologia_tim_a', name: '👶 Neonatología TIM A', type: 'neonate' },
+        { id: 'neonatologia_tim_b', name: '👶 Neonatología TIM B', type: 'neonate' },
+        { id: 'neonatologia_cuidados_basicos', name: '👶 Neonatología Cuidados Básicos', type: 'neonate' },
+        { id: 'urgencias', name: '🏥 Urgencias', type: 'adult' }
     ],
     2: [
-        { id: 'cefe', name: '🧪 CEFE / Central Fórmulas', type: 'comm' }
+        { id: 'uci_adulto', name: '🩺 UCI Adulto', type: 'adult' },
+        { id: 'tim_adulto', name: '🩺 TIM Adulto', type: 'adult' }
     ],
     3: [
-        { id: 'pediatria', name: '👶 Pediatría Lactantes', type: 'pediatric' },
-        { id: 'upip', name: '🧸 UPIP (Pacientes Críticos)', type: 'pediatric' },
-        { id: 'cirugia_infantil', name: '🍼 Cirugía Infantil', type: 'pediatric' }
+        { id: 'uco', name: '🫀 UCI CORO (UCO)', type: 'adult' },
+        { id: 'pediatria_lactantes', name: '👶 Pediatría Lactantes', type: 'pediatric' },
+        { id: 'segunda_infancia', name: '🧒 II Infancia', type: 'pediatric' },
+        { id: 'cirugia_infantil', name: '🍼 Cirugía Infantil', type: 'pediatric' },
+        { id: 'oncologia_pediatrica', name: '🎗️ Oncología Pediátrica', type: 'pediatric' },
+        { id: 'timped', name: '🧸 TIMPED', type: 'pediatric' },
+        { id: 'uciped', name: '🧸 UCIPED', type: 'pediatric' }
     ],
     4: [
-        { id: 'neonatologia', name: '👶 Neonatología (UCI/UTI)', type: 'neonate' },
-        { id: 'puerperio', name: '🤱 Puerperio / Maternidad', type: 'neonate' }
+        { id: 'aro', name: '🤱 ARO', type: 'adult' },
+        { id: 'ginecologia', name: '🤰 Ginecología', type: 'adult' },
+        { id: 'puerperio', name: '🤱 Puerperio', type: 'adult' },
+        { id: 'rn_ala_d', name: '👶 RN Ala D', type: 'neonate' },
+        { id: 'rn_ala_a', name: '👶 RN Ala A', type: 'neonate' }
     ],
     5: [
-        { id: 'medicina_ad', name: '🩺 Medicina Adulto', type: 'adult' },
-        { id: 'upc_adulto', name: '🩺 UPC Adulto', type: 'adult' }
+        { id: 'ala_a', name: '🏢 Ala A', type: 'adult' },
+        { id: 'ala_b', name: '🏢 Ala B', type: 'adult' },
+        { id: 'ala_c', name: '🏢 Ala C', type: 'adult' },
+        { id: 'ala_d', name: '🏢 Ala D', type: 'adult' }
     ],
     6: [
-        { id: 'cirugia_ad', name: '🔪 Cirugía Adulto', type: 'adult' },
-        { id: 'traumatologia', name: '🦴 Traumatología', type: 'adult' }
+        { id: 'ala_a', name: '🏢 Ala A', type: 'adult' },
+        { id: 'ala_b', name: '🏢 Ala B', type: 'adult' },
+        { id: 'ala_c', name: '🏢 Ala C', type: 'adult' },
+        { id: 'ala_d', name: '🏢 Ala D', type: 'adult' }
     ],
     7: [
-        { id: 'pensionado', name: '🏨 Pensionado', type: 'adult' }
+        { id: 'ala_a', name: '🏢 Ala A', type: 'adult' },
+        { id: 'ala_b', name: '🏢 Ala B', type: 'adult' },
+        { id: 'ala_c', name: '🏢 Ala C', type: 'adult' },
+        { id: 'ala_d', name: '🏢 Ala D', type: 'adult' }
     ],
     8: [
-        { id: 'oncologia', name: '🎗️ Oncología', type: 'adult' }
+        { id: 'ala_a', name: '🏢 Ala A', type: 'adult' },
+        { id: 'ala_b', name: '🏢 Ala B', type: 'adult' }
     ]
 };
 
@@ -7626,6 +7643,7 @@ window.selectFloorBtn = function(floor) {
         services.forEach(srv => {
             const card = document.createElement('div');
             card.className = 'service-card';
+            card.setAttribute('data-service-id', srv.id);
             card.innerHTML = `
                 <div style="font-weight:700; font-size:0.95rem;">${srv.name}</div>
                 <span class="patient-type-badge ${srv.type}">${srv.type === 'pediatric' ? '👶 Pediátrico' : srv.type === 'neonate' ? '👶 Neonato' : srv.type === 'comm' ? '🧪 CEFE' : '🩺 Adulto'}</span>
@@ -7655,7 +7673,7 @@ window.selectServiceCard = function(serviceId, serviceName, patientType) {
     // Highlight selected service card
     const cards = document.querySelectorAll('.service-card');
     cards.forEach(card => {
-        if (card.innerText.includes(serviceName)) {
+        if (card.getAttribute('data-service-id') === serviceId) {
             card.classList.add('active');
         } else {
             card.classList.remove('active');
@@ -7728,17 +7746,157 @@ window.updateActiveLocationBadge = function() {
 };
 
 function getDefaultBeds(floor, serviceId) {
-    if (serviceId === 'cefe') {
-        return ['Cabina 1', 'Cabina 2', 'Área Envasado'];
+    if (!serviceId) return [];
+    const cleanId = serviceId.toLowerCase();
+    
+    // 1. Neonatología (UCI, TIM A, TIM B, Cuidados Básicos)
+    if (cleanId.startsWith('neonatologia_')) {
+        const list = [];
+        for (let i = 1; i <= 12; i++) {
+            list.push(`Cupo ${i}`);
+        }
+        return list;
     }
+    
+    // 2. Urgencias
+    if (cleanId === 'urgencias') {
+        const list = [];
+        for (let i = 1; i <= 30; i++) {
+            list.push(`Box ${i}`);
+        }
+        return list;
+    }
+    
+    // 3. UCI Adulto
+    if (cleanId === 'uci_adulto') {
+        const list = [];
+        for (let i = 1; i <= 30; i++) {
+            list.push(`UCI ${i}`);
+        }
+        return list;
+    }
+    
+    // 4. TIM Adulto
+    if (cleanId === 'tim_adulto') {
+        const list = [];
+        for (let i = 1; i <= 30; i++) {
+            list.push(`TIM ${i}`);
+        }
+        return list;
+    }
+    
+    // 5. Floor 3 Pediatric Services
+    if (cleanId === 'pediatria_lactantes') {
+        const list = [];
+        for (let r = 301; r <= 311; r++) {
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
+            if (r === 301 || r === 302) {
+                list.push(`${r}-3`);
+            }
+        }
+        return list;
+    }
+    if (cleanId === 'segunda_infancia') {
+        const list = [];
+        for (let r = 312; r <= 322; r++) {
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
+            if (r === 312 || r === 313) {
+                list.push(`${r}-3`);
+            }
+        }
+        return list;
+    }
+    if (cleanId === 'cirugia_infantil') {
+        const list = [];
+        for (let r = 323; r <= 329; r++) {
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
+        }
+        return list;
+    }
+    if (cleanId === 'oncologia_pediatrica') {
+        const list = [];
+        for (let i = 1; i <= 10; i++) {
+            list.push(`ONCO ${i}`);
+        }
+        return list;
+    }
+    if (cleanId === 'timped') {
+        const list = [];
+        for (let i = 1; i <= 6; i++) {
+            list.push(`TIMPED ${i}`);
+        }
+        return list;
+    }
+    if (cleanId === 'uciped') {
+        const list = [];
+        for (let i = 1; i <= 6; i++) {
+            list.push(`UCIPED ${i}`);
+        }
+        return list;
+    }
+    if (cleanId === 'uco') {
+        const list = [];
+        for (let i = 1; i <= 10; i++) {
+            list.push(`UCO ${i}`);
+        }
+        return list;
+    }
+    
+    // 6. Floor 4: ARO, Ginecologia, Puerperio, RN Ala D, RN Ala A
+    if (floor === 4) {
+        const list = [];
+        for (let r = 401; r <= 411; r++) {
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
+            if (r === 401 || r === 402) {
+                list.push(`${r}-3`);
+            }
+        }
+        return list;
+    }
+    
+    // 7. General Alas for floors 5, 6, 7
+    if (floor === 5 || floor === 6 || floor === 7) {
+        let startRoom = 1;
+        let endRoom = 5;
+        if (cleanId === 'ala_b') { startRoom = 6; endRoom = 10; }
+        else if (cleanId === 'ala_c') { startRoom = 11; endRoom = 15; }
+        else if (cleanId === 'ala_d') { startRoom = 16; endRoom = 20; }
+        
+        const list = [];
+        for (let r = startRoom; r <= endRoom; r++) {
+            const rNum = floor * 100 + r;
+            list.push(`${rNum}-1`);
+            list.push(`${rNum}-2`);
+        }
+        return list;
+    }
+    
+    // 8. Floor 8: Ala A, Ala B
+    if (floor === 8) {
+        let startRoom = 1;
+        let endRoom = 10;
+        if (cleanId === 'ala_b') { startRoom = 11; endRoom = 20; }
+        
+        const list = [];
+        for (let r = startRoom; r <= endRoom; r++) {
+            const rNum = floor * 100 + r;
+            list.push(`${rNum}-1`);
+            list.push(`${rNum}-2`);
+        }
+        return list;
+    }
+    
+    // Fallback default bed list
     const list = [];
-    const rooms = [1, 2, 3, 4, 5];
-    rooms.forEach(r => {
+    for (let r = 1; r <= 5; r++) {
         const roomNum = floor * 100 + r;
-        list.push(`Cama ${roomNum}-1`);
-        list.push(`Cama ${roomNum}-2`);
-        if (r === 1 || r === 2) list.push(`Cama ${roomNum}-3`);
-    });
+        list.push(`${roomNum}-1`);
+        list.push(`${roomNum}-2`);
+    }
     return list;
 }
 

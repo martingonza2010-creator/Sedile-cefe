@@ -1486,19 +1486,26 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:foc
 .mascot-container {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 20px;
+    justify-content: flex-start;
+    gap: 20px;
+    margin-bottom: 25px;
+    border-bottom: 1px dashed rgba(139, 92, 246, 0.2);
+    padding-bottom: 15px;
+    text-align: left;
 }
 
 .mascot-otter {
-    font-size: 3rem;
-    animation: waveMascot 3s infinite ease-in-out;
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+    filter: drop-shadow(0 6px 12px rgba(139, 92, 246, 0.25));
+    animation: floatingOtter 4s ease-in-out infinite;
 }
 
-@keyframes waveMascot {
-    0%, 100% { transform: rotate(0deg); }
-    50% { transform: rotate(10deg); }
+@keyframes floatingOtter {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(2deg); }
 }
 
 .location-container h2 {
@@ -1853,4 +1860,66 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:foc
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
-}
+}
+
+/* NEW V4.80 SERVICE CARD & GLASSMORPHISM UPDATE */
+body {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 40%, #c084fc 100%) !important;
+    background-attachment: fixed !important;
+}
+.auth-card, .location-container {
+    background: rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(139, 92, 246, 0.15) !important;
+}
+.service-card {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.service-card:hover {
+    transform: translateY(-5px) scale(1.03);
+    background: rgba(255, 255, 255, 0.75);
+    border-color: rgba(168, 85, 247, 0.4);
+    box-shadow: 0 12px 30px rgba(139, 92, 246, 0.25);
+}
+.service-card.active {
+    background: rgba(168, 85, 247, 0.15) !important;
+    border: 2px solid #a855f7 !important;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4) !important;
+    transform: translateY(-2px) scale(1.05);
+}
+.service-card.active::after {
+    content: "✓";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #a855f7;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}

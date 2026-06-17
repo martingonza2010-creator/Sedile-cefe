@@ -12,12 +12,14 @@ CREATE TABLE IF NOT EXISTS public.config_camas (
 ALTER TABLE public.config_camas ENABLE ROW LEVEL SECURITY;
 
 -- Política de Lectura: Todos los usuarios autenticados pueden ver la configuración de camas
+DROP POLICY IF EXISTS "Permitir lectura a usuarios autenticados" ON public.config_camas;
 CREATE POLICY "Permitir lectura a usuarios autenticados" 
 ON public.config_camas FOR SELECT 
 TO authenticated 
 USING (true);
 
 -- Política de Escritura: Solo el Administrador único puede insertar/actualizar
+DROP POLICY IF EXISTS "Permitir escritura al administrador único" ON public.config_camas;
 CREATE POLICY "Permitir escritura al administrador único" 
 ON public.config_camas FOR ALL 
 TO authenticated 
