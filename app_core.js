@@ -5320,46 +5320,78 @@ function initAssessmentLogic() {
 }
 
 function calcChumleaWeight() {
+    const p = AppState.patient || {};
     const atr = parseFloat(document.getElementById('altrodilla')?.value) || 0;
     const age = parseFloat(document.getElementById('edad')?.value) || 0;
     const sex = document.getElementById('sexo')?.value;
+    const method = document.getElementById('altrodillaMethodSelect')?.value || 'ross';
 
-    const resBox = document.getElementById('estContainerStacked');
     const badgeW = document.getElementById('valChumleaWeight');
     const badgeS = document.getElementById('valRossStature');
     const badgeWDisplay = document.getElementById('valChumleaWeightBadge');
     const badgeSDisplay = document.getElementById('valRossStatureBadge');
+    const lblS = document.getElementById('lblRossStatureBadgeText');
+    const lblW = document.getElementById('lblChumleaWeightBadgeText');
+
+    if (lblS) lblS.innerText = method === 'ross' ? 'Talla Ross' : 'Talla Chumlea';
+    if (lblW) lblW.innerText = method === 'ross' ? 'Peso Ross' : 'Peso Chumlea';
 
     if (atr > 0) {
-        if (resBox) resBox.style.display = 'flex';
-
-        // 1. Ross Stature Formula
         let stature = 0;
-        if (sex === 'f') {
-            stature = (1.83 * atr) + (84.8 - (0.24 * age));
-        } else {
-            stature = (2.02 * atr) + (64.19 - (0.04 * age));
-        }
-
-        // 2. Chumlea Weight Formula
         let weight = 0;
-        const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30; // Default Muac
-        if (sex === 'f') {
-            weight = (1.27 * atr) + (0.87 * cb) + (0.41 * 35) + (0.11 * 15) - 43.1;
+
+        if (method === 'ross') {
+            // Ross Stature Formula (identical to Chumlea stature)
+            if (sex === 'f') {
+                stature = (1.83 * atr) + (84.8 - (0.24 * age));
+            } else {
+                stature = (2.02 * atr) + (64.19 - (0.04 * age));
+            }
+            // Ross Weight Formula (2-variable)
+            const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30; // Default Mid-arm circumference
+            if (sex === 'f') {
+                if (age >= 60) {
+                    weight = (1.09 * atr) + (2.68 * cb) - 65.51;
+                } else {
+                    weight = (1.01 * atr) + (2.81 * cb) - 66.04;
+                }
+            } else {
+                if (age >= 60) {
+                    weight = (1.10 * atr) + (3.07 * cb) - 75.81;
+                } else {
+                    weight = (1.19 * atr) + (3.21 * cb) - 86.82;
+                }
+            }
         } else {
-            weight = (0.98 * atr) + (1.16 * cb) + (0.37 * 35) + (1.16 * 15) - 35.8;
+            // Chumlea Stature Formula
+            if (sex === 'f') {
+                stature = (1.83 * atr) + (84.8 - (0.24 * age));
+            } else {
+                stature = (2.02 * atr) + (64.19 - (0.04 * age));
+            }
+            // Chumlea Weight Formula (4-variable using standard clinical defaults or inputs)
+            const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30;
+            const pt = parseFloat(document.getElementById('ptricipital')?.value) || 15; // default PT
+            const cp = parseFloat(document.getElementById('cpantorrilla')?.value) || 30; // default CP
+            if (sex === 'f') {
+                weight = (1.27 * atr) + (0.87 * cb) + (0.41 * pt) + (0.11 * cp) - 43.1;
+            } else {
+                weight = (0.98 * atr) + (1.16 * cb) + (0.37 * pt) + (1.16 * cp) - 35.8;
+            }
         }
 
         // Update UI Badges
-        if (badgeSDisplay) badgeSDisplay.innerText = `Talla Ross: ${stature.toFixed(1)} cm`;
-        if (badgeWDisplay) badgeWDisplay.innerText = `Peso Chumlea: ${weight.toFixed(1)} kg`;
+        if (badgeSDisplay) badgeSDisplay.innerText = `${stature.toFixed(1)} cm`;
+        if (badgeWDisplay) badgeWDisplay.innerText = `${weight.toFixed(1)} kg`;
 
         // Update hidden inputs for persistence/IA
         if (badgeW) badgeW.value = weight.toFixed(1) + ' kg';
         if (badgeS) badgeS.value = stature.toFixed(1) + ' cm';
-
     } else {
-        if (resBox) resBox.style.display = 'none';
+        if (badgeSDisplay) badgeSDisplay.innerText = '-- cm';
+        if (badgeWDisplay) badgeWDisplay.innerText = '-- kg';
+        if (badgeW) badgeW.value = '';
+        if (badgeS) badgeS.value = '';
     }
 }
 
@@ -5368,20 +5400,25 @@ function calcChumleaWeight() {
  * Uses Red-themed UI, Percentile Logic, and Area G (AMA) calculation.
  */
 function updateAnthropometry() {
+    const p = AppState.patient || {};
     const cb = parseFloat(document.getElementById('cbraquial')?.value) || 0;
     const pt = parseFloat(document.getElementById('ptricipital')?.value) || 0;
     const age = parseFloat(document.getElementById('edad')?.value) || 0;
     const sex = document.getElementById('sexo')?.value;
+    const method = document.getElementById('frisanchoMethodSelect')?.value || 'nhanes3';
 
-    const resBox = document.getElementById('frisanchoContainer');
     const lblCB = document.getElementById('lblCBStatus');
     const lblAMB = document.getElementById('lblAMBStatus');
     const lblAGB = document.getElementById('lblAGBStatus');
     const indicator = document.getElementById('anthIndicator');
     const badgeDate = document.getElementById('valAnthDate');
-    if (cb > 0 || pt > 0) {
-        if (resBox) resBox.style.display = 'block';
+    const refSub = document.getElementById('lblFrisanchoReferenceText');
 
+    if (refSub) {
+        refSub.innerText = method === 'nhanes3' ? 'Referencia: NHANES III / Frisancho 1990' : 'Referencia: Frisancho 1981 (NHANES I)';
+    }
+
+    if (cb > 0 || pt > 0) {
         // 1. Calculate Area G (AMA - Arm Muscle Area)
         let ama = 0;
         if (cb > 0 && pt > 0) {
@@ -5393,8 +5430,9 @@ function updateAnthropometry() {
             if (ama < 0) ama = 0;
         }
 
-        // 2. Reference Tables (Frisancho / NHANES Representative)
-        const refs = {
+        // 2. Reference Tables
+        // NHANES III (Frisancho 1990)
+        const nhanes3Refs = {
             cb: {
                 m: {
                     18: { p5: 27.2, p10: 28.2, p50: 32.7, p90: 37.7, p95: 39.5 },
@@ -5409,7 +5447,7 @@ function updateAnthropometry() {
                     75: { p5: 22.5, p10: 24.0, p50: 28.6, p90: 34.5, p95: 36.5 }
                 }
             },
-            ag: {
+            ag: { // represents AMB
                 m: {
                     18: { p5: 41.5, p10: 45.4, p50: 59.9, p90: 77.8, p95: 83.2 },
                     35: { p5: 44.5, p10: 48.9, p50: 64.1, p90: 83.5, p95: 90.0 },
@@ -5425,9 +5463,43 @@ function updateAnthropometry() {
             }
         };
 
+        // Frisancho 1981 (NHANES I)
+        const frisancho1981Refs = {
+            cb: {
+                m: {
+                    18: { p5: 26.8, p10: 27.8, p50: 31.8, p90: 36.8, p95: 38.5 },
+                    35: { p5: 28.5, p10: 29.8, p50: 33.8, p90: 38.5, p95: 40.0 },
+                    65: { p5: 26.5, p10: 27.8, p50: 31.8, p90: 36.0, p95: 37.5 },
+                    75: { p5: 25.0, p10: 26.5, p50: 30.0, p90: 34.5, p95: 36.0 }
+                },
+                f: {
+                    18: { p5: 22.5, p10: 23.5, p50: 27.0, p90: 31.5, p95: 33.5 },
+                    35: { p5: 24.5, p10: 25.8, p50: 30.8, p90: 36.8, p95: 39.5 },
+                    65: { p5: 23.5, p10: 24.8, p50: 29.8, p90: 35.8, p95: 38.0 },
+                    75: { p5: 22.0, p10: 23.5, p50: 28.0, p90: 33.5, p95: 35.0 }
+                }
+            },
+            ag: { // represents AMB
+                m: {
+                    18: { p5: 35.8, p10: 38.5, p50: 51.3, p90: 63.7, p95: 66.6 },
+                    35: { p5: 37.5, p10: 41.0, p50: 56.0, p90: 69.0, p95: 72.0 },
+                    65: { p5: 31.2, p10: 33.8, p50: 45.2, p90: 57.5, p95: 62.0 },
+                    75: { p5: 28.0, p10: 31.0, p50: 41.0, p90: 52.0, p95: 56.0 }
+                },
+                f: {
+                    18: { p5: 24.8, p10: 26.8, p50: 33.2, p90: 41.8, p95: 45.2 },
+                    35: { p5: 26.5, p10: 28.5, p50: 36.5, p90: 48.5, p95: 52.5 },
+                    65: { p5: 24.0, p10: 26.0, p50: 32.5, p90: 45.0, p95: 49.0 },
+                    75: { p5: 22.0, p10: 24.0, p50: 29.0, p90: 40.0, p95: 44.0 }
+                }
+            }
+        };
+
+        const activeRefs = method === 'nhanes3' ? nhanes3Refs : frisancho1981Refs;
+
         const getPercentileMatch = (type, val) => {
             if (val <= 0) return { status: '--', color: '#888', pos: 50 };
-            const sexRefs = refs[type][sex === 'f' ? 'f' : 'm'];
+            const sexRefs = activeRefs[type][sex === 'f' ? 'f' : 'm'];
             const keys = Object.keys(sexRefs).map(Number).sort((a, b) => b - a);
             const refKey = keys.find(k => age >= k) || keys[keys.length - 1];
             const p = sexRefs[refKey];
@@ -5478,7 +5550,11 @@ function updateAnthropometry() {
     } else {
         p.cbStatus = null;
         p.amaStatus = null;
-        if (resBox) resBox.style.display = 'none';
+        if (lblCB) lblCB.innerHTML = '--';
+        if (lblAMB) lblAMB.innerHTML = '--';
+        if (lblAGB) lblAGB.innerHTML = '--';
+        if (indicator) indicator.style.left = '50%';
+        if (badgeDate) badgeDate.innerText = 'Última act: --';
     }
 }
 

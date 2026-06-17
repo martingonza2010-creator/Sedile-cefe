@@ -1417,19 +1417,22 @@
                         </div>
                     </details>
 
-                    <!-- Ross/Chumlea Knee Height Estimation Box -->
-                    <div id="estContainerStacked" style="margin-top:15px; display:none; flex-direction:column; gap:8px; background:rgba(39, 174, 96, 0.05); padding:15px; border-radius:12px; border:1px solid rgba(39, 174, 96, 0.15);">
+                    <!-- Ross/Chumlea Knee Height Estimation Box (Permanently Visible) -->
+                    <div id="estContainerStacked" style="margin-top:15px; display:flex; flex-direction:column; gap:8px; background:rgba(39, 174, 96, 0.05); padding:15px; border-radius:12px; border:1px solid rgba(39, 174, 96, 0.15);">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <h5 style="color:#27ae60; margin:0; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">📋 Estimación Antropométrica (Rodilla)</h5>
-                            <span style="font-size:0.6rem; color:#7f8c8d; font-style:italic;">Ross y Chumlea</span>
+                            <select id="altrodillaMethodSelect" onchange="window.calcChumleaWeight()" style="padding:2px 8px; font-size:0.7rem; border-radius:6px; border:1px solid #27ae60; background:white; color:#27ae60; font-weight:600; cursor:pointer;">
+                                <option value="ross">Criterio Ross</option>
+                                <option value="chumlea">Criterio Chumlea</option>
+                            </select>
                         </div>
                         <div class="grid-col-2" style="grid-template-columns: 1fr 1fr; gap:10px; margin-top:5px;">
                             <div style="background:white; padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.05); text-align:center;">
-                                <span style="font-size:0.6rem; color:#7f8c8d; display:block; text-transform:uppercase; font-weight:600;">Talla Ross Estimada</span>
+                                <span id="lblRossStatureBadgeText" style="font-size:0.6rem; color:#7f8c8d; display:block; text-transform:uppercase; font-weight:600;">Talla Ross</span>
                                 <strong style="font-size:0.95rem; color:#27ae60;" id="valRossStatureBadge">-- cm</strong>
                             </div>
                             <div style="background:white; padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.05); text-align:center;">
-                                <span style="font-size:0.6rem; color:#7f8c8d; display:block; text-transform:uppercase; font-weight:600;">Peso Chumlea Estimado</span>
+                                <span id="lblChumleaWeightBadgeText" style="font-size:0.6rem; color:#7f8c8d; display:block; text-transform:uppercase; font-weight:600;">Peso Chumlea</span>
                                 <strong style="font-size:0.95rem; color:#27ae60;" id="valChumleaWeightBadge">-- kg</strong>
                             </div>
                         </div>
@@ -1438,17 +1441,23 @@
                         <input type="hidden" id="valChumleaWeight">
                     </div>
 
-                    <!-- Frisancho/NHANES Box -->
-                    <div id="frisanchoContainer" style="margin-top:15px; display:none; background:rgba(231, 76, 60, 0.05); padding:15px; border-radius:12px; border:1px solid rgba(231, 76, 60, 0.15);">
+                    <!-- Frisancho/NHANES Box (Permanently Visible) -->
+                    <div id="frisanchoContainer" style="margin-top:15px; display:block; background:rgba(231, 76, 60, 0.05); padding:15px; border-radius:12px; border:1px solid rgba(231, 76, 60, 0.15);">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
                             <div>
                                 <div style="display:flex; align-items:center; gap:6px;">
-                                    <h5 style="color:#c0392b; margin:0; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">📍 Clasificación Frisancho</h5>
+                                    <h5 style="color:#c0392b; margin:0; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">📍 Clasificación Braquial</h5>
                                     <button type="button" onclick="window.showFrisanchoHelp()" style="background:#c0392b; border:none; color:white; border-radius:50%; width:16px; height:16px; font-size:0.65rem; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; transition:all 0.2s;" title="¿Cómo usar?">ℹ️</button>
                                 </div>
-                                <span style="font-size:0.55rem; color:#7f8c8d; display:block; font-weight:500; margin-top:2px;">Estándar de Referencia: Frisancho 1990 / NHANES III</span>
+                                <span id="lblFrisanchoReferenceText" style="font-size:0.55rem; color:#7f8c8d; display:block; font-weight:500; margin-top:2px;">Referencia: NHANES III / Frisancho 1990</span>
                             </div>
-                            <div id="valAnthDate" style="font-size:0.65rem; color:#7f8c8d; font-style:italic;">Última act: --</div>
+                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                                <select id="frisanchoMethodSelect" onchange="window.updateAnthropometry()" style="padding:2px 8px; font-size:0.7rem; border-radius:6px; border:1px solid #c0392b; background:white; color:#c0392b; font-weight:600; cursor:pointer;">
+                                    <option value="nhanes3">NHANES III (Frisancho 1990)</option>
+                                    <option value="frisancho1981">Frisancho 1981</option>
+                                </select>
+                                <div id="valAnthDate" style="font-size:0.6rem; color:#7f8c8d; font-style:italic;">Última act: --</div>
+                            </div>
                         </div>
 
                         <div class="anth-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:12px;">
@@ -2413,7 +2422,7 @@
         <script src="minsal_data.js"></script>
         <script src="pittaluga_data.js"></script>
         <script src="special_data.js"></script>
-        <script src="app_core.js?v=4.77"></script>
+        <script src="app_core.js?v=4.78"></script>
         <!-- NEW V3.60: PRINTABLE AREA FOR HANDOFF -->
         <div id="printHandoffArea"></div>
 </body>
