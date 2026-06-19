@@ -190,14 +190,14 @@ const LOCAL_FORMULAS = [
     },
 
     // --- FÓRMULAS RTH (ADULTO ENTERAL) ---
-    { cat: "Fórmulas RTH", id: "osmolite", name: "Osmolite", type: "l", volBase: 1000, k: 100.0, p: 4.0, c: 13.6, f: 3.4, minerals: {} },
-    { cat: "Fórmulas RTH", id: "glucerna_15", name: "Glucerna 1.5", type: "l", volBase: 1000, k: 150.0, p: 7.5, c: 12.76, f: 7.5, minerals: {} },
-    { cat: "Fórmulas RTH", id: "diben_15", name: "Diben 1.5 Kcal", type: "l", volBase: 1000, k: 150.0, p: 7.5, c: 13.1, f: 7.0, minerals: {} },
-    { cat: "Fórmulas RTH", id: "jevity_1", name: "Jevity 1.0 (1000ml)", type: "l", volBase: 1000, k: 106.0, p: 4.4, c: 15.1, f: 3.4, minerals: {} },
-    { cat: "Fórmulas RTH", id: "fresubin_fibre", name: "Fresubin Original Fibre", type: "l", volBase: 500, k: 100.0, p: 3.8, c: 13.0, f: 3.4, minerals: {} },
-    { cat: "Fórmulas RTH", id: "fresubin_intensive", name: "Fresubin Intensive", type: "l", volBase: 500, k: 122.0, p: 10.0, c: 12.9, f: 3.2, minerals: {} },
-    { cat: "Fórmulas RTH", id: "fresubin_2kcal", name: "Fresubin 2 Kcal HP", type: "l", volBase: 500, k: 200.0, p: 10.0, c: 17.5, f: 10.0, minerals: {} },
-    { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", volBase: 1000, k: 149.2, p: 8.0, c: 18.0, f: 4.8, minerals: {} },
+    { cat: "Fórmulas RTH", id: "osmolite", name: "Osmolite", type: "l", volBase: 1000, k: 100.0, p: 4.0, c: 13.6, f: 3.4, minerals: { na: 93, k: 157, cl: 142, ca: 70, p: 70, mg: 21, fe: 1.5, zn: 1.4, cu: 0.18, mn: 0.3, i: 0.012, se: 0.007, cr: 0.009, mo: 0.014 } },
+    { cat: "Fórmulas RTH", id: "glucerna_15", name: "Glucerna 1.5", type: "l", volBase: 1000, k: 150.0, p: 7.5, c: 12.76, f: 7.5, minerals: { na: 140, k: 165, cl: 145, ca: 100, p: 100, mg: 31, fe: 0.85, zn: 1.4, cu: 0.15, mn: 0.25 } },
+    { cat: "Fórmulas RTH", id: "diben_15", name: "Diben 1.5 Kcal", type: "l", volBase: 1000, k: 150.0, p: 7.5, c: 13.1, f: 7.0, minerals: { na: 55, k: 180, cl: 85, ca: 155, p: 110, mg: 30, fe: 2.0, zn: 1.8, cu: 0.2, mn: 0.4, i: 0.02, se: 0.01, cr: 0.02, mo: 0.015 } },
+    { cat: "Fórmulas RTH", id: "jevity_1", name: "Jevity 1.0 (1000ml)", type: "l", volBase: 1000, k: 106.0, p: 4.4, c: 15.1, f: 3.4, minerals: { na: 100, k: 168, cl: 150, ca: 80, p: 80, mg: 25, fe: 1.8, zn: 1.4 } },
+    { cat: "Fórmulas RTH", id: "fresubin_fibre", name: "Fresubin Original Fibre", type: "l", volBase: 500, k: 100.0, p: 3.8, c: 13.0, f: 3.4, minerals: { na: 75, k: 125, cl: 115, ca: 80, p: 63, mg: 25, fe: 1.3, zn: 1.2 } },
+    { cat: "Fórmulas RTH", id: "fresubin_intensive", name: "Fresubin Intensive", type: "l", volBase: 500, k: 122.0, p: 10.0, c: 12.9, f: 3.2, minerals: { na: 100, k: 180, cl: 120, ca: 90, p: 85, mg: 28, fe: 1.5, zn: 1.5 } },
+    { cat: "Fórmulas RTH", id: "fresubin_2kcal", name: "Fresubin 2 Kcal HP", type: "l", volBase: 500, k: 200.0, p: 10.0, c: 17.5, f: 10.0, minerals: { na: 120, k: 230, cl: 150, ca: 160, p: 130, mg: 40, fe: 2.5, zn: 2.2 } },
+    { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", volBase: 1000, k: 149.2, p: 8.0, c: 18.0, f: 4.8, minerals: { na: 110, k: 235, cl: 80, ca: 125, p: 100, mg: 27, fe: 2.0, zn: 1.8 } },
 
     // --- BOTELLINES ---
     { cat: "Botellines", id: "ensure_clinical_bot", name: "Ensure Clinical", type: "l", isBotellin: true, volUnit: 220, k: 149.2, p: 8.0, c: 18.0, f: 4.8, minerals: {} },
@@ -4146,10 +4146,48 @@ function runSimulation() {
         ivK = ivC * 3.4;
     }
 
-    k += (modK + oralK + ivK);
-    p += (modP + oralP);
-    c += (modC + oralC + ivC);
-    l += (modL + oralL);
+    // NEW V4.95: Factor in RTH (Ready to Hang) contributions
+    let rthK = 0, rthP = 0, rthC = 0, rthL = 0;
+    const rthRate = parseFloat(document.getElementById('infusionRate')?.value) || 0;
+    const rthId = document.getElementById('infusionRTHSelect')?.value;
+    const rthSubtotalWrapper = document.getElementById('rthSubtotalWrapper');
+    
+    if (rthRate > 0 && rthId) {
+        const rthObj = AppState.formulas.find(f => f.id === rthId);
+        if (rthObj) {
+            const rthVol = rthRate * 24; // Daily volume in ml
+            rthK = (rthVol / 100) * rthObj.k;
+            rthP = (rthVol / 100) * rthObj.p;
+            rthC = (rthVol / 100) * rthObj.c;
+            rthL = (rthVol / 100) * rthObj.f;
+            
+            // Update RTH subtotal board
+            const elRthK = document.getElementById('subKcalRth');
+            const elRthP = document.getElementById('subProtRth');
+            const elRthC = document.getElementById('subCHORth');
+            const elRthL = document.getElementById('subLipRth');
+            if (elRthK) elRthK.innerText = Math.round(rthK);
+            if (elRthP) elRthP.innerText = rthP.toFixed(1);
+            if (elRthC) elRthC.innerText = rthC.toFixed(1);
+            if (elRthL) elRthL.innerText = rthL.toFixed(1);
+            
+            if (rthSubtotalWrapper) rthSubtotalWrapper.style.display = 'block';
+            
+            // Render minerals if panel is open
+            if (typeof window.renderRTHMinerals === 'function') {
+                window.renderRTHMinerals(rthObj, rthVol);
+            }
+        }
+    } else {
+        if (rthSubtotalWrapper) rthSubtotalWrapper.style.display = 'none';
+        const panel = document.getElementById('rthMineralsPanel');
+        if (panel) panel.style.display = 'none';
+    }
+
+    k += (modK + oralK + ivK + rthK);
+    p += (modP + oralP + rthP);
+    c += (modC + oralC + ivC + rthC);
+    l += (modL + oralL + rthL);
 
     // --- NEW V4.40: Factor in Route Overlap (Traslape) ---
     if (AppState.traslape && AppState.traslape.active) {
@@ -4529,6 +4567,9 @@ function initInfusionLogic() {
             `;
         } else {
             logBox.style.display = 'none';
+        }
+        if (typeof window.runSimulation === 'function') {
+            window.runSimulation();
         }
     };
 
@@ -8588,3 +8629,119 @@ window.removeBedFromService = async function(bedName) {
 
 
 
+
+
+// =========================================================================
+// NEW V4.95: RTH COMPARATOR MODAL & RTH MINERALS HANDLERS
+// =========================================================================
+window.openRTHComparison = () => {
+    const modal = document.getElementById('rthComparisonModal');
+    if (modal) modal.classList.add('active');
+    
+    // Set custom volume input to current daily volume of RTH if it exists
+    const rate = parseFloat(document.getElementById('infusionRate')?.value) || 0;
+    const volInput = document.getElementById('txtRTHCompVolume');
+    if (volInput) {
+        volInput.value = rate > 0 ? (rate * 24) : 1000;
+    }
+    
+    window.updateRTHComparisonTable();
+};
+
+window.closeRTHComparison = () => {
+    const modal = document.getElementById('rthComparisonModal');
+    if (modal) modal.classList.remove('active');
+};
+
+window.updateRTHComparisonTable = () => {
+    const tableBody = document.getElementById('rthComparisonTableBody');
+    if (!tableBody) return;
+    
+    const compVol = parseFloat(document.getElementById('txtRTHCompVolume')?.value) || 1000;
+    const rthList = AppState.formulas.filter(f => f.cat === "Fórmulas RTH");
+    
+    let html = '';
+    rthList.forEach(f => {
+        const factor = compVol / 100;
+        const totalK = f.k * factor;
+        const totalP = f.p * factor;
+        const totalC = f.c * factor;
+        const totalF = f.f * factor;
+        
+        html += `
+            <tr style="border-bottom:1px solid #e2e8f0; height:38px;">
+                <td style="padding:8px 10px; text-align:left; font-weight:700; color:#1e293b; position:sticky; left:0; background:white;">${f.name}</td>
+                <td style="padding:8px 10px; color:#475569;">${f.volBase} ml</td>
+                <td style="padding:8px 10px; background:#fff5f5; color:#c53030; font-weight:600;">${f.k.toFixed(1)}</td>
+                <td style="padding:8px 10px; background:#ebf8ff; color:#2b6cb0; font-weight:600;">${f.p.toFixed(1)}</td>
+                <td style="padding:8px 10px; background:#f0fff4; color:#22543d; font-weight:600;">${f.c.toFixed(1)}</td>
+                <td style="padding:8px 10px; background:#fffaf0; color:#744210; font-weight:600;">${f.f.toFixed(1)}</td>
+                <td style="padding:8px 10px; font-weight:800; color:#1e1b4b; border-left:1px solid #e2e8f0; background:#f8fafc;">${Math.round(totalK)}</td>
+                <td style="padding:8px 10px; font-weight:800; color:#1e1b4b; background:#f8fafc;">${totalP.toFixed(1)}g</td>
+                <td style="padding:8px 10px; font-weight:800; color:#1e1b4b; background:#f8fafc;">${totalC.toFixed(1)}g</td>
+                <td style="padding:8px 10px; font-weight:800; color:#1e1b4b; background:#f8fafc;">${totalF.toFixed(1)}g</td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+};
+
+window.toggleRTHMinerals = () => {
+    const panel = document.getElementById('rthMineralsPanel');
+    if (!panel) return;
+    const isVisible = panel.style.display === 'block';
+    panel.style.display = isVisible ? 'none' : 'block';
+    
+    if (!isVisible) {
+        const rate = parseFloat(document.getElementById('infusionRate')?.value) || 0;
+        const rthId = document.getElementById('infusionRTHSelect')?.value;
+        if (rate > 0 && rthId) {
+            const rthObj = AppState.formulas.find(f => f.id === rthId);
+            if (rthObj) {
+                window.renderRTHMinerals(rthObj, rate * 24);
+            }
+        }
+    }
+};
+
+window.renderRTHMinerals = (rthObj, vol) => {
+    const grid = document.getElementById('rthMineralsGrid');
+    if (!grid) return;
+    
+    if (!rthObj.minerals || Object.keys(rthObj.minerals).length === 0) {
+        grid.innerHTML = `<div style="color:#7f8c8d; grid-column: 1 / -1; padding:10px;">Sin datos de minerales para ${rthObj.name}</div>`;
+        return;
+    }
+    
+    const factor = vol / 100;
+    const items = [
+        { id: "na", name: "Sodio", icon: "🧂" },
+        { id: "k", name: "Potasio", icon: "🍌" },
+        { id: "cl", name: "Cloro", icon: "🧪" },
+        { id: "ca", name: "Calcio", icon: "🦴" },
+        { id: "p", name: "Fósforo", icon: "🐟" },
+        { id: "mg", name: "Magnesio", icon: "🥬" },
+        { id: "fe", name: "Hierro", icon: "🩸" },
+        { id: "zn", name: "Zinc", icon: "🛡️" },
+        { id: "cu", name: "Cobre", icon: "⚡" },
+        { id: "i", name: "Yodo", icon: "🌊" },
+        { id: "mn", name: "Manganeso", icon: "🌰" },
+        { id: "se", name: "Selenio", icon: "🌾" },
+        { id: "cr", name: "Cromo", icon: "💎" },
+        { id: "mo", name: "Molibdeno", icon: "⚙️" }
+    ];
+    
+    grid.innerHTML = items.map(i => {
+        const val = rthObj.minerals[i.id];
+        if (val === undefined) return "";
+        const finalVal = (val * factor).toFixed(2).replace('.', ',');
+        return `
+            <div style="background:#fff; border:1px solid #fadbd8; border-radius:6px; padding:4px; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:50px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <span style="font-size:0.75rem;">${i.icon}</span>
+                <span style="font-weight:800; color:#c0392b; margin:1px 0; font-size:0.7rem; white-space:nowrap;">${finalVal} mg</span>
+                <span style="font-size:0.55rem; color:#7f8c8d; text-transform:uppercase; font-weight:700;">${i.name}</span>
+            </div>
+        `;
+    }).join('');
+};
