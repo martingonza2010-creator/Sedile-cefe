@@ -1136,7 +1136,6 @@ function initGoalLogic() {
 }
 
 window.loadHistoryList = async (showPapelera = false) => {
-    // Guard clause for uninitialized user session
     if (!AppState.user || !AppState.user.id) {
         console.warn("loadHistoryList: AppState.user is not loaded yet. Skipping load.");
         const list = document.getElementById('patientListContainer');
@@ -1146,7 +1145,6 @@ window.loadHistoryList = async (showPapelera = false) => {
         return;
     }
 
-    // Update tabs robustly
     const tabActivos = document.getElementById('tabHistActivos');
     const tabPapelera = document.getElementById('tabHistPapelera');
     if (tabActivos) {
@@ -1181,9 +1179,10 @@ window.loadHistoryList = async (showPapelera = false) => {
         return;
     }
 
-    // Filter out null names
-    const validRecords = records.filter(r => r.nombre && r.nombre.trim() !== '');
-
+    let validRecords = records.filter(r => r.nombre && r.nombre.trim() !== '');
+    if (window.restrictedHistoryWard) {
+        validRecords = validRecords.filter(r => r.metadata?.location?.serviceName === window.restrictedHistoryWard);
+    }
     const now = new Date();
     const toHardDelete = [];
     const showRecords = [];
@@ -1191,7 +1190,6 @@ window.loadHistoryList = async (showPapelera = false) => {
     validRecords.forEach(r => {
         const isTrash = r.estado_sala === 'eliminado';
         if (isTrash) {
-            // Calculate remaining days
             const delDateStr = r.metadata?.deleted_at;
             let daysLeft = 30;
             if (delDateStr) {
@@ -1199,8 +1197,6 @@ window.loadHistoryList = async (showPapelera = false) => {
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 daysLeft = 30 - diffDays;
             } else {
-                // Si no hay fecha de borrado en la metadata, asumimos que se acaba de borrar
-                // Y parchamos la metadata para que empiece a contar desde hoy
                 let meta = r.metadata || {};
                 meta.deleted_at = new Date().toISOString();
                 supabaseClient.from('pacientes').update({ metadata: meta }).eq('id', r.id).then(()=>{});
@@ -1218,63 +1214,106 @@ window.loadHistoryList = async (showPapelera = false) => {
         }
     });
 
-    // Auto-purge expired records quietly in background
     toHardDelete.forEach(async (id) => {
         console.log(`Auto-purging expired patient ${id}`);
         await supabaseClient.from('pacientes').delete().eq('id', id);
     });
 
-    const chartContainerE = document.getElementById('chartContainer');
-    if (chartContainerE && window.getComputedStyle(chartContainerE.parentElement).display === 'flex') {
-        // Only hide it if it's somehow left in the old flex container, 
-        // though it shouldn't be since we moved it.
+    // Save globally so we can filter client-side
+    window.lastHistoryRecords = showRecords;
+
+    // Populate service filter dropdown
+    const serviceFilter = document.getElementById('historyServiceFilter');
+    if (serviceFilter) {
+        const services = new Set();
+        showRecords.forEach(r => {
+            const sName = r.metadata?.location?.serviceName;
+            if (sName) services.add(sName);
+        });
+
+        let filterHtml = '<option value="all">-- Todos los Servicios --</option>';
+        Array.from(services).sort().forEach(s => {
+            filterHtml += `<option value="${s}">${s}</option>`;
+        });
+        const currentVal = serviceFilter.value;
+        serviceFilter.innerHTML = filterHtml;
+        if (Array.from(services).includes(currentVal)) {
+            serviceFilter.value = currentVal;
+        } else {
+            serviceFilter.value = 'all';
+        }
     }
 
-    if (showRecords.length === 0) {
-        let debugText = ``;
-        if (showPapelera) {
-            const trashCount = validRecords.filter(r => r.estado_sala === 'eliminado').length;
-            debugText = `<br><small style="font-size:0.7rem; color:#ccc;">Debug: Registros totales=${records.length}, Eliminados encontrados=${trashCount}</small>`;
+    window.renderFilteredHistory();
+};
+
+window.renderFilteredHistory = () => {
+    const list = document.getElementById('patientListContainer');
+    if (!list) return;
+
+    let filtered = window.lastHistoryRecords || [];
+    if (!window.restrictedHistoryWard) {
+        const filterVal = document.getElementById('historyServiceFilter')?.value || 'all';
+        if (filterVal !== 'all') {
+            filtered = filtered.filter(r => r.metadata?.location?.serviceName === filterVal);
         }
-        list.innerHTML = `<p style="text-align:center; opacity:0.6;">${showPapelera ? 'La papelera está vacía.' : 'Ningún registro guardado aún.'}${debugText}</p>`;
+    }
+
+    if (filtered.length === 0) {
+        list.innerHTML = '<p style="text-align:center; opacity:0.6;">Ningún registro para el servicio seleccionado.</p>';
         return;
     }
 
-    // Grouping to only show the most recent record per patient in the list to avoid clutter
-    const mapUniques = new Map();
-    showRecords.forEach(r => {
-        if (!mapUniques.has(r.nombre)) mapUniques.set(r.nombre, r);
-    });
-    const uniqueDisplay = Array.from(mapUniques.values());
-
     let html = '';
+    filtered.forEach(r => {
+        // Date and Time formatting
+        const dateObj = new Date(r.created_at);
+        const dateStr = dateObj.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + dateObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        const serviceBadge = r.metadata?.location?.serviceName ? `<span style="font-size:0.75rem; background:rgba(124, 58, 237, 0.1); color:rgb(124, 58, 237); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">${r.metadata.location.serviceName}</span>` : '';
+        const camaBadge = `<span style="font-size:0.75rem; background:rgba(59, 130, 246, 0.1); color:rgb(59, 130, 246); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">Cama: ${r.cama || 'Sin asignar'}</span>`;
 
-    uniqueDisplay.forEach(r => {
-
-        const dateStr = new Date(r.created_at).toLocaleDateString('es-CL');
-        if (showPapelera) {
+        const dateBadge = `<span style="font-size:0.7rem; background:rgba(100, 116, 139, 0.08); color:rgb(100, 116, 139); padding:3px 8px; border-radius:6px; font-weight:700;">📅 ${dateStr}</span>`;
+        const isTrash = r.estado_sala === 'eliminado';
+        if (isTrash) {
             html += `
-                <div style="background:#fff3ef; border:1px solid #ffcccb; border-radius:10px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong style="color:#c0392b; font-size:1.1rem; display:block; margin-bottom:3px;">${r.nombre}</strong>
-                        <span style="font-size:0.8rem; color:#666;">Se eliminará en ${r._daysLeft} días</span>
+                <div class="history-card trash" style="background:#fffaf8; border:1px solid #fed7aa; border-radius:12px; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; transition: all 0.2s ease;">
+                    <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <strong style="color:#7c2d12; font-size:1.05rem;">${r.nombre}</strong>
+                            ${serviceBadge}
+                            ${camaBadge}
+                        </div>
+                        <div style="font-size:0.78rem; color:#7c2d12; opacity:0.8; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                            <span>⚠️ Se eliminará en <b>${r._daysLeft} días</b></span>
+                            <span>•</span>
+                            <span>${dateBadge}</span>
+                        </div>
                     </div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background:#27ae60;" onclick="window.restorePatient('${r.id}')">\u{21A9}\u{FE0F} Restaurar</button>
-                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.hardDeletePatient('${r.id}')" title="Eliminar definitivamente">\u{1F5D1}\u{FE0F}</button>
+                    <div style="display:flex; gap:8px; align-items:center; margin-left:15px;">
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background:#10b981; border:none; color:white; border-radius:8px;" onclick="window.restorePatient('${r.id}')">↩ Restaurar</button>
+                        <button class="btn-micro" style="padding: 8px; font-size: 0.95rem; background: rgba(239, 68, 68, 0.08); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;" onclick="event.stopPropagation(); window.hardDeletePatient('${r.id}')" title="Eliminar definitivamente">🗑</button>
                     </div>
                 </div>
             `;
         } else {
+            const ageWeightText = r.edad ? `⚖️ ${r.edad} años | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal` : 'Ficha inicial';
             html += `
-                <div style="background:#f8f9fa; border:1px solid #eee; border-radius:10px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong style="color:var(--primary); font-size:1.1rem; display:block; margin-bottom:3px;">${r.nombre}</strong>
-                        <span style="font-size:0.8rem; color:#666;">${dateStr} | ${r.edad} años | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal</span>
+                <div class="history-card" style="background:linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%); border:1px solid #e2e8f0; border-radius:12px; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+                    <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <strong style="color:#1e1b4b; font-size:1.05rem;">${r.nombre}</strong>
+                            ${serviceBadge}
+                            ${camaBadge}
+                        </div>
+                        <div style="font-size:0.78rem; color:#475569; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                            <span>${ageWeightText}</span>
+                            <span>•</span>
+                            <span>${dateBadge}</span>
+                        </div>
                     </div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">\u{1F4C2} Cargar</button>
-                        <button class="btn-micro" style="padding: 6px; font-size: 0.9rem; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a papelera">\u{1F5D1}\u{FE0F}</button>
+                    <div style="display:flex; gap:8px; align-items:center; margin-left:15px;">
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">📂 Cargar</button>
+                        <button class="btn-micro" style="padding: 8px; font-size: 0.95rem; background: rgba(239, 68, 68, 0.08); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a papelera">🗑</button>
                     </div>
                 </div>
             `;
@@ -1297,7 +1336,8 @@ function initWardKanban() {
 }
 
 async function loadWardKanban() {
-    await window.renderWardBedsGrid();
+    await window.initCensusModal && window.initCensusModal();
+    window.renderWardBedsGrid();
 }
 
 window.togglePatientState = async (id, newState) => {
@@ -2032,6 +2072,8 @@ window.loadPatient = async (id) => {
 
         // Trigger calc
         calculateRequirements();
+        const histModal = document.getElementById('historyModal');
+        if (histModal) histModal.classList.remove('active');
 
         // Restore goals if exist
         if (data.metadata && data.metadata.simulator) {
@@ -2209,22 +2251,32 @@ function calculateRequirements() {
             zWFH = getZScore('wfh', cm, p.sexo, p.peso);
         }
 
-        if (y > 5 || (y === 5 && m >= 1)) {
+        let methodText = "";
+        if (p.type === 'neonate') {
+            rawPesoIdeal = 0; // Do not calculate/show ideal weight for neonates
+            methodText = "";
+        } else if (y > 5 || (y === 5 && m >= 1)) {
             // Niños mayores > 5 años y Adolescentes: Mediana del IMC/E
             const medianBMI = getLMSMedian('bmi', m, p.sexo);
             if (medianBMI && p.estatura > 0) {
                 rawPesoIdeal = medianBMI * (p.estatura * p.estatura);
             }
+            methodText = "IMC/E";
         } else if (!isUnderOne || (isUnderOne && zWFH !== null && zWFH >= 1.0)) {
             // Excepción P/T: Preescolares (1-5) o lactantes con Sobrepeso/Obesidad (P/T >= 1)
             if (cm > 0) rawPesoIdeal = getLMSMedian('wfh', cm, p.sexo);
+            methodText = "P/T";
         } else {
             // Lactantes regulares (< 1 año)
             rawPesoIdeal = getLMSMedian('wfa', m, p.sexo);
+            methodText = "P/E";
         }
 
+        const elTitle = document.getElementById('lblIdealWeightTitle');
+        if (elTitle) elTitle.innerText = methodText ? `Peso Ideal (${methodText})` : "Peso Ideal";
+
         if (rawPesoIdeal) {
-            document.getElementById('valIdealWeight').innerText = rawPesoIdeal.toFixed(1) + ' kg*';
+            document.getElementById('valIdealWeight').innerText = rawPesoIdeal.toFixed(1) + ' kg';
         } else {
             document.getElementById('valIdealWeight').innerText = '--';
         }
@@ -2234,6 +2286,8 @@ function calculateRequirements() {
         const factorIdx = p.edad >= 65 ? 25.5 : 21.7;
         rawPesoIdeal = factorIdx * (p.estatura * p.estatura);
         document.getElementById('valIdealWeight').innerText = rawPesoIdeal.toFixed(1) + ' kg';
+        const elTitle = document.getElementById('lblIdealWeightTitle');
+        if (elTitle) elTitle.innerText = "Peso Ideal (Fórmula)";
     }
 
     if (rawPesoIdeal > 0) {
@@ -2407,6 +2461,12 @@ function calculateRequirements() {
             p.diagWeight = status;
             valIMCClass.innerText = status;
             valIMCClass.style.color = color;
+            if (p.type === 'adult' && status.includes("Obesidad")) {
+                const sel = document.getElementById('pesoCalculoSelect');
+                if (sel && sel.value === 'real') {
+                    sel.value = 'ajustado';
+                }
+            }
         }
     } else {
         if (valAdultIMC) valAdultIMC.innerText = '--';
@@ -2665,7 +2725,14 @@ window.updatePatientModeUI = (mode) => {
     document.getElementById('pediatricAssessmentResults').style.display = (mode === 'pediatric' || mode === 'neonate') ? 'block' : 'none';
 
     const iwRow = document.getElementById('valIdealWeight')?.parentElement?.parentElement;
-    if (iwRow) iwRow.style.display = mode === 'adult' ? 'flex' : 'none';
+    if (iwRow) iwRow.style.display = mode === 'neonate' ? 'none' : 'flex';
+
+    const iptCard = document.getElementById('iptCardContainer');
+    const sctCard = document.getElementById('sctCardContainer');
+    const weightAdjCard = document.getElementById('weightAdjCardContainer');
+    if (iptCard) iptCard.style.display = mode === 'neonate' ? 'none' : '';
+    if (sctCard) sctCard.style.display = mode === 'neonate' ? 'none' : '';
+    if (weightAdjCard) weightAdjCard.style.display = mode === 'neonate' ? 'none' : '';
 
     // Alternar visibilidad de tamizajes condicionales (STRONGkids vs NRS 2002)
     const strongKidsCard = document.getElementById('strongKidsCard');
@@ -3134,14 +3201,15 @@ function renderPediatricZScores() {
 
             displayVal = `${z > 0 ? '+' : ''}${z.toFixed(2)}`;
         } else {
-            diag = 'â˜…'; // Special star for string-based badges
+            diag = ''; // No special symbol for string-based badges
         }
 
+        const diagHtml = diag ? `<span style="font-size:0.55rem; padding:2px 3px; background:${color}20; border-radius:4px; font-weight:700;">${diag}</span>` : '';
         return `<div style="background:#fff; border:1px solid ${color}; padding:5px; border-radius:6px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
             <div style="font-size:0.55rem; color:#666; font-weight:600; line-height:1.1;">${title}</div>
             <div style="font-size:0.85rem; font-weight:800; color:${color}; display:flex; justify-content:center; align-items:baseline; gap:4px; margin-top:2px;">
                 ${displayVal}
-                <span style="font-size:0.55rem; padding:2px 3px; background:${color}20; border-radius:4px; font-weight:700;">${diag}</span>
+                ${diagHtml}
             </div>
         </div>`;
     };
@@ -3379,7 +3447,7 @@ function renderPediatricZScores() {
             if (diagWeight) {
                 html += `<div style="background:${diagWColor}15; border-left:4px solid ${diagWColor}; padding:8px; border-radius:4px; font-weight:700; color:${diagWColor}; font-size:0.85rem; display:flex; flex-direction:column; gap:2px;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span>âš–ï¸ Estado Nutricional (MINSAL)</span>
+                                <span>Estado Nutricional (MINSAL)</span>
                                 <span style="font-size:0.9rem;">${diagWeight}</span>
                             </div>
                             <div style="font-size:0.65rem; opacity:0.8; text-align:right;">${evaluatedBy}</div>
@@ -3387,7 +3455,7 @@ function renderPediatricZScores() {
             }
             if (diagHeight) {
                 html += `<div style="background:${diagHColor}15; border-left:4px solid ${diagHColor}; padding:8px; border-radius:4px; font-weight:700; color:${diagHColor}; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
-                            <span>ðŸ“ Calificación Estatural</span>
+                            <span>Calificación Estatural</span>
                             <span style="font-size:0.9rem;">${diagHeight}</span>
                          </div>`;
             }
@@ -3401,11 +3469,11 @@ function renderPediatricZScores() {
                 if (ageData) {
                     let diagWaist = 'Normal (< p75)';
                     let waColor = '#27ae60';
-                    if (cInp >= ageData.p90) { diagWaist = 'Obesidad Abdominal (â‰¥ p90)'; waColor = '#c0392b'; }
-                    else if (cInp >= ageData.p75) { diagWaist = 'Riesgo Obesidad Adb. (â‰¥ p75)'; waColor = '#f39c12'; }
+                    if (cInp >= ageData.p90) { diagWaist = 'Obesidad Abdominal (>= p90)'; waColor = '#c0392b'; }
+                    else if (cInp >= ageData.p75) { diagWaist = 'Riesgo Obesidad Adb. (>= p75)'; waColor = '#f39c12'; }
 
                     html += `<div style="background:${waColor}15; border-left:4px solid ${waColor}; padding:8px; border-radius:4px; font-weight:700; color:${waColor}; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
-                                <span>â­• Perímetro Cintura</span>
+                                <span>Perímetro Cintura</span>
                                 <span style="font-size:0.9rem;">${diagWaist}</span>
                              </div>`;
                 }
@@ -4559,8 +4627,14 @@ function clearAllInputsForMode(mode) {
     runSimulation();
 }
 
-function resetPatientForm() {
+async function resetPatientForm() {
+    const nombreVal = document.getElementById('nombre')?.value || '';
     if (!confirm("¿Deseas limpiar todos los campos para un nuevo paciente?")) return;
+
+    if (nombreVal.trim() !== '') {
+        showToast("💾 Guardando paciente actual en historial...");
+        await window.saveCurrentPatient(true);
+    }
 
     // Reset Global State
     AppState.patient = { id: null, nombre: '', edad: 0, sexo: 'm', peso: 0, estatura: 0, actividad: 1.2, bmi: 0, tmt: 0, ia_report: null, weight_history: [] };
@@ -5489,7 +5563,24 @@ function updateAnthropometry() {
     const pt = parseFloat(document.getElementById('ptricipital')?.value) || 0;
     const age = parseFloat(document.getElementById('edad')?.value) || 0;
     const sex = document.getElementById('sexo')?.value;
-    const method = document.getElementById('frisanchoMethodSelect')?.value || 'nhanes3';
+    const sel = document.getElementById('frisanchoMethodSelect');
+    if (sel) {
+        if (typeof window.event !== 'undefined' && window.event && window.event.target === sel) {
+            sel.dataset.userModified = 'true';
+        }
+        if (!sel.dataset.userModified) {
+            if (age >= 70) {
+                if (sel.value !== 'nhanes3_elderly') {
+                    sel.value = 'nhanes3_elderly';
+                }
+            } else {
+                if (sel.value === 'nhanes3_elderly') {
+                    sel.value = 'nhanes3';
+                }
+            }
+        }
+    }
+    const method = sel?.value || 'nhanes3';
 
     const lblCB = document.getElementById('lblCBStatus');
     const lblAMB = document.getElementById('lblAMBStatus');
@@ -5499,7 +5590,13 @@ function updateAnthropometry() {
     const refSub = document.getElementById('lblFrisanchoReferenceText');
 
     if (refSub) {
-        refSub.innerText = method === 'nhanes3' ? 'Referencia: NHANES III / Frisancho 1990' : 'Referencia: Frisancho 1981 (NHANES I)';
+        if (method === 'nhanes3_elderly') {
+            refSub.innerText = 'Referencia: NHANES III (Adulto Mayor >= 70 años)';
+        } else if (method === 'nhanes3') {
+            refSub.innerText = 'Referencia: Frisancho 1990';
+        } else {
+            refSub.innerText = 'Referencia: Frisancho 1981 (NHANES I)';
+        }
     }
 
     if (cb > 0 || pt > 0) {
@@ -5579,7 +5676,31 @@ function updateAnthropometry() {
             }
         };
 
-        const activeRefs = method === 'nhanes3' ? nhanes3Refs : frisancho1981Refs;
+        // NHANES III (Adulto Mayor >= 70 años)
+        const nhanes3ElderlyRefs = {
+            cb: {
+                m: {
+                    70: { p5: 26.0, p10: 27.5, p50: 31.5, p90: 36.0, p95: 37.5 },
+                    80: { p5: 24.5, p10: 25.8, p50: 29.5, p90: 34.0, p95: 35.5 }
+                },
+                f: {
+                    70: { p5: 23.0, p10: 24.5, p50: 29.0, p90: 35.0, p95: 36.5 },
+                    80: { p5: 21.5, p10: 22.8, p50: 27.0, p90: 32.5, p95: 34.0 }
+                }
+            },
+            ag: {
+                m: {
+                    70: { p5: 28.5, p10: 31.5, p50: 41.5, p90: 52.5, p95: 56.5 },
+                    80: { p5: 26.0, p10: 28.5, p50: 38.0, p90: 48.0, p95: 52.0 }
+                },
+                f: {
+                    70: { p5: 23.0, p10: 25.0, p50: 30.0, p90: 41.5, p95: 45.5 },
+                    80: { p5: 21.0, p10: 22.8, p50: 27.5, p90: 37.5, p95: 41.5 }
+                }
+            }
+        };
+
+        const activeRefs = method === 'nhanes3' ? nhanes3Refs : (method === 'nhanes3_elderly' ? nhanes3ElderlyRefs : frisancho1981Refs);
 
         const getPercentileMatch = (type, val) => {
             if (val <= 0) return { status: '--', color: '#888', pos: 50 };
@@ -7514,6 +7635,283 @@ window.closeFrisanchoHelp = () => {
     if (modal) modal.classList.remove('active');
 };
 
+window.toggleFrisanchoTooltip = () => {
+    const tooltip = document.getElementById('frisanchoTooltipBubble');
+    if (tooltip) {
+        const isOpen = tooltip.style.display === 'block';
+        tooltip.style.display = isOpen ? 'none' : 'block';
+    }
+};
+
+document.addEventListener('click', () => {
+    const tooltip = document.getElementById('frisanchoTooltipBubble');
+    if (tooltip) tooltip.style.display = 'none';
+});
+
+
+
+// ==========================================
+// WARD-RESTRICTED HISTORY MODAL SYSTEM (V4.90)
+// ==========================================
+window.restrictedHistoryWard = null;
+
+window.openWardHistory = () => {
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) return;
+    const activeLoc = JSON.parse(activeLocStr);
+    
+    // Set restriction flag
+    window.restrictedHistoryWard = activeLoc.serviceName;
+    
+    // Open modal
+    const modal = document.getElementById('historyModal');
+    if (modal) modal.classList.add('active');
+    
+    // Show ward label and hide main filter dropdown
+    const subtitle = document.getElementById('lblHistoryWardSubtitle');
+    if (subtitle) {
+        subtitle.innerText = `Sala: ${activeLoc.serviceName}`;
+        subtitle.style.display = 'block';
+    }
+    const filterContainer = document.getElementById('historyFilterContainer');
+    if (filterContainer) {
+        filterContainer.style.display = 'none';
+    }
+    
+    // Load history
+    window.loadHistoryList(false);
+};
+// ==========================================
+// MULTIMODAL OCR CENSUS IMPORT SYSTEM (V4.90)
+// ==========================================
+
+window.handleCensusUpload = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    showToast("📷 Procesando captura de censo con Nutria IA...");
+    
+    const reader = new FileReader();
+    reader.onload = async function() {
+        try {
+            const base64Data = reader.result.split(',')[1];
+            const mimeType = file.type;
+            
+            const activeLocStr = localStorage.getItem('activeLocation');
+            if (!activeLocStr) {
+                alert("Por favor selecciona un piso y servicio primero.");
+                return;
+            }
+            const activeLoc = JSON.parse(activeLocStr);
+            const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+            
+            let bedsList = getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
+            if (supabaseClient) {
+                const { data: configRecord } = await supabaseClient
+                    .from('config_camas')
+                    .select('*')
+                    .eq('location_key', locationKey)
+                    .maybeSingle();
+                if (configRecord && configRecord.beds) {
+                    bedsList = configRecord.beds;
+                }
+            }
+            
+            const resultJSON = await callGeminiMultimodalOCR(base64Data, mimeType, bedsList);
+            const extracted = JSON.parse(resultJSON);
+            
+            await showCensusReviewModal(extracted, bedsList, activeLoc);
+        } catch (err) {
+            console.error("Error al procesar censo:", err);
+            alert("Error al procesar la imagen con IA: " + err.message);
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.readAsDataURL(file);
+};
+
+async function callGeminiMultimodalOCR(base64Data, mimeType, bedsList) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const prompt = `Analiza esta imagen que contiene el censo de pacientes y camas de una sala de hospital.
+Las camas válidas en este servicio son: ${bedsList.join(', ')}.
+Tu tarea es extraer los nombres de los pacientes que ocupan cada una de estas camas. Mapea la información de la imagen a las camas de esta lista.
+Devuelve el resultado únicamente en formato JSON (un arreglo de objetos), donde cada objeto tenga las propiedades "cama" y "nombre".
+Si una cama de la lista está vacía, no tiene paciente, o está libre, el valor de "nombre" debe ser "".
+No inventes nombres. Si el nombre no es legible, usa "".
+Ejemplo de formato de salida:
+[
+  {"cama": "${bedsList[0] || '101'}", "nombre": "JUAN PEREZ SOTO"},
+  {"cama": "${bedsList[1] || '102'}", "nombre": ""}
+]
+Devuelve SOLAMENTE el JSON plano en texto plano. No incluyes bloques de código markdown (```json), ni explicaciones.`;
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{
+                parts: [
+                    { text: prompt },
+                    {
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: base64Data
+                        }
+                    }
+                ]
+            }]
+        })
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`Error de API Gemini: ${errorData.error?.message || res.statusText}`);
+    }
+
+    const data = await res.json();
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+    text = text.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
+    return text;
+}
+
+window.pendingCensusChanges = [];
+
+async function showCensusReviewModal(extracted, bedsList, activeLoc) {
+    let activePatients = [];
+    if (supabaseClient) {
+        const { data, error } = await supabaseClient
+            .from('pacientes')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (!error && data) {
+            activePatients = data.filter(p => p.estado_sala !== 'de_alta' && p.estado_sala !== 'eliminado');
+        }
+    }
+    
+    const matchedPatients = activePatients.filter(p => {
+        if (p.metadata && p.metadata.location && p.metadata.location.serviceId) {
+            return p.metadata.location.serviceId === activeLoc.serviceId;
+        }
+        return bedsList.includes(p.cama);
+    });
+
+    const changesListEl = document.getElementById('censusChangesList');
+    if (!changesListEl) return;
+    
+    changesListEl.innerHTML = '';
+    window.pendingCensusChanges = [];
+    
+    let hasChanges = false;
+    
+    bedsList.forEach(bedName => {
+        const currentPat = matchedPatients.find(p => p.cama === bedName);
+        const extPat = extracted.find(e => e.cama === bedName);
+        const extName = extPat ? extPat.nombre.trim().toUpperCase() : '';
+        const currentName = currentPat ? currentPat.nombre.trim().toUpperCase() : '';
+        
+        if (currentName !== extName) {
+            // Detect type of change
+            if (currentName && !extName) {
+                hasChanges = true;
+                window.pendingCensusChanges.push({ type: 'discharge', bed: bedName, patientId: currentPat.id, name: currentPat.nombre });
+                changesListEl.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#fdf2e9; border:1px solid #fadbd8; border-radius:8px; padding:10px 12px; font-size:0.85rem; color:#d35400;">
+                        <div><strong style="color:#b9770e;">🔴 Alta:</strong> Cama <b>${bedName}</b></div>
+                        <div><b>${currentPat.nombre}</b></div>
+                    </div>`;
+            } else if (!currentName && extName) {
+                hasChanges = true;
+                window.pendingCensusChanges.push({ type: 'admission', bed: bedName, name: extName });
+                changesListEl.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#e8f8f5; border:1px solid #a3e4d7; border-radius:8px; padding:10px 12px; font-size:0.85rem; color:#16a085;">
+                        <div><strong style="color:#117a65;">🟢 Ingreso:</strong> Cama <b>${bedName}</b></div>
+                        <div><b>${extName}</b></div>
+                    </div>`;
+            } else if (currentName && extName) {
+                hasChanges = true;
+                window.pendingCensusChanges.push({ type: 'discharge', bed: bedName, patientId: currentPat.id, name: currentPat.nombre });
+                window.pendingCensusChanges.push({ type: 'admission', bed: bedName, name: extName });
+                changesListEl.innerHTML += `
+                    <div style="display:flex; flex-direction:column; gap:6px; background:#fef9e7; border:1px solid #fdebd0; border-radius:8px; padding:10px 12px; font-size:0.85rem; color:#b7950b;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <div><strong style="color:#b9770e;">🔴 Alta (relevo):</strong> Cama <b>${bedName}</b></div>
+                            <div><b>${currentPat.nombre}</b></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; border-top:1px dashed #fdebd0; padding-top:4px; margin-top:4px;">
+                            <div><strong style="color:#117a65;">🟢 Ingreso (relevo):</strong> Cama <b>${bedName}</b></div>
+                            <div><b>${extName}</b></div>
+                        </div>
+                    </div>`;
+            }
+        }
+    });
+    
+    if (!hasChanges) {
+        changesListEl.innerHTML = '<p style="text-align:center; opacity:0.6; padding: 20px 0;">El censo de la captura coincide exactamente con los pacientes registrados. No se requieren cambios.</p>';
+    }
+    
+    const modal = document.getElementById('censusReviewModal');
+    if (modal) modal.classList.add('active');
+}
+
+window.applyCensusChanges = async function() {
+    if (window.pendingCensusChanges.length === 0) {
+        const modal = document.getElementById('censusReviewModal');
+        if (modal) modal.classList.remove('active');
+        return;
+    }
+    
+    showToast("💾 Guardando cambios en Supabase...");
+    
+    const activeLocStr = localStorage.getItem('activeLocation');
+    const activeLoc = JSON.parse(activeLocStr);
+    
+    for (const change of window.pendingCensusChanges) {
+        if (change.type === 'discharge') {
+            await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', change.patientId);
+        } else if (change.type === 'admission') {
+            const newPatientData = {
+                nombre: change.name,
+                edad: 0,
+                peso_kg: 0,
+                estatura_m: 0,
+                sexo: 'm',
+                actividad: 1.2,
+                diagnostico: 'Ingresado por Censo IA',
+                cama: change.bed,
+                tmt: 0,
+                ia_report: null,
+                metadata: {
+                    location: {
+                        floor: activeLoc.floor,
+                        serviceId: activeLoc.serviceId,
+                        serviceName: activeLoc.serviceName
+                    }
+                },
+                user_id: AppState.user.id
+            };
+            await supabaseClient.from('pacientes').insert([newPatientData]);
+        }
+    }
+    
+    showToast("🎉 ¡Censo actualizado con éxito!");
+    
+    const modal = document.getElementById('censusReviewModal');
+    if (modal) modal.classList.remove('active');
+    
+    await window.renderWardBedsGrid();
+};
+
+window.initCensusModal = () => {
+    document.getElementById('btnCensusReviewClose')?.addEventListener('click', () => {
+        document.getElementById('censusReviewModal')?.classList.remove('active');
+    });
+    document.getElementById('btnCensusCancel')?.addEventListener('click', () => {
+        document.getElementById('censusReviewModal')?.classList.remove('active');
+    });
+    document.getElementById('btnCensusConfirm')?.addEventListener('click', window.applyCensusChanges);
+};
 
 // ==========================================
 // ENVIRONMENT SELECTOR & BEDS GRID SYSTEM (V4.80)
@@ -7978,40 +8376,41 @@ window.renderWardBedsGrid = async function() {
                 card.innerHTML = `
                     <div class="bed-header">
                         <span class="bed-badge occupied">🛏️ ${bedName}</span>
-                        ${isCritico ? '<span class="status-alert-badge">🚨 CRÍTICO</span>' : '<span class="status-alert-badge normal">🟢 EN CURSO</span>'}
+                        ${isCritico ? '<span class="status-alert-tag critical">🚨 CRÍTICO</span>' : '<span class="status-alert-tag active">🟢 ACTIVO</span>'}
                     </div>
                     <div class="bed-patient-info" onclick="loadPatient('${patient.id}')" style="cursor:pointer;" title="Haga clic para editar ficha">
                         <div class="patient-name">${patient.nombre}</div>
                         <div class="patient-dx">${dx}</div>
-                        <div class="patient-details">${patient.edad} años | ${weight} kg</div>
-                        <div class="patient-regime">🍼 Fórmula: <b>${formula}</b></div>
-                        <div class="patient-adequacy">⚡ Requerimiento: <b>${tmtKcal} kcal/día</b></div>
+                        <div class="patient-metrics-row">
+                            <span class="metric-item" title="Edad">🎂 ${patient.edad}a</span>
+                            <span class="metric-item" title="Peso">⚖️ ${weight}kg</span>
+                        </div>
+                        <div class="patient-regime-row">
+                            <div class="regime-formula" title="Fórmula">🍼 ${formula}</div>
+                            <div class="regime-req" title="Requerimiento">⚡ ${tmtKcal} kcal</div>
+                        </div>
                     </div>
-                    <div class="bed-actions">
-                        <button class="action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
-                        <button class="action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
-                        <button class="action-btn" title="Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
-                        <button class="action-btn" title="Dar de Alta" style="color: #27ae60;" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
-                        ${isAdmin ? `<button class="action-btn delete-bed" title="Eliminar Cama del Servicio" style="color: #e74c3c; margin-left:auto;" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
+                    <div class="bed-actions-row">
+                        <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
+                        <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
+                        <button class="circle-action-btn" title="Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
+                        <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
                     </div>
+                    ${isAdmin ? `<button class="btn-delete-bed-absolute" title="Eliminar Cama del Servicio" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
                 `;
             } else {
                 card.className = 'bed-card empty';
                 card.innerHTML = `
                     <div class="bed-header">
                         <span class="bed-badge empty">🛏️ ${bedName}</span>
-                        <span style="font-size:0.7rem; color:#94a3b8; font-weight:600;">DISPONIBLE</span>
+                        <span class="status-alert-tag empty">DISPONIBLE</span>
                     </div>
-                    <div class="empty-bed-placeholder">
-                        <span class="bed-icon">🛏️</span>
-                        <button class="btn-micro" style="background:#e0e7ff; color:#4f46e5; font-weight:700;" onclick="window.registerPatientInBed('${bedName}')">
-                            ➕ Registrar Paciente
+                    <div class="empty-bed-body">
+                        <button class="btn-register-patient" onclick="window.registerPatientInBed('${bedName}')">
+                            ➕ Registrar
                         </button>
                     </div>
-                    ${isAdmin ? `
-                    <div style="display:flex; justify-content:flex-end; margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0;">
-                        <button class="action-btn" title="Eliminar Cama del Servicio" style="color: #e74c3c;" onclick="window.removeBedFromService('${bedName}')">🗑️ Eliminar</button>
-                    </div>` : ''}
+                    ${isAdmin ? `<button class="btn-delete-bed-absolute" title="Eliminar Cama del Servicio" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
                 `;
             }
             

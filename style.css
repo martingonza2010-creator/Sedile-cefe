@@ -1726,128 +1726,263 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:foc
     margin-top: 15px;
 }
 
-.bed-card-item {
-    background: white;
-    border: 2px solid rgba(168, 85, 247, 0.06);
+/* Base bed card - Glassmorphic design */
+.bed-card {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 18px;
-    padding: 18px 15px;
-    text-align: center;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 12px 14px;
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 160px;
+    min-height: 135px; /* Compact height */
+    box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
 }
 
-.bed-card-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(139, 92, 246, 0.08);
-    border-color: rgba(174, 131, 250, 0.3);
+/* Hover effects */
+.bed-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(139, 92, 246, 0.12);
+    background: rgba(255, 255, 255, 0.65);
+    border-color: rgba(168, 85, 247, 0.3);
 }
 
-.bed-card-item.occupied {
-    border-color: rgba(16, 185, 129, 0.2);
-    background: rgba(16, 185, 129, 0.02);
-}
-
-.bed-card-item.occupied:hover {
-    border-color: #10b981;
-}
-
-.bed-card-item.empty {
-    border-style: dashed;
-    border-color: #cbd5e1;
-    background: rgba(248, 250, 252, 0.55);
-}
-
-.bed-number-lbl {
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: #1e293b;
-    margin-bottom: 5px;
-}
-
-.bed-status-icon {
-    font-size: 2.2rem;
-    margin: 10px 0;
-    display: block;
-}
-
-.bed-patient-name {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: #4f46e5;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 2px;
-}
-
-.bed-patient-info {
-    font-size: 0.7rem;
-    color: #64748b;
-    margin-bottom: 12px;
-}
-
-.bed-btn-action {
-    display: block;
+/* Bed header alignment */
+.bed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
     width: 100%;
-    padding: 6px;
-    border-radius: 10px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    border: none;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.2s;
 }
 
-.bed-card-item.occupied .bed-btn-action {
-    background: rgba(139, 92, 246, 0.08);
-    color: var(--primary);
-}
-
-.bed-card-item.occupied .bed-btn-action:hover {
-    background: var(--primary);
-    color: white;
-}
-
-.bed-card-item.empty .bed-btn-action {
-    background: #f1f5f9;
-    color: #64748b;
-    border: 1px dashed #cbd5e1;
-}
-
-.bed-card-item.empty .bed-btn-action:hover {
-    background: #e2e8f0;
-    color: #334155;
-}
-
-/* Admin controls on Bed Card */
-.btn-delete-bed {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: rgba(239, 68, 68, 0.08);
-    color: #ef4444;
-    border: none;
-    font-size: 0.75rem;
+/* Bed Name Badge */
+.bed-badge {
+    font-size: 0.85rem;
     font-weight: 800;
+    color: #1e1b4b;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 5px rgba(139, 92, 246, 0.03);
+}
+
+/* Status Alert Tag */
+.status-alert-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 12px;
+    letter-spacing: 0.03em;
+}
+
+.status-alert-tag.active {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-alert-tag.critical {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    animation: pulseCritical 2s infinite ease-in-out;
+}
+
+.status-alert-tag.empty {
+    background: rgba(100, 116, 139, 0.08);
+    color: #475569;
+    border: 1px solid rgba(100, 116, 139, 0.15);
+}
+
+@keyframes pulseCritical {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Empty Bed Styles */
+.bed-card.empty {
+    border-style: dashed;
+    border-width: 2px;
+    border-color: rgba(168, 85, 247, 0.25);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.bed-card.empty:hover {
+    border-color: rgba(168, 85, 247, 0.6);
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.empty-bed-body {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+}
+
+/* Clean Register Button for Empty beds */
+.btn-register-patient {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(139, 92, 246, 0.15);
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.btn-register-patient:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(139, 92, 246, 0.25);
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+}
+
+/* Absolute Positioning for admin delete bed button */
+.btn-delete-bed-absolute {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #ef4444;
+    border: 1px solid #fca5a5;
+    font-size: 0.8rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
 }
 
-.btn-delete-bed:hover {
+.btn-delete-bed-absolute:hover {
+    transform: scale(1.15) rotate(5deg);
     background: #ef4444;
     color: white;
+    border-color: #ef4444;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
 }
+
+/* Occupied Bed Info container */
+.bed-patient-info {
+    text-align: left;
+    margin: 8px 0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.patient-name {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #1e1b4b;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.patient-dx {
+    font-size: 0.72rem;
+    color: #4b5563;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.85;
+}
+
+/* Patient clinical info: ultra-compact row */
+.patient-metrics-row,
+.patient-regime-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: #4b5563;
+    font-weight: 600;
+}
+
+.patient-regime-row {
+    margin-top: 1px;
+}
+
+.metric-item,
+.regime-formula,
+.regime-req {
+    background: rgba(255, 255, 255, 0.4);
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* Actions Row at bottom of occupied card */
+.bed-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(139, 92, 246, 0.08);
+}
+
+/* Circle Action Buttons styling */
+.circle-action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    font-size: 0.78rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.03);
+}
+
+.circle-action-btn:hover {
+    transform: translateY(-2px) scale(1.1);
+    background: #e0e7ff;
+    border-color: #818cf8;
+    box-shadow: 0 4px 8px rgba(129, 140, 248, 0.2);
+}
+
+.circle-action-btn.success {
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.circle-action-btn.success:hover {
+    background: #ecfdf5;
+    border-color: #34d399;
+    box-shadow: 0 4px 8px rgba(52, 211, 153, 0.2);
+}
+
 
 /* Admin Add Bed Row */
 .admin-bed-controls {
@@ -1922,4 +2057,27 @@ body {
     font-size: 0.75rem;
     font-weight: bold;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Responsive styling for ward header and micro buttons on smaller screens */
+@media (max-width: 640px) {
+    .ward-header-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 15px !important;
+        padding: 15px !important;
+    }
+    .ward-header-bar > div:last-child {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+    .ward-header-bar .btn-micro {
+        width: 100% !important;
+        text-align: center !important;
+        padding: 8px 6px !important;
+        font-size: 0.72rem !important;
+        margin: 0 !important;
+    }
 }
