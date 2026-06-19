@@ -993,6 +993,14 @@ function initPatientLogic() {
 
 function initCompactLayout() {
 
+    window.saveCurrentPatient = async (isReset = false) => {
+        const form = document.getElementById('form-paciente');
+        if (form) {
+            const submitEvent = new Event('submit', { cancelable: true });
+            form.dispatchEvent(submitEvent);
+        }
+    };
+
     const form = document.getElementById('form-paciente');
     if (form) {
         form.onsubmit = async (e) => {
@@ -1181,7 +1189,15 @@ window.loadHistoryList = async (showPapelera = false) => {
 
     let validRecords = records.filter(r => r.nombre && r.nombre.trim() !== '');
     if (window.restrictedHistoryWard) {
-        validRecords = validRecords.filter(r => r.metadata?.location?.serviceName === window.restrictedHistoryWard);
+        const activeLocStr = localStorage.getItem('activeLocation');
+        if (activeLocStr) {
+            const activeLoc = JSON.parse(activeLocStr);
+            validRecords = validRecords.filter(r => 
+                r.metadata?.location &&
+                r.metadata.location.floor === activeLoc.floor &&
+                r.metadata.location.serviceId === activeLoc.serviceId
+            );
+        }
     }
     const now = new Date();
     const toHardDelete = [];
