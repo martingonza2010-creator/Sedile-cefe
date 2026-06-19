@@ -7744,7 +7744,7 @@ Ejemplo de formato de salida:
   {"cama": "${bedsList[0] || '101'}", "nombre": "JUAN PEREZ SOTO"},
   {"cama": "${bedsList[1] || '102'}", "nombre": ""}
 ]
-Devuelve SOLAMENTE el JSON plano en texto plano. No incluyes bloques de código markdown (```json), ni explicaciones.`;
+Devuelve SOLAMENTE el JSON plano en texto plano. No incluyes bloques de código markdown (\`\`\`json), ni explicaciones.`;
 
     const res = await fetch(url, {
         method: 'POST',
