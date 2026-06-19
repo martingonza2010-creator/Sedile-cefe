@@ -4289,7 +4289,7 @@ function runSimulation() {
     }
 
     // Trigger Infusion Calc update if volume changes
-    calcInfusion();
+    calcInfusion(true);
     calcHydration();
 
     // Update Chart
@@ -4433,7 +4433,7 @@ function initInfusionLogic() {
     };
 
     // Bind inputs to global scope since we referenced it inline
-    window.calcInfusion = function () {
+    window.calcInfusion = function (skipSim) {
         // We listen to the main prescribed volume! 
         const totalVolPrescrito = window.getEffectiveSimulationVolume();
         const rate = parseFloat(document.getElementById('infusionRate').value) || 0;
@@ -4568,7 +4568,7 @@ function initInfusionLogic() {
         } else {
             logBox.style.display = 'none';
         }
-        if (typeof window.runSimulation === 'function') {
+        if (!skipSim && typeof window.runSimulation === 'function') {
             window.runSimulation();
         }
     };
