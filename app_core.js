@@ -141,8 +141,13 @@ const LOCAL_FORMULAS = [
     { cat: "Fórmulas en Polvo", id: "prenan", name: "Prenan", type: "p", k: 507, p: 12.5, c: 54.5, f: 26.6, lipids_profile: { dha: 90, ara: 90, cholesterol: 0 }, minerals: { na: 250, k: 570, cl: 335, ca: 558, p: 320, mg: 59, mn: 0.085, se: 0.015, fe: 5.1, i: 0.11, cu: 0.39, zn: 5.7 } },
     { cat: "Fórmulas en Polvo", id: "nan_sin_lactosa", name: "NAN Sin Lactosa", type: "p", k: 506, p: 10.4, c: 58.5, f: 25.6, lipids_profile: { dha: 42, ara: 42, cholesterol: 30 }, minerals: { na: 160, k: 480, cl: 340, ca: 280, p: 160, mg: 43, mn: 0.07, se: 0.009, fe: 5.0, i: 0.062, cu: 0.34, zn: 2.8 } },
     { cat: "Fórmulas en Polvo", id: "fortificador_leche_materna", name: "Fortificador Leche Materna", type: "p", k: 435, p: 35.5, c: 32.4, f: 4.2, lipids_profile: { dha: 157, ara: 0, cholesterol: 0 }, minerals: { na: 918, k: 1210, cl: 803, ca: 1890, p: 1095, mg: 100, mn: 0.185, se: 0.085, fe: 45.0, i: 0.39, cu: 1.3, zn: 23.5 } },
-    { cat: "Fórmulas en Polvo", id: "lacsure", name: "Lacsure", type: "p", stdDil: 25, k: 378, p: 14.7, c: 68.8, f: 3.24, lipids_profile: { dha: 0, ara: 0 }, minerals: { na: 146, k: 1377, cl: 0, ca: 478, p: 221, mg: 128, mn: 1.28, se: 0.015, fe: 3.3, i: 0.0595, cu: 0.25, zn: 3.5, cr: 0.0213, mo: 0 }, fibra: 3.4, hmb: 785 },
     
+    // --- FÓRMULAS EN POLVO (LECHES HRA) ---
+    { cat: "Leches HRA", id: "lacsure", name: "Lacsure", type: "p", stdDil: 25, allowedDilutions: [25, 28], k: 378, p: 14.7, c: 68.8, f: 3.24, lipids_profile: { dha: 0, ara: 0 }, minerals: { na: 146, k: 1377, cl: 0, ca: 478, p: 221, mg: 128, mn: 1.28, se: 0.015, fe: 3.3, i: 0.0595, cu: 0.25, zn: 3.5, cr: 0.0213, mo: 0 }, fibra: 3.4, hmb: 785 },
+    { cat: "Leches HRA", id: "vivalite_gold", name: "Vivalite Gold", type: "p", stdDil: 22, allowedDilutions: [22], k: 409, p: 21.8, c: 47.7, f: 14.2, lipids_profile: { dha: 0, ara: 0 }, minerals: { na: 247, k: 646, cl: 291, ca: 641, p: 187, mg: 89.3, mn: 1.36, se: 0.0215, fe: 1.68, i: 0.0625, cu: 0.213, zn: 4.6, cr: 0.0239, mo: 0.0411 }, fibra: 2.67, hmb: 0 },
+    { cat: "Leches HRA", id: "vivalite_up", name: "Vivalite Up", type: "p", stdDil: 22, allowedDilutions: [22], k: 379, p: 16.5, c: 53.9, f: 10.3, lipids_profile: { dha: 0, ara: 0 }, minerals: { na: 201, k: 1163, cl: 218, ca: 674, p: 303, mg: 84.3, mn: 1.46, se: 0.0225, fe: 2.22, i: 0.0657, cu: 0.258, zn: 4.8, cr: 0.0286, mo: 0.0431 }, fibra: 1.86, hmb: 2300 },
+    { cat: "Leches HRA", id: "nat100_triple_fibra", name: "Nat100 Triple Fibra", type: "p", stdDil: 22, allowedDilutions: [22], k: 435, p: 15.4, c: 55.0, f: 17.1, lipids_profile: { dha: 0, ara: 0 }, minerals: { na: 300, k: 600, cl: 450, ca: 360, p: 295, mg: 100, mn: 1.2, se: 0.032, fe: 6.3, i: 0.07, cu: 0.68, zn: 6.3, cr: 0.032, mo: 0.045 }, fibra: 6.5, hmb: 0 },
+
     // --- FÓRMULAS LÍQUIDAS / ESPECIALES ---
     { cat: "Leches HRA", id: "alprem_liquido", name: "Alprem (100ml)", type: "l", k: 142.9, p: 5.1, c: 14.6, f: 7.1, lipids_profile: { dha: 26, ara: 26, cholesterol: 0 }, minerals: { na: 91.4, k: 212.9, cl: 135.4, ca: 207.1, p: 137.3, mg: 14.9, mn: 0.0223, se: 0.0086, fe: 3.29, i: 0.0501, cu: 0.1429, zn: 2.14 } },
 
@@ -3956,12 +3961,21 @@ function renderFormulaInputs(formula) {
 
     if (wrapper) wrapper.style.display = 'block';
 
-    if (formula.id === 'lacsure') {
+    if (formula.allowedDilutions) {
         if (baseDilInput) baseDilInput.style.display = 'none';
         if (baseDilSelect) {
             baseDilSelect.style.display = 'block';
-            if (baseDilInput.value !== '25' && baseDilInput.value !== '28') {
-                baseDilInput.value = '25';
+            baseDilSelect.innerHTML = '';
+            formula.allowedDilutions.forEach(dilVal => {
+                const opt = document.createElement('option');
+                opt.value = dilVal;
+                opt.innerText = dilVal + '%';
+                baseDilSelect.appendChild(opt);
+            });
+            const valStr = baseDilInput.value;
+            const hasVal = formula.allowedDilutions.map(String).includes(valStr);
+            if (!hasVal) {
+                baseDilInput.value = formula.allowedDilutions[0];
             }
             baseDilSelect.value = baseDilInput.value;
         }
@@ -3995,12 +4009,21 @@ function renderFormulaBInputs() {
 
     if (!baseDilBInput) return;
 
-    if (formulaB && formulaB.id === 'lacsure') {
+    if (formulaB && formulaB.allowedDilutions) {
         baseDilBInput.style.display = 'none';
         if (baseDilBSelect) {
             baseDilBSelect.style.display = 'block';
-            if (baseDilBInput.value !== '25' && baseDilBInput.value !== '28') {
-                baseDilBInput.value = '25';
+            baseDilBSelect.innerHTML = '';
+            formulaB.allowedDilutions.forEach(dilVal => {
+                const opt = document.createElement('option');
+                opt.value = dilVal;
+                opt.innerText = dilVal + '%';
+                baseDilBSelect.appendChild(opt);
+            });
+            const valStr = baseDilBInput.value;
+            const hasVal = formulaB.allowedDilutions.map(String).includes(valStr);
+            if (!hasVal) {
+                baseDilBInput.value = formulaB.allowedDilutions[0];
             }
             baseDilBSelect.value = baseDilBInput.value;
         }
@@ -7228,8 +7251,12 @@ window.populateEnteralList = () => {
     const select = document.getElementById('advEnteralProduct');
     if (!select) return;
     let html = '<option value="none">-- Sin Enteral --</option>';
+    
+    // Oral supplement IDs that should be excluded from Advanced Enteral transition dropdown
+    const excludedOralIds = ["alprem_liquido", "alprem", "e1", "e2", "e3", "e4", "g1", "g2", "g3", "g4"];
+    
     AppState.formulas.forEach(f => {
-        if (f.cat === "Fórmulas RTH" || f.cat === "Leches HRA") {
+        if (f.cat === "Fórmulas RTH" || (f.cat === "Leches HRA" && !excludedOralIds.includes(f.id))) {
             html += '<option value="' + f.id + '">' + f.name + '</option>';
         }
     });
