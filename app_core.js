@@ -190,14 +190,14 @@ const LOCAL_FORMULAS = [
     },
 
     // --- FÓRMULAS RTH (ADULTO ENTERAL) ---
-    { cat: "Fórmulas RTH", id: "osmolite", name: "Osmolite", type: "l", volBase: 1000, k: 100.0, p: 4.0, c: 13.6, f: 3.4, minerals: { na: 93, k: 157, cl: 142, ca: 70, p: 70, mg: 21, fe: 1.5, zn: 1.4, cu: 0.18, mn: 0.3, i: 0.012, se: 0.007, cr: 0.009, mo: 0.014 } },
+    { cat: "Fórmulas RTH", id: "osmolite", name: "Osmolite", type: "l", volBase: 500, k: 100.0, p: 4.0, c: 13.6, f: 3.4, minerals: { na: 93, k: 157, cl: 142, ca: 70, p: 70, mg: 21, fe: 1.5, zn: 1.4, cu: 0.18, mn: 0.3, i: 0.012, se: 0.007, cr: 0.009, mo: 0.014 } },
     { cat: "Fórmulas RTH", id: "glucerna_15", name: "Glucerna 1.5", type: "l", volBase: 1000, k: 150.0, p: 7.5, c: 12.76, f: 7.5, minerals: { na: 140, k: 165, cl: 145, ca: 100, p: 100, mg: 31, fe: 0.85, zn: 1.4, cu: 0.15, mn: 0.25 } },
     { cat: "Fórmulas RTH", id: "diben_15", name: "Diben 1.5 (1000 ml)", type: "l", volBase: 1000, k: 150.0, p: 7.5, c: 13.1, f: 7.0, minerals: { na: 85, k: 155, cl: 110, ca: 80, p: 63, mg: 30, fe: 2.0, zn: 1.8, cu: 0.2, mn: 0.4, i: 0.02, se: 0.01, cr: 0.02, mo: 0.015 } },
     { cat: "Fórmulas RTH", id: "jevity_1", name: "Jevity 1.0 (1000ml)", type: "l", volBase: 1000, k: 106.0, p: 4.4, c: 15.1, f: 3.4, minerals: { na: 100, k: 168, cl: 150, ca: 80, p: 80, mg: 25, fe: 1.8, zn: 1.4 } },
     { cat: "Fórmulas RTH", id: "fresubin_fibre", name: "Fresubin Original Fibre", type: "l", volBase: 500, k: 100.0, p: 3.8, c: 13.0, f: 3.4, minerals: { na: 75, k: 125, cl: 115, ca: 80, p: 63, mg: 25, fe: 1.3, zn: 1.2 } },
     { cat: "Fórmulas RTH", id: "fresubin_intensive", name: "Fresubin Intensive", type: "l", volBase: 500, k: 122.0, p: 10.0, c: 12.9, f: 3.2, minerals: { na: 100, k: 180, cl: 120, ca: 90, p: 85, mg: 28, fe: 1.5, zn: 1.5 } },
     { cat: "Fórmulas RTH", id: "fresubin_2kcal", name: "Fresubin 2 Kcal HP", type: "l", volBase: 500, k: 200.0, p: 10.0, c: 17.5, f: 10.0, minerals: { na: 120, k: 230, cl: 150, ca: 160, p: 130, mg: 40, fe: 2.5, zn: 2.2 } },
-    { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", volBase: 1000, k: 149.2, p: 8.0, c: 18.0, f: 4.8, minerals: { na: 110, k: 235, cl: 80, ca: 125, p: 100, mg: 27, fe: 2.0, zn: 1.8 } },
+    { cat: "Fórmulas RTH", id: "ensure_clinical_rth", name: "Ensure Clinical (RTH)", type: "l", volBase: 500, k: 149.2, p: 8.0, c: 18.0, f: 4.8, minerals: { na: 110, k: 235, cl: 80, ca: 125, p: 100, mg: 27, fe: 2.0, zn: 1.8 } },
 
     // --- BOTELLINES ---
     { cat: "Botellines", id: "ensure_clinical_bot", name: "Ensure Clinical", type: "l", isBotellin: true, volUnit: 220, k: 149.2, p: 8.0, c: 18.0, f: 4.8, minerals: {} },
@@ -4436,9 +4436,18 @@ function initInfusionLogic() {
     window.calcInfusion = function (skipSim) {
         // We listen to the main prescribed volume! 
         const totalVolPrescrito = window.getEffectiveSimulationVolume();
+        const selectedRthId = document.getElementById('infusionRTHSelect')?.value;
+
+        // If no RTH is selected, clear rate and start time
+        if (!selectedRthId) {
+            const rateInput = document.getElementById('infusionRate');
+            if (rateInput) rateInput.value = '';
+            const startInput = document.getElementById('infusionStart');
+            if (startInput) startInput.value = '';
+        }
+
         const rate = parseFloat(document.getElementById('infusionRate').value) || 0;
         const sachetStartStr = document.getElementById('infusionStart')?.value;
-        const selectedRthId = document.getElementById('infusionRTHSelect')?.value;
 
         const resBox = document.getElementById('infusionResultBox');
         const logBox = document.getElementById('valLogisticsBox');
@@ -4448,6 +4457,9 @@ function initInfusionLogic() {
         if (totalVolPrescrito <= 0 && rate <= 0) {
             resBox.style.display = 'none';
             if (logBox) logBox.style.display = 'none';
+            if (!skipSim && typeof window.runSimulation === 'function') {
+                window.runSimulation();
+            }
             return;
         }
 
