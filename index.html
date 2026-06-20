@@ -1064,6 +1064,10 @@
                             <div style="display:flex; gap:10px; align-items:center;">
                                 <select id="formulaSelectB" class="select-modern" style="flex:1;"></select>
                                 <input type="number" id="dilutionB" placeholder="Dil. %" style="width:70px; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; outline:none;" oninput="window.runSimulation()" title="Dilución Fórmula B (%)">
+                                <select id="dilutionBSelect" class="select-modern" style="display:none; width:70px; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; outline:none; background: white;">
+                                    <option value="25">25%</option>
+                                    <option value="28">28%</option>
+                                </select>
                             </div>
 
                             <div id="compareResult"
@@ -1102,6 +1106,10 @@
                             <div class="input-group" id="dilutionWrapper" style="margin-bottom: 0; transition: all 0.2s ease;">
                                 <label id="lblDilution">Dilución (%)</label>
                                 <input type="number" id="dilution" placeholder="%" style="height: 40px !important; padding: 8px 12px !important; border-radius: 12px !important; border: 2px solid rgba(44, 62, 80, 0.08) !important; box-sizing: border-box !important;">
+                                <select id="dilutionSelect" class="select-modern" style="display:none; height: 40px !important; padding: 8px 12px !important; border-radius: 12px !important; border: 2px solid rgba(44, 62, 80, 0.08) !important; box-sizing: border-box !important; background: white; width: 100%;">
+                                    <option value="25">25%</option>
+                                    <option value="28">28%</option>
+                                </select>
                             </div>
                         </div>
 
@@ -1318,6 +1326,18 @@
                     <div class="macro-item p"><label>Prot</label><span id="valProt" style="font-size: 1.1rem;">0</span><small>g</small></div>
                     <div class="macro-item c"><label>CHO</label><span id="valCHO" style="font-size: 1.1rem;">0</span><small>g</small></div>
                     <div class="macro-item f"><label>Lípidos</label><span id="valLip" style="font-size: 1.1rem;">0</span><small>g</small></div>
+                </div>
+                <!-- Aportes Adicionales (Fibra y HMB) -->
+                <div id="additionalAportesBox" style="display:none; margin-top: 15px; padding: 10px 15px; background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.15); border-radius: 12px; justify-content: space-around; align-items: center; gap: 10px;">
+                    <div style="text-align: center;">
+                        <span style="font-size: 0.68rem; color: #6b21a8; font-weight: 700; text-transform: uppercase; display: block;">Fibra Dietética</span>
+                        <strong style="color: #6b21a8; font-size: 1.1rem;"><span id="totalFibra">0.0</span> g</strong>
+                    </div>
+                    <div style="border-left: 1px dashed rgba(124, 58, 237, 0.3); height: 30px;"></div>
+                    <div style="text-align: center;">
+                        <span style="font-size: 0.68rem; color: #6b21a8; font-weight: 700; text-transform: uppercase; display: block;">HMB</span>
+                        <strong style="color: #6b21a8; font-size: 1.1rem;"><span id="totalHMB">0</span> mg</strong>
+                    </div>
                 </div>
             </div>
 

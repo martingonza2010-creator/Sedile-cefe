@@ -141,6 +141,7 @@ const LOCAL_FORMULAS = [
     { cat: "Fórmulas en Polvo", id: "prenan", name: "Prenan", type: "p", k: 507, p: 12.5, c: 54.5, f: 26.6, lipids_profile: { dha: 90, ara: 90, cholesterol: 0 }, minerals: { na: 250, k: 570, cl: 335, ca: 558, p: 320, mg: 59, mn: 0.085, se: 0.015, fe: 5.1, i: 0.11, cu: 0.39, zn: 5.7 } },
     { cat: "Fórmulas en Polvo", id: "nan_sin_lactosa", name: "NAN Sin Lactosa", type: "p", k: 506, p: 10.4, c: 58.5, f: 25.6, lipids_profile: { dha: 42, ara: 42, cholesterol: 30 }, minerals: { na: 160, k: 480, cl: 340, ca: 280, p: 160, mg: 43, mn: 0.07, se: 0.009, fe: 5.0, i: 0.062, cu: 0.34, zn: 2.8 } },
     { cat: "Fórmulas en Polvo", id: "fortificador_leche_materna", name: "Fortificador Leche Materna", type: "p", k: 435, p: 35.5, c: 32.4, f: 4.2, lipids_profile: { dha: 157, ara: 0, cholesterol: 0 }, minerals: { na: 918, k: 1210, cl: 803, ca: 1890, p: 1095, mg: 100, mn: 0.185, se: 0.085, fe: 45.0, i: 0.39, cu: 1.3, zn: 23.5 } },
+    { cat: "Fórmulas en Polvo", id: "lacsure", name: "Lacsure", type: "p", stdDil: 25, k: 378, p: 14.7, c: 68.8, f: 3.24, lipids_profile: { dha: 0, ara: 0 }, minerals: { na: 146, k: 1377, cl: 0, ca: 478, p: 221, mg: 128, mn: 1.28, se: 0.015, fe: 3.3, i: 0.0595, cu: 0.25, zn: 3.5, cr: 0.0213, mo: 0 }, fibra: 3.4, hmb: 785 },
     
     // --- FÓRMULAS LÍQUIDAS / ESPECIALES ---
     { cat: "Leches HRA", id: "alprem_liquido", name: "Alprem (100ml)", type: "l", k: 142.9, p: 5.1, c: 14.6, f: 7.1, lipids_profile: { dha: 26, ara: 26, cholesterol: 0 }, minerals: { na: 91.4, k: 212.9, cl: 135.4, ca: 207.1, p: 137.3, mg: 14.9, mn: 0.0223, se: 0.0086, fe: 3.29, i: 0.0501, cu: 0.1429, zn: 2.14 } },
@@ -3645,6 +3646,15 @@ function initSimulatorLogic() {
         };
     }
     if (dil) dil.oninput = runSimulation;
+    const dilSelect = document.getElementById('dilutionSelect');
+    if (dilSelect) {
+        dilSelect.onchange = () => {
+            if (dil) {
+                dil.value = dilSelect.value;
+                runSimulation();
+            }
+        };
+    }
     if (btnSave) btnSave.onclick = savePrescription;
 
     if (timesInp) {
@@ -3934,18 +3944,33 @@ function renderFormulaInputs(formula) {
     const wrapper = document.getElementById('dilutionWrapper');
     const container = document.getElementById('recipeInputsContainer');
     const baseDilInput = document.getElementById('dilution');
+    const baseDilSelect = document.getElementById('dilutionSelect');
 
     if (!formula) {
         if (wrapper) wrapper.style.display = 'block';
+        if (baseDilInput) baseDilInput.style.display = 'block';
+        if (baseDilSelect) baseDilSelect.style.display = 'none';
         if (container) container.style.display = 'none';
         return;
     }
 
     if (wrapper) wrapper.style.display = 'block';
-    
-    // Auto-fill standard dilution if present
-    if (formula.stdDil && baseDilInput) {
-        baseDilInput.value = formula.stdDil;
+
+    if (formula.id === 'lacsure') {
+        if (baseDilInput) baseDilInput.style.display = 'none';
+        if (baseDilSelect) {
+            baseDilSelect.style.display = 'block';
+            if (baseDilInput.value !== '25' && baseDilInput.value !== '28') {
+                baseDilInput.value = '25';
+            }
+            baseDilSelect.value = baseDilInput.value;
+        }
+    } else {
+        if (baseDilInput) baseDilInput.style.display = 'block';
+        if (baseDilSelect) baseDilSelect.style.display = 'none';
+        if (formula.stdDil && baseDilInput) {
+            baseDilInput.value = formula.stdDil;
+        }
     }
 
     // NEW V4.50: Botellines Logic for Volume Label
@@ -3958,6 +3983,32 @@ function renderFormulaInputs(formula) {
         } else {
             lblVolume.innerText = 'Volumen (ml)';
             inputVolume.placeholder = 'ml';
+        }
+    }
+}
+
+function renderFormulaBInputs() {
+    const fIdB = document.getElementById('formulaSelectB')?.value;
+    const formulaB = AppState.formulas.find(f => f.id === fIdB);
+    const baseDilBInput = document.getElementById('dilutionB');
+    const baseDilBSelect = document.getElementById('dilutionBSelect');
+
+    if (!baseDilBInput) return;
+
+    if (formulaB && formulaB.id === 'lacsure') {
+        baseDilBInput.style.display = 'none';
+        if (baseDilBSelect) {
+            baseDilBSelect.style.display = 'block';
+            if (baseDilBInput.value !== '25' && baseDilBInput.value !== '28') {
+                baseDilBInput.value = '25';
+            }
+            baseDilBSelect.value = baseDilBInput.value;
+        }
+    } else {
+        baseDilBInput.style.display = 'block';
+        if (baseDilBSelect) baseDilBSelect.style.display = 'none';
+        if (formulaB && formulaB.stdDil) {
+            baseDilBInput.value = formulaB.stdDil;
         }
     }
 }
@@ -4195,6 +4246,66 @@ function runSimulation() {
         p += (AppState.traslape.sourceProt || 0);
         c += (AppState.traslape.sourceCHO || 0);
         l += (AppState.traslape.sourceLip || 0);
+    }
+
+    // Calculate total Fiber and HMB
+    let totalFibra = 0;
+    let totalHMB = 0;
+    
+    const activeFormulaId = document.getElementById('formulaSelect')?.value;
+    const activeFormula = AppState.formulas.find(f => f.id === activeFormulaId);
+    if (activeFormula) {
+        let grams = 0;
+        const vol = activeFormula.isBotellin ? (v1 * activeFormula.volUnit) : v1;
+        if (activeFormula.type === 'p') {
+            const dil = v2 > 0 ? v2 : (activeFormula.stdDil || 0);
+            grams = vol * (dil / 100);
+        } else {
+            grams = vol;
+        }
+
+        if (activeFormula.fibra) {
+            totalFibra += activeFormula.fibra * (grams / 100);
+        }
+        if (activeFormula.hmb) {
+            totalHMB += activeFormula.hmb * (grams / 100);
+        }
+    }
+
+    if (AppState.compareMode) {
+        const compareFormulaId = document.getElementById('formulaSelectB')?.value;
+        const compareFormula = AppState.formulas.find(f => f.id === compareFormulaId);
+        if (compareFormula) {
+            let gramsB = 0;
+            const volB = compareFormula.isBotellin ? (v1 * compareFormula.volUnit) : v1;
+            if (compareFormula.type === 'p') {
+                gramsB = volB * (v2B / 100);
+            } else {
+                gramsB = volB;
+            }
+
+            if (compareFormula.fibra) {
+                totalFibra += compareFormula.fibra * (gramsB / 100);
+            }
+            if (compareFormula.hmb) {
+                totalHMB += compareFormula.hmb * (gramsB / 100);
+            }
+        }
+    }
+
+    const elFibra = document.getElementById('totalFibra');
+    const elHMB = document.getElementById('totalHMB');
+    const elAdditionalBox = document.getElementById('additionalAportesBox');
+
+    if (elFibra) elFibra.innerText = totalFibra.toFixed(1);
+    if (elHMB) elHMB.innerText = Math.round(totalHMB);
+
+    if (elAdditionalBox) {
+        if (totalFibra > 0 || totalHMB > 0) {
+            elAdditionalBox.style.display = 'flex';
+        } else {
+            elAdditionalBox.style.display = 'none';
+        }
     }
 
     // Animation: Count Up Numbers
@@ -4841,6 +4952,9 @@ function initCompareLogic() {
     // Clone options from main select to secondary
     setTimeout(() => {
         selB.innerHTML = document.getElementById('formulaSelect').innerHTML;
+        if (typeof renderFormulaBInputs === 'function') {
+            renderFormulaBInputs();
+        }
     }, 1000); // Wait for main init
 
     btnComp.onclick = () => {
@@ -4851,8 +4965,21 @@ function initCompareLogic() {
     };
 
     selB.onchange = () => {
+        if (typeof renderFormulaBInputs === 'function') {
+            renderFormulaBInputs();
+        }
         runSimulation();
     };
+    const dilBSelect = document.getElementById('dilutionBSelect');
+    if (dilBSelect) {
+        dilBSelect.onchange = () => {
+            const baseDilBInput = document.getElementById('dilutionB');
+            if (baseDilBInput) {
+                baseDilBInput.value = dilBSelect.value;
+                runSimulation();
+            }
+        };
+    }
 }
 
 // Duplicate function at line 928 removed in V3.30
