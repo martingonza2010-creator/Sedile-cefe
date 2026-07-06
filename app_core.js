@@ -8142,53 +8142,52 @@ window.initCensusModal = () => {
 
 const SERVICES_BY_FLOOR = {
     1: [
+        { id: 'urgencias', name: '🏥 Unidad de Emergencia', type: 'adult' },
+        { id: 'neonatologia_cuidados_basicos', name: '👶 Neonatología CB', type: 'neonate' },
         { id: 'neonatologia_uci', name: '👶 Neonatología UCI', type: 'neonate' },
-        { id: 'neonatologia_tim_a', name: '👶 Neonatología TIM A', type: 'neonate' },
-        { id: 'neonatologia_tim_b', name: '👶 Neonatología TIM B', type: 'neonate' },
-        { id: 'neonatologia_cuidados_basicos', name: '👶 Neonatología Cuidados Básicos', type: 'neonate' },
-        { id: 'urgencias', name: '🏥 Urgencias', type: 'adult' }
+        { id: 'neonatologia_tim', name: '👶 Neonatología TIM', type: 'neonate' }
     ],
     2: [
-        { id: 'uci_adulto', name: '🩺 UCI Adulto', type: 'adult' },
-        { id: 'tim_adulto', name: '🩺 TIM Adulto', type: 'adult' }
+        { id: 'uci_adulto', name: '🩺 UCI Adultos', type: 'adult' },
+        { id: 'tim_adulto', name: '🩺 TIM Adultos', type: 'adult' }
     ],
     3: [
-        { id: 'uco', name: '🫀 UCI CORO (UCO)', type: 'adult' },
-        { id: 'pediatria_lactantes', name: '👶 Pediatría Lactantes', type: 'pediatric' },
-        { id: 'segunda_infancia', name: '🧒 II Infancia', type: 'pediatric' },
-        { id: 'cirugia_infantil', name: '🍼 Cirugía Infantil', type: 'pediatric' },
-        { id: 'oncologia_pediatrica', name: '🎗️ Oncología Pediátrica', type: 'pediatric' },
-        { id: 'timped', name: '🧸 TIMPED', type: 'pediatric' },
-        { id: 'uciped', name: '🧸 UCIPED', type: 'pediatric' }
+        { id: 'uco', name: '🫀 UCI Coronaria (UCO)', type: 'adult' },
+        { id: 'uciped', name: '🧸 UCIPED (UCP Ped. UCI)', type: 'pediatric' },
+        { id: 'timped', name: '🧸 TIMPED (UCP Ped. TIM)', type: 'pediatric' },
+        { id: 'pediatria_lactantes', name: '👶 Pediatría Lactantes (Ala A)', type: 'pediatric' },
+        { id: 'segunda_infancia', name: '🧒 II Infancia (Ala D)', type: 'pediatric' },
+        { id: 'cirugia_infantil', name: '🍼 Cirugía Infantil (Ala D)', type: 'pediatric' },
+        { id: 'oncologia_pediatrica', name: '🎗️ Oncología Pediátrica (Ala D)', type: 'pediatric' }
     ],
     4: [
-        { id: 'aro', name: '🤱 ARO', type: 'adult' },
-        { id: 'ginecologia', name: '🤰 Ginecología', type: 'adult' },
-        { id: 'puerperio', name: '🤱 Puerperio', type: 'adult' },
-        { id: 'rn_ala_d', name: '👶 RN Ala D', type: 'neonate' },
-        { id: 'rn_ala_a', name: '👶 RN Ala A', type: 'neonate' }
+        { id: 'aro', name: '🤱 ARO (Ala A)', type: 'adult' },
+        { id: 'ginecologia', name: '🤰 Ginecología (Ala B)', type: 'adult' },
+        { id: 'puerperio', name: '🤱 Puerperio (Ala D)', type: 'adult' },
+        { id: 'rn_ala_a', name: '👶 RN Ala A', type: 'neonate' },
+        { id: 'rn_ala_d', name: '👶 RN Ala D', type: 'neonate' }
     ],
     5: [
-        { id: 'ala_a', name: '🏢 Ala A', type: 'adult' },
-        { id: 'ala_b', name: '🏢 Ala B', type: 'adult' },
-        { id: 'ala_c', name: '🏢 Ala C', type: 'adult' },
-        { id: 'ala_d', name: '🏢 Ala D', type: 'adult' }
+        { id: 'ala_a', name: '🏢 Cirugía Básica (Ala A)', type: 'adult' },
+        { id: 'ala_b', name: '🏢 Cirugía UCM (Ala B)', type: 'adult' },
+        { id: 'ala_c', name: '🏢 Cirugía UCM (Ala C)', type: 'adult' },
+        { id: 'ala_d', name: '🏢 Bloque QX Especialidades (Ala D)', type: 'adult' }
     ],
     6: [
-        { id: 'ala_a', name: '🏢 Ala A', type: 'adult' },
-        { id: 'ala_b', name: '🏢 Ala B', type: 'adult' },
-        { id: 'ala_c', name: '🏢 Ala C', type: 'adult' },
-        { id: 'ala_d', name: '🏢 Ala D', type: 'adult' }
+        { id: 'ala_a', name: '🏢 UCM Neurología (Ala A)', type: 'adult' },
+        { id: 'ala_b', name: '🏢 Oncología Adultos (Ala B)', type: 'adult' },
+        { id: 'ala_c', name: '🏢 Medicina (Ala C)', type: 'adult' },
+        { id: 'ala_d', name: '🏢 Medicina UCM (Ala D)', type: 'adult' }
     ],
     7: [
-        { id: 'ala_a', name: '🏢 Ala A', type: 'adult' },
-        { id: 'ala_b', name: '🏢 Ala B', type: 'adult' },
-        { id: 'ala_c', name: '🏢 Ala C', type: 'adult' },
-        { id: 'ala_d', name: '🏢 Ala D', type: 'adult' }
+        { id: 'ala_a', name: '🏢 Cardiología UCM (Ala A)', type: 'adult' },
+        { id: 'ala_b', name: '🏢 Psiquiatría Infanto Juvenil (Ala B)', type: 'pediatric' },
+        { id: 'ala_c', name: '🏢 Médico Quirúrgico (Ala C)', type: 'adult' },
+        { id: 'ala_d', name: '🏢 TIM Adultos - Cardiología QX (Ala D)', type: 'adult' }
     ],
     8: [
-        { id: 'ala_a', name: '🏢 Ala A', type: 'adult' },
-        { id: 'ala_b', name: '🏢 Ala B', type: 'adult' }
+        { id: 'ala_a', name: '🏢 Psiquiatría Adultos (Ala A)', type: 'adult' },
+        { id: 'ala_b', name: '🏢 Psiquiatría Adultos (Ala B)', type: 'adult' }
     ]
 };
 
@@ -8370,10 +8369,17 @@ function getDefaultBeds(floor, serviceId) {
     if (!serviceId) return [];
     const cleanId = serviceId.toLowerCase();
     
-    // 1. Neonatología (UCI, TIM A, TIM B, Cuidados Básicos)
-    if (cleanId.startsWith('neonatologia_')) {
+    // 1. Neonatología (CB, UCI, TIM)
+    if (cleanId === 'neonatologia_uci') {
         const list = [];
-        for (let i = 1; i <= 12; i++) {
+        for (let i = 1; i <= 9; i++) {
+            list.push(`Cupo ${i}`);
+        }
+        return list;
+    }
+    if (cleanId === 'neonatologia_tim' || cleanId === 'neonatologia_cuidados_basicos') {
+        const list = [];
+        for (let i = 1; i <= 18; i++) {
             list.push(`Cupo ${i}`);
         }
         return list;
@@ -8382,8 +8388,8 @@ function getDefaultBeds(floor, serviceId) {
     // 2. Urgencias
     if (cleanId === 'urgencias') {
         const list = [];
-        for (let i = 1; i <= 30; i++) {
-            list.push(`Box ${i}`);
+        for (let i = 1; i <= 25; i++) {
+            list.push(`AR ${i}`);
         }
         return list;
     }
@@ -8391,7 +8397,7 @@ function getDefaultBeds(floor, serviceId) {
     // 3. UCI Adulto
     if (cleanId === 'uci_adulto') {
         const list = [];
-        for (let i = 1; i <= 30; i++) {
+        for (let i = 1; i <= 18; i++) {
             list.push(`UCI ${i}`);
         }
         return list;
@@ -8400,54 +8406,17 @@ function getDefaultBeds(floor, serviceId) {
     // 4. TIM Adulto
     if (cleanId === 'tim_adulto') {
         const list = [];
-        for (let i = 1; i <= 30; i++) {
+        for (let i = 1; i <= 27; i++) {
             list.push(`TIM ${i}`);
         }
         return list;
     }
     
     // 5. Floor 3 Pediatric Services
-    if (cleanId === 'pediatria_lactantes') {
-        const list = [];
-        for (let r = 301; r <= 311; r++) {
-            list.push(`${r}-1`);
-            list.push(`${r}-2`);
-            if (r === 301 || r === 302) {
-                list.push(`${r}-3`);
-            }
-        }
-        return list;
-    }
-    if (cleanId === 'segunda_infancia') {
-        const list = [];
-        for (let r = 312; r <= 322; r++) {
-            list.push(`${r}-1`);
-            list.push(`${r}-2`);
-            if (r === 312 || r === 313) {
-                list.push(`${r}-3`);
-            }
-        }
-        return list;
-    }
-    if (cleanId === 'cirugia_infantil') {
-        const list = [];
-        for (let r = 323; r <= 329; r++) {
-            list.push(`${r}-1`);
-            list.push(`${r}-2`);
-        }
-        return list;
-    }
-    if (cleanId === 'oncologia_pediatrica') {
+    if (cleanId === 'uco') {
         const list = [];
         for (let i = 1; i <= 10; i++) {
-            list.push(`ONCO ${i}`);
-        }
-        return list;
-    }
-    if (cleanId === 'timped') {
-        const list = [];
-        for (let i = 1; i <= 6; i++) {
-            list.push(`TIMPED ${i}`);
+            list.push(`UCO ${i}`);
         }
         return list;
     }
@@ -8458,18 +8427,55 @@ function getDefaultBeds(floor, serviceId) {
         }
         return list;
     }
-    if (cleanId === 'uco') {
+    if (cleanId === 'timped') {
         const list = [];
         for (let i = 1; i <= 10; i++) {
-            list.push(`UCO ${i}`);
+            list.push(`TIMPED ${i}`);
+        }
+        return list;
+    }
+    if (cleanId === 'oncologia_pediatrica') {
+        const list = [];
+        for (let i = 1; i <= 5; i++) {
+            list.push(`ONCO ${i}`);
+        }
+        return list;
+    }
+    if (cleanId === 'pediatria_lactantes') {
+        const list = [];
+        for (let r = 301; r <= 314; r++) {
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
+            if (r === 301 || r === 302 || r === 303) {
+                list.push(`${r}-3`);
+            }
+        }
+        return list;
+    }
+    if (cleanId === 'segunda_infancia') {
+        const list = [];
+        for (let r = 315; r <= 322; r++) {
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
+            if (r === 315 || r === 316) {
+                list.push(`${r}-3`);
+            }
+        }
+        return list;
+    }
+    if (cleanId === 'cirugia_infantil') {
+        const list = [];
+        for (let r = 323; r <= 328; r++) {
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
         }
         return list;
     }
     
-    // 6. Floor 4: ARO, Ginecologia, Puerperio, RN Ala D, RN Ala A
-    if (floor === 4) {
+    // 6. Floor 4: ARO, Ginecologia, Puerperio, RN Ala A, RN Ala D
+    if (cleanId === 'aro') {
         const list = [];
-        for (let r = 401; r <= 411; r++) {
+        for (let r = 401; r <= 412; r++) {
             list.push(`${r}-1`);
             list.push(`${r}-2`);
             if (r === 401 || r === 402) {
@@ -8478,35 +8484,83 @@ function getDefaultBeds(floor, serviceId) {
         }
         return list;
     }
+    if (cleanId === 'ginecologia') {
+        const list = [];
+        for (let r = 413; r <= 423; r++) {
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
+            if (r === 413 || r === 414) {
+                list.push(`${r}-3`);
+            }
+        }
+        return list;
+    }
+    if (cleanId === 'puerperio') {
+        const list = [];
+        for (let r = 433; r <= 443; r++) {
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
+            if (r === 433 || r === 434) {
+                list.push(`${r}-3`);
+            }
+        }
+        return list;
+    }
+    if (cleanId === 'rn_ala_a') {
+        const list = [];
+        for (let i = 1; i <= 9; i++) {
+            list.push(`RN ${i}`);
+        }
+        return list;
+    }
+    if (cleanId === 'rn_ala_d') {
+        const list = [];
+        for (let i = 1; i <= 17; i++) {
+            list.push(`RN ${i}`);
+        }
+        return list;
+    }
     
-    // 7. General Alas for floors 5, 6, 7
+    // 7. General Alas for floors 5, 6, 7 (with up to 3 beds per room)
     if (floor === 5 || floor === 6 || floor === 7) {
         let startRoom = 1;
         let endRoom = 5;
-        if (cleanId === 'ala_b') { startRoom = 6; endRoom = 10; }
-        else if (cleanId === 'ala_c') { startRoom = 11; endRoom = 15; }
-        else if (cleanId === 'ala_d') { startRoom = 16; endRoom = 20; }
+        if (floor === 5) {
+            if (cleanId === 'ala_a') { startRoom = 501; endRoom = 513; }
+            else if (cleanId === 'ala_b') { startRoom = 515; endRoom = 527; }
+            else if (cleanId === 'ala_c') { startRoom = 528; endRoom = 541; }
+            else if (cleanId === 'ala_d') { startRoom = 542; endRoom = 555; }
+        } else if (floor === 6) {
+            if (cleanId === 'ala_a') { startRoom = 601; endRoom = 614; }
+            else if (cleanId === 'ala_b') { startRoom = 615; endRoom = 627; }
+            else if (cleanId === 'ala_c') { startRoom = 628; endRoom = 641; }
+            else if (cleanId === 'ala_d') { startRoom = 642; endRoom = 655; }
+        } else if (floor === 7) {
+            if (cleanId === 'ala_a') { startRoom = 701; endRoom = 714; }
+            else if (cleanId === 'ala_b') { startRoom = 718; endRoom = 726; }
+            else if (cleanId === 'ala_c') { startRoom = 728; endRoom = 740; }
+            else if (cleanId === 'ala_d') { startRoom = 742; endRoom = 754; }
+        }
         
         const list = [];
         for (let r = startRoom; r <= endRoom; r++) {
-            const rNum = floor * 100 + r;
-            list.push(`${rNum}-1`);
-            list.push(`${rNum}-2`);
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
+            list.push(`${r}-3`);
         }
         return list;
     }
     
     // 8. Floor 8: Ala A, Ala B
     if (floor === 8) {
-        let startRoom = 1;
-        let endRoom = 10;
-        if (cleanId === 'ala_b') { startRoom = 11; endRoom = 20; }
+        let startRoom = 801;
+        let endRoom = 810;
+        if (cleanId === 'ala_b') { startRoom = 811; endRoom = 815; }
         
         const list = [];
         for (let r = startRoom; r <= endRoom; r++) {
-            const rNum = floor * 100 + r;
-            list.push(`${rNum}-1`);
-            list.push(`${rNum}-2`);
+            list.push(`${r}-1`);
+            list.push(`${r}-2`);
         }
         return list;
     }
