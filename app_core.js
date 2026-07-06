@@ -8156,9 +8156,9 @@ const SERVICES_BY_FLOOR = {
         { id: 'uciped', name: '🧸 UCIPED (UCP Ped. UCI)', type: 'pediatric' },
         { id: 'timped', name: '🧸 TIMPED (UCP Ped. TIM)', type: 'pediatric' },
         { id: 'pediatria_lactantes', name: '👶 Pediatría Lactantes (Ala A)', type: 'pediatric' },
-        { id: 'segunda_infancia', name: '🧒 II Infancia (Ala D)', type: 'pediatric' },
-        { id: 'cirugia_infantil', name: '🍼 Cirugía Infantil (Ala D)', type: 'pediatric' },
-        { id: 'oncologia_pediatrica', name: '🎗️ Oncología Pediátrica (Ala D)', type: 'pediatric' }
+        { id: 'segunda_infancia', name: '🧒 II Infancia', type: 'pediatric' },
+        { id: 'cirugia_infantil', name: '🍼 Cirugía Infantil', type: 'pediatric' },
+        { id: 'oncologia_pediatrica', name: '🎗️ Oncología Pediátrica', type: 'pediatric' }
     ],
     4: [
         { id: 'aro', name: '🤱 ARO (Ala A)', type: 'adult' },
