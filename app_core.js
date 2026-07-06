@@ -6611,8 +6611,8 @@ document.querySelectorAll('.input-watch').forEach(imp => {
     });
 });
 
-// --- NUTRI IA (ðŸ¦¦ V3.23) ---
-const GEMINI_API_KEY = typeof window_GEMINI_API_KEY !== 'undefined' ? window_GEMINI_API_KEY : '';
+// --- NUTRI IA (🦦 V3.23) ---
+const GEMINI_API_KEY = (typeof window_GEMINI_API_KEY !== 'undefined' && window_GEMINI_API_KEY) ? window_GEMINI_API_KEY : 'AIzaSyCy3M818UQMLrocr75uaUUTE36MeJg97MA';
 
 function initNutriIA() {
     const btnGenerate = document.getElementById('btnGenerateIA');
