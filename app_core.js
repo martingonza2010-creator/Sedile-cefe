@@ -4694,9 +4694,9 @@ function initInfusionLogic() {
 
                 planesText = `
                     <div style="margin-top:5px; background:rgba(255,255,255,0.7); padding:4px 8px; border-radius:5px; border-left:3px solid #27ae60;">
-                        <b style="color:#27ae60; font-size:0.75rem;">ðŸ“‹ Plan de Repartos SEDILE (${envasesNedded} en total):</b><br>
-                        â€¢ En el reparto de las 14:00 hrs: Pedir <b>${count14}</b> producto(s).<br>
-                        â€¢ En el reparto de las 18:00 hrs: Pedir <b>${count18}</b> producto(s).
+                        <b style="color:#27ae60; font-size:0.75rem;">&#128203; Plan de Repartos SEDILE (${envasesNedded} en total):</b><br>
+                        &bull; En el reparto de las 14:00 hrs: Pedir <b>${count14}</b> producto(s).<br>
+                        &bull; En el reparto de las 18:00 hrs: Pedir <b>${count18}</b> producto(s).
                     </div>
                 `;
             }
@@ -8575,6 +8575,34 @@ function getDefaultBeds(floor, serviceId) {
     return list;
 }
 
+window.toggleRoomCollapse = function(roomKey, elementId) {
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) return;
+    const activeLoc = JSON.parse(activeLocStr);
+    const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+    
+    const storageKey = `collapsedRooms_${locationKey}`;
+    let collapsed = [];
+    try {
+        collapsed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    } catch(e) {
+        collapsed = [];
+    }
+    
+    const index = collapsed.indexOf(roomKey);
+    const element = document.getElementById(elementId);
+    
+    if (index >= 0) {
+        collapsed.splice(index, 1);
+        if (element) element.classList.remove('collapsed');
+    } else {
+        collapsed.push(roomKey);
+        if (element) element.classList.add('collapsed');
+    }
+    
+    localStorage.setItem(storageKey, JSON.stringify(collapsed));
+};
+
 window.renderWardBedsGrid = async function() {
     const activeLocStr = localStorage.getItem('activeLocation');
     if (!activeLocStr) return;
@@ -8583,7 +8611,7 @@ window.renderWardBedsGrid = async function() {
     const grid = document.getElementById('wardBedsGrid');
     if (!grid) return;
     
-    grid.innerHTML = '<p style="opacity:0.5; text-align:center; padding: 40px;">Cargando camas...</p>';
+    grid.innerHTML = '<p style="opacity:0.5; text-align:center; padding: 40px;">Cargando salas y camas...</p>';
     
     // Check if admin is logged in to show bed tools
     const userEmail = AppState.user?.email || '';
@@ -8632,66 +8660,151 @@ window.renderWardBedsGrid = async function() {
             return bedsList.includes(p.cama);
         });
         
+        // 3. Group beds by room
+        const groupOrder = [];
+        const groupedBeds = {};
+        bedsList.forEach(bedName => {
+            let groupKey = 'Cupos del Servicio';
+            if (bedName.includes('-')) {
+                const parts = bedName.split('-');
+                groupKey = `Sala ${parts[0].trim()}`;
+            }
+            if (!groupedBeds[groupKey]) {
+                groupedBeds[groupKey] = [];
+                groupOrder.push(groupKey);
+            }
+            groupedBeds[groupKey].push(bedName);
+        });
+
+        // Get collapsed rooms for this service
+        const storageKey = `collapsedRooms_${locationKey}`;
+        let collapsedRooms = [];
+        try {
+            collapsedRooms = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        } catch(e) {
+            collapsedRooms = [];
+        }
+
         grid.innerHTML = '';
         
-        bedsList.forEach(bedName => {
-            // Find active patient assigned to this bed
-            const patient = matchedPatients.find(p => p.cama === bedName);
+        groupOrder.forEach((roomName, roomIndex) => {
+            const bedsInRoom = groupedBeds[roomName];
+            const elementId = `room-group-${roomIndex}`;
             
-            const card = document.createElement('div');
+            // Calculate stats for this room
+            let totalBeds = bedsInRoom.length;
+            let occupiedCount = 0;
+            let emptyCount = 0;
+            let hasCritical = false;
             
-            if (patient) {
-                const isCritico = patient.estado_sala === 'critico' || patient.requiere_atencion;
-                card.className = `bed-card occupied ${isCritico ? 'critical' : 'active'}`;
-                
-                // Construct metrics display
-                const tmtKcal = patient.tmt || '--';
-                const weight = patient.peso_kg || '--';
-                const dx = patient.diagnostico || 'Sin diagnóstico';
-                const formula = patient.metadata?.simulator?.formula || 'Ninguna';
-                
-                card.innerHTML = `
-                    <div class="bed-header">
-                        <span class="bed-badge occupied">🛏️ ${bedName}</span>
-                        ${isCritico ? '<span class="status-alert-tag critical">🚨 CRÍTICO</span>' : '<span class="status-alert-tag active">🟢 ACTIVO</span>'}
-                    </div>
-                    <div class="bed-patient-info" onclick="loadPatient('${patient.id}')" style="cursor:pointer;" title="Haga clic para editar ficha">
-                        <div class="patient-name">${patient.nombre}</div>
-                        <div class="patient-dx">${dx}</div>
-                        <div class="patient-metrics-row">
-                            <span class="metric-item" title="Edad">🎂 ${patient.edad}a</span>
-                            <span class="metric-item" title="Peso">⚖️ ${weight}kg</span>
-                        </div>
-                        <div class="patient-regime-row">
-                            <div class="regime-formula" title="Fórmula">🍼 ${formula}</div>
-                            <div class="regime-req" title="Requerimiento">⚡ ${tmtKcal} kcal</div>
-                        </div>
-                    </div>
-                    <div class="bed-actions-row">
-                        <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
-                        <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
-                        <button class="circle-action-btn" title="Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
-                        <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
-                    </div>
-                    ${isAdmin ? `<button class="btn-delete-bed-absolute" title="Eliminar Cama del Servicio" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
-                `;
-            } else {
-                card.className = 'bed-card empty';
-                card.innerHTML = `
-                    <div class="bed-header">
-                        <span class="bed-badge empty">🛏️ ${bedName}</span>
-                        <span class="status-alert-tag empty">DISPONIBLE</span>
-                    </div>
-                    <div class="empty-bed-body">
-                        <button class="btn-register-patient" onclick="window.registerPatientInBed('${bedName}')">
-                            ➕ Registrar
-                        </button>
-                    </div>
-                    ${isAdmin ? `<button class="btn-delete-bed-absolute" title="Eliminar Cama del Servicio" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
-                `;
+            bedsInRoom.forEach(bedName => {
+                const patient = matchedPatients.find(p => p.cama === bedName);
+                if (patient) {
+                    occupiedCount++;
+                    if (patient.estado_sala === 'critico' || patient.requiere_atencion) {
+                        hasCritical = true;
+                    }
+                } else {
+                    emptyCount++;
+                }
+            });
+            
+            const isCollapsed = collapsedRooms.includes(roomName);
+            
+            const roomGroup = document.createElement('div');
+            roomGroup.id = elementId;
+            roomGroup.className = `room-group ${isCollapsed ? 'collapsed' : ''} ${hasCritical ? 'has-critical' : ''}`;
+            
+            // Render header
+            let summaryHTML = `
+                <span class="room-summary-badge total">${totalBeds} ${totalBeds === 1 ? 'cama' : 'camas'}</span>
+            `;
+            if (occupiedCount > 0) {
+                summaryHTML += `<span class="room-summary-badge occupied">${occupiedCount} ${occupiedCount === 1 ? 'ocupada' : 'ocupadas'}</span>`;
+            }
+            if (emptyCount > 0) {
+                summaryHTML += `<span class="room-summary-badge empty">${emptyCount} ${emptyCount === 1 ? 'disponible' : 'disponibles'}</span>`;
+            }
+            if (hasCritical) {
+                summaryHTML += `<span class="room-summary-badge critical-alert">🚨 CRÍTICO</span>`;
             }
             
-            grid.appendChild(card);
+            const headerHTML = `
+                <div class="room-group-header" onclick="window.toggleRoomCollapse('${roomName.replace(/'/g, "\\'")}', '${elementId}')">
+                    <div class="room-title-container">
+                        <span class="room-toggle-icon">▼</span>
+                        <span>${roomName === 'Cupos del Servicio' ? 'Área / Cupos del Servicio' : roomName}</span>
+                    </div>
+                    <div class="room-badges-container">
+                        ${summaryHTML}
+                    </div>
+                </div>
+            `;
+            
+            const bedsGridDiv = document.createElement('div');
+            bedsGridDiv.className = 'room-beds-grid beds-grid';
+            bedsGridDiv.style.marginTop = '0';
+            
+            bedsInRoom.forEach(bedName => {
+                const patient = matchedPatients.find(p => p.cama === bedName);
+                const card = document.createElement('div');
+                
+                if (patient) {
+                    const isCritico = patient.estado_sala === 'critico' || patient.requiere_atencion;
+                    card.className = `bed-card occupied ${isCritico ? 'critical' : 'active'}`;
+                    
+                    const tmtKcal = patient.tmt || '--';
+                    const weight = patient.peso_kg || '--';
+                    const dx = patient.diagnostico || 'Sin diagnóstico';
+                    const formula = patient.metadata?.simulator?.formula || 'Ninguna';
+                    
+                    card.innerHTML = `
+                        <div class="bed-header">
+                            <span class="bed-badge occupied">🛏️ ${bedName}</span>
+                            ${isCritico ? '<span class="status-alert-tag critical">🚨 CRÍTICO</span>' : '<span class="status-alert-tag active">🟢 ACTIVO</span>'}
+                        </div>
+                        <div class="bed-patient-info" onclick="loadPatient('${patient.id}')" style="cursor:pointer;" title="Haga clic para editar ficha">
+                            <div class="patient-name">${patient.nombre}</div>
+                            <div class="patient-dx">${dx}</div>
+                            <div class="patient-metrics-row">
+                                <span class="metric-item" title="Edad">🎂 ${patient.edad}a</span>
+                                <span class="metric-item" title="Peso">⚖️ ${weight}kg</span>
+                            </div>
+                            <div class="patient-regime-row">
+                                <div class="regime-formula" title="Fórmula">🍼 ${formula}</div>
+                                <div class="regime-req" title="Requerimiento">⚡ ${tmtKcal} kcal</div>
+                            </div>
+                        </div>
+                        <div class="bed-actions-row">
+                            <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
+                            <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
+                            <button class="circle-action-btn" title="Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
+                            <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
+                        </div>
+                        ${isAdmin ? `<button class="btn-delete-bed-absolute" title="Eliminar Cama del Servicio" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
+                    `;
+                } else {
+                    card.className = 'bed-card empty';
+                    card.innerHTML = `
+                        <div class="bed-header">
+                            <span class="bed-badge empty">🛏️ ${bedName}</span>
+                            <span class="status-alert-tag empty">DISPONIBLE</span>
+                        </div>
+                        <div class="empty-bed-body">
+                            <button class="btn-register-patient" onclick="window.registerPatientInBed('${bedName}')">
+                                ➕ Registrar
+                            </button>
+                        </div>
+                        ${isAdmin ? `<button class="btn-delete-bed-absolute" title="Eliminar Cama del Servicio" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
+                    `;
+                }
+                
+                bedsGridDiv.appendChild(card);
+            });
+            
+            roomGroup.innerHTML = headerHTML;
+            roomGroup.appendChild(bedsGridDiv);
+            grid.appendChild(roomGroup);
         });
         
     } catch (err) {
