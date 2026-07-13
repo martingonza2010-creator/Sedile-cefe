@@ -1294,6 +1294,18 @@ window.renderFilteredHistory = () => {
         const serviceBadge = r.metadata?.location?.serviceName ? `<span style="font-size:0.75rem; background:rgba(124, 58, 237, 0.1); color:rgb(124, 58, 237); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">${r.metadata.location.serviceName}</span>` : '';
         const camaBadge = `<span style="font-size:0.75rem; background:rgba(59, 130, 246, 0.1); color:rgb(59, 130, 246); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">Cama: ${r.cama || 'Sin asignar'}</span>`;
 
+        let dischargeBadge = '';
+        if (r.estado_sala === 'de_alta') {
+            const discDateStr = r.metadata?.discharged_at;
+            if (discDateStr) {
+                const discObj = new Date(discDateStr);
+                const discStr = discObj.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + discObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+                dischargeBadge = `<span style="font-size:0.75rem; background:rgba(16, 185, 129, 0.15); color:rgb(5, 150, 105); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">✔️ Alta: ${discStr}</span>`;
+            } else {
+                dischargeBadge = `<span style="font-size:0.75rem; background:rgba(16, 185, 129, 0.15); color:rgb(5, 150, 105); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">✔️ Dado de alta</span>`;
+            }
+        }
+
         const dateBadge = `<span style="font-size:0.7rem; background:rgba(100, 116, 139, 0.08); color:rgb(100, 116, 139); padding:3px 8px; border-radius:6px; font-weight:700;">📅 ${dateStr}</span>`;
         const isTrash = r.estado_sala === 'eliminado';
         if (isTrash) {
@@ -1304,6 +1316,7 @@ window.renderFilteredHistory = () => {
                             <strong style="color:#7c2d12; font-size:1.05rem;">${r.nombre}</strong>
                             ${serviceBadge}
                             ${camaBadge}
+                            ${dischargeBadge}
                         </div>
                         <div style="font-size:0.78rem; color:#7c2d12; opacity:0.8; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
                             <span>⚠️ Se eliminará en <b>${r._daysLeft} días</b></span>
@@ -1326,6 +1339,7 @@ window.renderFilteredHistory = () => {
                             <strong style="color:#1e1b4b; font-size:1.05rem;">${r.nombre}</strong>
                             ${serviceBadge}
                             ${camaBadge}
+                            ${dischargeBadge}
                         </div>
                         <div style="font-size:0.78rem; color:#475569; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
                             <span>${ageWeightText}</span>
@@ -1374,8 +1388,27 @@ window.togglePatientState = async (id, newState) => {
 
 window.dischargePatient = async (id) => {
     if (!confirm("¿Dar de alta a este paciente de la sala? Seguirá en tu historial, pero no en este Kanban.")) return;
-    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', id);
-    if (!error) loadWardKanban();
+    
+    let currentMeta = {};
+    const { data: p } = await supabaseClient.from('pacientes').select('metadata').eq('id', id).maybeSingle();
+    if (p && p.metadata) {
+        currentMeta = { ...p.metadata };
+    }
+    currentMeta.discharged_at = new Date().toISOString();
+    
+    const { error } = await supabaseClient.from('pacientes').update({ 
+        estado_sala: 'de_alta',
+        metadata: currentMeta
+    }).eq('id', id);
+    
+    if (!error) {
+        if (typeof window.loadHistoryList === 'function') {
+            await window.loadHistoryList(false);
+        }
+        loadWardKanban();
+    } else {
+        alert("Error al dar de alta: " + error.message);
+    }
 };
 
 window.deletePatient = async (id) => {
@@ -8841,9 +8874,24 @@ window.togglePatientStateGrid = async function(id, newState) {
 
 window.dischargePatientGrid = async function(id) {
     if (!confirm("¿Está seguro de dar de alta a este paciente?")) return;
-    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', id);
+    
+    let currentMeta = {};
+    const { data: p } = await supabaseClient.from('pacientes').select('metadata').eq('id', id).maybeSingle();
+    if (p && p.metadata) {
+        currentMeta = { ...p.metadata };
+    }
+    currentMeta.discharged_at = new Date().toISOString();
+    
+    const { error } = await supabaseClient.from('pacientes').update({ 
+        estado_sala: 'de_alta',
+        metadata: currentMeta
+    }).eq('id', id);
+    
     if (!error) {
         showToast("✅ Paciente dado de alta.");
+        if (typeof window.loadHistoryList === 'function') {
+            await window.loadHistoryList(false);
+        }
         await window.renderWardBedsGrid();
     } else {
         alert("Error al dar de alta: " + error.message);
