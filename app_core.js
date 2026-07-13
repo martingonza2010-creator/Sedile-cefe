@@ -4683,9 +4683,9 @@ function initInfusionLogic() {
                 for (let i = 0; i < envasesNedded; i++) {
                     const connectTime = (cycleStartDecimal + (i * bottleDuration)) % 24;
                     // SEDILE Safe Window (margen orgánico prep.): 
-                    // Si se instala tarde (15:00 a 18:59) -> cabe para pedir a las 14:00 (hoy)
+                    // Si se instala tarde (15:00 a 17:59) -> cabe para pedir a las 14:00 (hoy)
                     // Si se instala en cualquier otro horario -> pedir a las 18:00
-                    if (connectTime >= 15 && connectTime < 19) {
+                    if (connectTime >= 15 && connectTime < 18) {
                         count14++;
                     } else {
                         count18++;
