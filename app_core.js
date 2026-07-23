@@ -147,6 +147,7 @@ const LOCAL_FORMULAS = [
     { cat: "Leches HRA", id: "vivalite_gold", name: "Vivalite Gold", type: "p", stdDil: 22, allowedDilutions: [22], k: 409, p: 21.8, c: 47.7, f: 14.2, lipids_profile: { dha: 0, ara: 0 }, minerals: { na: 247, k: 646, cl: 291, ca: 641, p: 187, mg: 89.3, mn: 1.36, se: 0.0215, fe: 1.68, i: 0.0625, cu: 0.213, zn: 4.6, cr: 0.0239, mo: 0.0411 }, fibra: 2.67, hmb: 0 },
     { cat: "Leches HRA", id: "vivalite_up", name: "Vivalite Up", type: "p", stdDil: 22, allowedDilutions: [22], k: 379, p: 16.5, c: 53.9, f: 10.3, lipids_profile: { dha: 0, ara: 0 }, minerals: { na: 201, k: 1163, cl: 218, ca: 674, p: 303, mg: 84.3, mn: 1.46, se: 0.0225, fe: 2.22, i: 0.0657, cu: 0.258, zn: 4.8, cr: 0.0286, mo: 0.0431 }, fibra: 1.86, hmb: 2300 },
     { cat: "Leches HRA", id: "nat100_triple_fibra", name: "Nat100 Triple Fibra", type: "p", stdDil: 22, allowedDilutions: [22], k: 435, p: 15.4, c: 55.0, f: 17.1, lipids_profile: { dha: 0, ara: 0 }, minerals: { na: 300, k: 600, cl: 450, ca: 360, p: 295, mg: 100, mn: 1.2, se: 0.032, fe: 6.3, i: 0.07, cu: 0.68, zn: 6.3, cr: 0.032, mo: 0.045 }, fibra: 6.5, hmb: 0 },
+    { cat: "Leches HRA", id: "nutren_senior", name: "Nutren Senior", type: "p", stdDil: 19, allowedDilutions: [19], k: 392, p: 31.3, c: 40.0, f: 11.0, lipids_profile: { dha: 0, ara: 0, cholesterol: 75 }, minerals: { na: 345, k: 0, cl: 0, ca: 1000, p: 490, mg: 287, mn: 1.229, se: 0.109, fe: 8.4, i: 0, cu: 0.675, zn: 16.0 }, fibra: 4.1, hmb: 0 },
 
     // --- FÓRMULAS LÍQUIDAS / ESPECIALES ---
     { cat: "Leches HRA", id: "alprem_liquido", name: "Alprem (100ml)", type: "l", k: 142.9, p: 5.1, c: 14.6, f: 7.1, lipids_profile: { dha: 26, ara: 26, cholesterol: 0 }, minerals: { na: 91.4, k: 212.9, cl: 135.4, ca: 207.1, p: 137.3, mg: 14.9, mn: 0.0223, se: 0.0086, fe: 3.29, i: 0.0501, cu: 0.1429, zn: 2.14 } },
@@ -1002,6 +1003,7 @@ function initCompactLayout() {
     window.saveCurrentPatient = async (isReset = false) => {
         const form = document.getElementById('form-paciente');
         if (form) {
+            form.dataset.isReset = isReset ? 'true' : 'false';
             const submitEvent = new Event('submit', { cancelable: true });
             form.dispatchEvent(submitEvent);
         }
@@ -1011,11 +1013,16 @@ function initCompactLayout() {
     if (form) {
         form.onsubmit = async (e) => {
             e.preventDefault();
-            const btn = form.querySelector('button[type="submit"]');
-            const originalText = btn.innerHTML;
+            const isResetSignal = form.dataset.isReset === 'true';
+            form.dataset.isReset = 'false';
 
-            btn.disabled = true;
-            btn.innerHTML = `<span>â³</span> Guardando...`;
+            const btn = form.querySelector('button[type="submit"]');
+            const originalText = btn ? btn.innerHTML : 'Guardar Paciente';
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span> Guardando...`;
+            }
 
             try {
                 const nombre = document.getElementById('nombre').value;
@@ -1119,26 +1126,32 @@ function initCompactLayout() {
                 const { error } = await supabaseClient.from('pacientes').insert([data]);
 
                 if (!error) {
-                    showToast("âœ… Ficha completa guardada en historial");
+                    showToast("✅ Ficha completa guardada en historial");
                     window.loadHistoryList(false);
 
                     if (typeof updatePatientEvolutionChart === 'function') {
                         updatePatientEvolutionChart(nombre);
                     }
 
-                    btn.innerHTML = `<span>âœ”</span> ¡Guardado!`;
+                    if (btn) {
+                        btn.innerHTML = `<span>✔</span> ¡Guardado!`;
+                    }
                     setTimeout(() => {
-                        btn.disabled = false;
-                        btn.innerHTML = originalText;
-                    }, 2000);
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    }, 1500);
                 } else {
                     throw error;
                 }
             } catch (err) {
                 console.error("Save Error:", err);
                 alert("Error al guardar (Verifica caché SQL): " + err.message);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
             }
         };
     }
@@ -2059,6 +2072,9 @@ function initEvolutionLogic() {
 
 
 window.loadPatient = async (id) => {
+    if (typeof resetPatientForm === 'function') {
+        await resetPatientForm(true);
+    }
     const { data } = await supabaseClient.from('pacientes').select('*').eq('id', id).single();
     if (data) {
         AppState.patient.id = data.id;
@@ -4661,8 +4677,22 @@ function initInfusionLogic() {
             const endH = sachetEndDate.getHours().toString().padStart(2, '0');
             const endM = sachetEndDate.getMinutes().toString().padStart(2, '0');
 
-            const dayDiff = sachetEndDate.getDate() - now.getDate();
-            const dayLabel = dayDiff > 0 ? " (+1 día)" : "";
+            const startDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const endDateOnly = new Date(sachetEndDate.getFullYear(), sachetEndDate.getMonth(), sachetEndDate.getDate());
+            const diffDays = Math.round((endDateOnly - startDateOnly) / (1000 * 60 * 60 * 24));
+
+            const endDD = sachetEndDate.getDate().toString().padStart(2, '0');
+            const endMM = (sachetEndDate.getMonth() + 1).toString().padStart(2, '0');
+            const dateStr = `${endDD}/${endMM}`;
+
+            let dayLabel = "";
+            if (diffDays === 0) {
+                dayLabel = ` (Hoy ${dateStr})`;
+            } else if (diffDays === 1) {
+                dayLabel = ` (Mañana ${dateStr})`;
+            } else {
+                dayLabel = ` (${dateStr})`;
+            }
 
             sachetEndStrDisplay = `${endH}:${endM}${dayLabel}`;
             const hrs = Math.floor(durationHrs);
@@ -4863,13 +4893,15 @@ function clearAllInputsForMode(mode) {
     runSimulation();
 }
 
-async function resetPatientForm() {
+async function resetPatientForm(skipConfirm = false) {
     const nombreVal = document.getElementById('nombre')?.value || '';
-    if (!confirm("¿Deseas limpiar todos los campos para un nuevo paciente?")) return;
+    if (!skipConfirm) {
+        if (!confirm("¿Deseas limpiar todos los campos para un nuevo paciente?")) return;
 
-    if (nombreVal.trim() !== '') {
-        showToast("💾 Guardando paciente actual en historial...");
-        await window.saveCurrentPatient(true);
+        if (nombreVal.trim() !== '') {
+            showToast("💾 Guardando paciente actual en historial...");
+            await window.saveCurrentPatient(true);
+        }
     }
 
     // Reset Global State
@@ -6060,16 +6092,38 @@ function initTabNavigation() {
     }
 }
 
+let toastTimer = null;
 function showToast(msg) {
     let toast = document.getElementById('app-toast');
     if (!toast) {
         toast = document.createElement('div');
         toast.id = 'app-toast';
+        toast.style.position = 'fixed';
+        toast.style.bottom = '20px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.background = 'rgba(44, 62, 80, 0.95)';
+        toast.style.color = 'white';
+        toast.style.padding = '10px 22px';
+        toast.style.borderRadius = '30px';
+        toast.style.zIndex = '10000';
+        toast.style.fontSize = '0.85rem';
+        toast.style.fontWeight = '600';
+        toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.25)';
+        toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
         document.body.appendChild(toast);
     }
-    toast.innerText = msg;
-    toast.classList.add('toast-show');
-    setTimeout(() => { toast.classList.remove('toast-show'); }, 3000);
+    if (toastTimer) clearTimeout(toastTimer);
+    toast.innerHTML = msg;
+    toast.style.display = 'block';
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+
+    toastTimer = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(10px)';
+        setTimeout(() => { toast.style.display = 'none'; }, 300);
+    }, 3000);
 }
 // --- 17. GLOBAL EVENTS & MISC (CLEANUP V3.16.2) ---
 function initGlobalEvents() {
@@ -6179,7 +6233,8 @@ function initGlobalEvents() {
             volText = isBotellin ? `${vol} Unidad(es) (${vol * formula.volUnit} ml totales)` : `${vol} ml`;
         }
 
-        // Build ADIME Text
+        // Build ADIME Clinical Note Text
+        const pName = document.getElementById('nombre')?.value || p.nombre || 'Sin nombre';
         const pAgeVal = document.getElementById('edad')?.value || p.edad;
         const pAge = pAgeVal ? `${pAgeVal} años` : (p.exactMonths ? `${p.exactMonths.toFixed(1)} meses` : '--');
         const pSexVal = document.getElementById('sexo')?.value || p.sexo;
@@ -6198,25 +6253,44 @@ function initGlobalEvents() {
         const nrsClassif = document.getElementById('nrsClassif')?.innerText || '';
         const nrsString = nrsClassif ? `${nrsTotal} (${nrsClassif})` : nrsTotal;
         
-        const formulaName = formula ? formula.name : 'No indicada';
-        let dietoterapia = `Fórmula: ${formulaName} | Volumen: ${volText}`;
-        const dilVal = document.getElementById('dilution')?.value;
-        if (dilVal && parseFloat(dilVal) > 0) {
-            dietoterapia += ` | Dilución: ${dilVal}%`;
+        const valKcalEl = document.getElementById('valKcal');
+        const valProtEl = document.getElementById('valProt');
+        const totalKcalVal = valKcalEl ? parseFloat(valKcalEl.innerText) || 0 : 0;
+        const totalProtVal = valProtEl ? parseFloat(valProtEl.innerText) || 0 : 0;
+
+        const kcalFinal = totalKcalVal > 0 ? Math.round(totalKcalVal) : Math.round(goal);
+        const protFinal = totalProtVal > 0 ? totalProtVal.toFixed(1) : pTotal.toFixed(1);
+
+        let aporteStr = `Aporte: ${kcalFinal} kcal`;
+        if (pesoCalc > 0) {
+            aporteStr += ` (${(kcalFinal / pesoCalc).toFixed(1)} kcal/kg)`;
         }
-        if (modulesText) {
-            dietoterapia += ` | Módulos: ${modulesText.slice(0, -2)}`;
+        aporteStr += ` / ${protFinal} g proteína`;
+        if (pesoCalc > 0) {
+            aporteStr += ` (${(parseFloat(protFinal) / pesoCalc).toFixed(2)} g/kg)`;
         }
 
-        // Add oral diet details if entered
+        let regimenParts = [];
         const dietSelect = document.getElementById('oralDietType');
-        const dietText = dietSelect && dietSelect.value !== 'custom' ? dietSelect.options[dietSelect.selectedIndex].text : 'Régimen Personalizado';
-        const oralKcalVal = parseFloat(document.getElementById('oralKcal')?.value) || 0;
-        const oralPct = parseFloat(document.getElementById('oralIntakePercent')?.value) || 100;
-        if (oralKcalVal > 0) {
-            dietoterapia += ` | Ingesta Oral: Régimen: ${dietText} (${Math.round(oralKcalVal)} kcal entregadas al ${oralPct}%)`;
+        if (dietSelect && dietSelect.value !== 'custom') {
+            const rawOpt = dietSelect.options[dietSelect.selectedIndex].text;
+            const cleanOpt = rawOpt.replace(/\s*\(\d+\s*kcal\)/i, '');
+            regimenParts.push(`Régimen: ${cleanOpt}`);
         }
-        
+        if (formula) {
+            let fStr = `Fórmula: ${formula.name} (${volText}`;
+            const dilVal = document.getElementById('dilution')?.value;
+            if (dilVal && parseFloat(dilVal) > 0) fStr += `, Dilución: ${dilVal}%`;
+            fStr += `)`;
+            regimenParts.push(fStr);
+        }
+        if (modulesText) {
+            regimenParts.push(`Módulos: ${modulesText.slice(0, -2)}`);
+        }
+
+        const regimenAdded = regimenParts.length > 0 ? regimenParts.join(' | ') : 'Régimen: Según indicación clínica';
+        const dietoterapia = `${regimenAdded} | ${aporteStr}\nSe realizara control de examenes, ingesta, deposiciones, y suplementacion en caso de no cubrir requerimientos nutricionales.`;
+
         const userName = AppState.user?.user_metadata?.full_name || "[Nombre del Profesional]";
 
         // Gastrointestinal symptoms
@@ -6280,29 +6354,32 @@ function initGlobalEvents() {
             dniBreve += ` ${compBraquialText}`;
         }
 
-        const adimeText = `-Datos del paciente: Edad: ${pAge} | Sexo: ${pSex} | Cama: ${pCama}
--Diagnostico medico: ${dxMedico}
-Anamnesis y sintomas: ${symptomsText}
-Antecedentes morbidos: [Ingresar antecedentes mórbidos]
+        const adimeText = `EVOLUCIÓN CLÍNICA NUTRICIONAL (ADIME)
 
-Antropometria Basica:
-IMC: ${imcValText}
-Talla: ${tallaVal}
-Peso: ${pesoVal}
-CB: ${cbVal}
+[A - ASSESSMENT / VALORACIÓN]
+• Datos del Paciente: Nombre: ${pName} | Edad: ${pAge} | Sexo: ${pSex} | Cama: ${pCama}
+• Diagnóstico Médico: ${dxMedico}
+• Anamnesis y Síntomas: ${symptomsText}
+• Antecedentes Mórbidos: [Ingresar antecedentes mórbidos]
 
-DNI breve:
-${dniBreve}
+Antropometría Básica:
+- IMC: ${imcValText} kg/m² | Talla: ${tallaVal} | Peso: ${pesoVal} | CB: ${cbVal} cm
+- NRS 2002 / Tamizaje: ${nrsString}
 
-NRS 2002: ${nrsString}
+[D - DIAGNOSIS / DIAGNÓSTICO NUTRICIONAL]
+• DNI Breve: ${dniBreve}
 
-Dietoterapia actual: ${dietoterapia}
+[I - INTERVENTION / INTERVENCIÓN Y DIETOTERAPIA]
+• ${dietoterapia}
 
-Nombre del nutricionista: ${userName}`;
+[M - MONITORING & E - EVALUATION / MONITOREO Y EVALUACIÓN]
+• Monitoreo: Control diario de tolerancia, ingesta, exámenes y deposiciones.
+
+Nutricionista Responsable: ${userName}`;
 
         content.innerText = adimeText;
         const titleH4 = document.querySelector('#clinicalNoteContainer h4');
-        if (titleH4) titleH4.innerText = "Vista Previa de Evolución (ADIME)";
+        if (titleH4) titleH4.innerText = "Vista Previa de Evolución ADIME";
         container.style.display = 'block';
         container.scrollIntoView({ behavior: 'smooth' });
     };
@@ -7110,28 +7187,7 @@ function updateMacroGoals() {
     }
 }
 
-// --- HELPER: TOAST NOTIFICATIONS ---
-function showToast(msg) {
-    const toast = document.createElement('div');
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
-    toast.style.background = 'rgba(44, 62, 80, 0.9)';
-    toast.style.color = 'white';
-    toast.style.padding = '10px 20px';
-    toast.style.borderRadius = '30px';
-    toast.style.zIndex = '10000';
-    toast.style.fontSize = '0.85rem';
-    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-    toast.innerHTML = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.5s ease';
-        setTimeout(() => toast.remove(), 500);
-    }, 3000);
-}
+
 
 // --- WAIST EVALUATION ENGINE (CC) ---
 window.evaluateWaist = (makeBadgeFn = null) => {
@@ -7951,7 +8007,8 @@ window.handleCensusUpload = async function(event) {
     reader.onload = async function() {
         try {
             const base64Data = reader.result.split(',')[1];
-            const mimeType = file.type;
+            let mimeType = file.type || 'image/jpeg';
+            if (mimeType.includes('pdf')) mimeType = 'application/pdf';
             
             const activeLocStr = localStorage.getItem('activeLocation');
             if (!activeLocStr) {
@@ -7968,18 +8025,34 @@ window.handleCensusUpload = async function(event) {
                     .select('*')
                     .eq('location_key', locationKey)
                     .maybeSingle();
-                if (configRecord && configRecord.beds) {
+                if (configRecord && configRecord.beds && configRecord.beds.length > 0) {
                     bedsList = configRecord.beds;
                 }
             }
             
+            if (!bedsList || bedsList.length === 0) {
+                alert("No se encontraron camas configuradas para este servicio.");
+                return;
+            }
+
             const resultJSON = await callGeminiMultimodalOCR(base64Data, mimeType, bedsList);
-            const extracted = JSON.parse(resultJSON);
+            let extracted = [];
+            try {
+                extracted = JSON.parse(resultJSON);
+            } catch (pErr) {
+                console.error("Error interpretando JSON de IA:", pErr, resultJSON);
+                const match = resultJSON.match(/\[[\s\S]*\]/);
+                if (match) {
+                    extracted = JSON.parse(match[0]);
+                } else {
+                    throw new Error("No se pudo estructurar el censo. Asegúrate de que la foto o documento sea claro e intentalo de nuevo.");
+                }
+            }
             
             await showCensusReviewModal(extracted, bedsList, activeLoc);
         } catch (err) {
             console.error("Error al procesar censo:", err);
-            alert("Error al procesar la imagen con IA: " + err.message);
+            alert("Error al procesar el censo con Nutria IA: " + err.message);
         } finally {
             event.target.value = '';
         }
@@ -7988,9 +8061,14 @@ window.handleCensusUpload = async function(event) {
 };
 
 async function callGeminiMultimodalOCR(base64Data, mimeType, bedsList) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    const prompt = `Analiza esta imagen que contiene el censo de pacientes y camas de una sala de hospital.
-Las camas válidas en este servicio son: ${bedsList.join(', ')}.
+    const modelsToTry = [
+        'gemini-1.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-pro'
+    ];
+
+    const prompt = `Analiza esta imagen o documento que contiene el censo de pacientes y camas de una sala de hospital.
+Las camas válidas registradas en este servicio son: ${bedsList.join(', ')}.
 Tu tarea es extraer los nombres de los pacientes que ocupan cada una de estas camas. Mapea la información de la imagen a las camas de esta lista.
 Devuelve el resultado únicamente en formato JSON (un arreglo de objetos), donde cada objeto tenga las propiedades "cama" y "nombre".
 Si una cama de la lista está vacía, no tiene paciente, o está libre, el valor de "nombre" debe ser "".
@@ -8000,35 +8078,50 @@ Ejemplo de formato de salida:
   {"cama": "${bedsList[0] || '101'}", "nombre": "JUAN PEREZ SOTO"},
   {"cama": "${bedsList[1] || '102'}", "nombre": ""}
 ]
-Devuelve SOLAMENTE el JSON plano en texto plano. No incluyes bloques de código markdown (\`\`\`json), ni explicaciones.`;
+Devuelve SOLAMENTE el JSON plano en texto. No incluyas bloques de código markdown (\`\`\`json), ni explicaciones adicionales.`;
 
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{
-                parts: [
-                    { text: prompt },
-                    {
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: base64Data
-                        }
-                    }
-                ]
-            }]
-        })
-    });
+    let lastError = null;
+    for (const model of modelsToTry) {
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: base64Data
+                                }
+                            }
+                        ]
+                    }]
+                })
+            });
 
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(`Error de API Gemini: ${errorData.error?.message || res.statusText}`);
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(`[${model}] ${errorData.error?.message || res.statusText}`);
+            }
+
+            const data = await res.json();
+            let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+            text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const firstBracket = text.indexOf('[');
+            const lastBracket = text.lastIndexOf(']');
+            if (firstBracket !== -1 && lastBracket !== -1) {
+                text = text.substring(firstBracket, lastBracket + 1);
+            }
+            return text;
+        } catch (err) {
+            console.warn(`Intento fallido con modelo ${model}:`, err.message);
+            lastError = err;
+        }
     }
-
-    const data = await res.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-    text = text.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
-    return text;
+    throw lastError || new Error("No se pudo conectar con Nutria IA. Verifica tu conexión a internet.");
 }
 
 window.pendingCensusChanges = [];
@@ -8167,6 +8260,12 @@ window.initCensusModal = () => {
         document.getElementById('censusReviewModal')?.classList.remove('active');
     });
     document.getElementById('btnCensusConfirm')?.addEventListener('click', window.applyCensusChanges);
+    
+    const censusInput = document.getElementById('censusFileInput');
+    if (censusInput && !censusInput.dataset.bound) {
+        censusInput.addEventListener('change', window.handleCensusUpload);
+        censusInput.dataset.bound = "true";
+    }
 };
 
 // ==========================================
@@ -8846,20 +8945,33 @@ window.renderWardBedsGrid = async function() {
     }
 };
 
-window.registerPatientInBed = function(bedName) {
-    // Fill the bed name in the left panel form
+window.registerPatientInBed = async function(bedName) {
+    // 1. Limpiar completamente los datos del paciente anterior sin pedir confirmación
+    if (typeof resetPatientForm === 'function') {
+        await resetPatientForm(true);
+    }
+    
+    // 2. Asignar el número de cama seleccionado en el formulario y en AppState
     const camaInput = document.getElementById('cama');
     if (camaInput) {
         camaInput.value = bedName;
     }
+    if (AppState && AppState.patient) {
+        AppState.patient.cama = bedName;
+    }
     
-    // Focus on the patient name input
+    // 3. Cambiar automáticamente a la vista de Cálculo Nutricional / Ficha
+    if (typeof window.switchAppView === 'function') {
+        window.switchAppView('dashboard');
+    }
+    
+    // 4. Enfocar el campo de nombre del paciente
     const nameInput = document.getElementById('nombre');
     if (nameInput) {
         nameInput.focus();
     }
     
-    showToast(`📝 Registrando paciente en la cama: ${bedName}`);
+    showToast(`📝 Registrando paciente nuevo en la cama: ${bedName}`);
 };
 
 window.togglePatientStateGrid = async function(id, newState) {
