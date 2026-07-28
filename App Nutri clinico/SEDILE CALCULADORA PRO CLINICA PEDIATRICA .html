@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEDILE App | Clinical Nutrition</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #009688;
+      /* Verde clínico vibrante */
+      --primary-dark: #00695c;
+      --accent: #b2dfdb;
+      --text-main: #2d3436;
+      --text-light: #636e72;
+      --white: #ffffff;
+      --glass-bg: rgba(255, 255, 255, 0.92);
+      --glass-border: rgba(255, 255, 255, 0.5);
+      --shadow-soft: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+      --shadow-card: 0 4px 15px rgba(0, 0, 0, 0.05);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #e0f2f1 0%, #80cbc4 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      color: var(--text-main);
+    }
+
+    /* Container Principal con Glassmorphism */
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      position: relative;
+      transform: translateZ(0);
+      /* Aceleración Hardware */
+    }
+
+    /* Header */
+    header {
+      padding: 30px 30px 10px 30px;
+      text-align: center;
+    }
+
+    .icon-medical {
+      width: 50px;
+      height: 50px;
+      background: rgba(0, 150, 136, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px;
+      color: var(--primary);
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 5px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+
+    /* Formulario */
+    .input-section {
+      padding: 20px 30px;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 8px;
+      margin-left: 5px;
+      transition: color 0.3s;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Iconos dentro de inputs */
+    .input-icon {
+      position: absolute;
+      left: 15px;
+      color: var(--primary);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    select,
+    input {
+      width: 100%;
+      padding: 14px 15px 14px 45px;
+      /* Espacio para icono */
+      border: 2px solid #eceff1;
+      border-radius: var(--radius-md);
+      background: #fafafa;
+      font-size: 1rem;
+      color: var(--text-main);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      appearance: none;
+      /* Quitar estilo nativo */
+    }
+
+    /* Efectos Focus */
+    select:focus,
+    input:focus {
+      border-color: var(--primary);
+      background: var(--white);
+      box-shadow: 0 4px 12px rgba(0, 150, 136, 0.15);
+      outline: none;
+    }
+
+    .input-group:focus-within label {
+      color: var(--primary);
+    }
+
+    .input-group:focus-within .input-icon {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    .row {
+      display: flex;
+      gap: 15px;
+    }
+
+    .row .input-group {
+      flex: 1;
+    }
+
+    /* Botón animado */
+    .btn-calc {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.3s;
+      box-shadow: 0 10px 20px rgba(0, 150, 136, 0.3);
+      margin-top: 10px;
+    }
+
+    .btn-calc::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transform: skewX(-20deg) translateX(-150%);
+      transition: 0.5s;
+    }
+
+    .btn-calc:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 25px rgba(0, 150, 136, 0.4);
+    }
+
+    .btn-calc:hover::after {
+      transform: skewX(-20deg) translateX(150%);
+    }
+
+    .btn-calc:active {
+      transform: translateY(-1px);
+    }
+
+    /* Sección Resultados */
+    #results-area {
+      display: none;
+      padding: 10px 30px 30px 30px;
+    }
+
+    .instruction-card {
+      background: rgba(224, 242, 241, 0.6);
+      border-left: 4px solid var(--primary);
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      opacity: 0;
+      transform: translateY(20px);
+      /* La animación se asigna con JS */
+    }
+
+    .instruction-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--primary-dark);
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .instruction-text {
+      font-size: 1.05rem;
+      color: var(--text-main);
+      line-height: 1.4;
+    }
+
+    /* Grid de Tarjetas */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      padding: 15px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      text-align: center;
+      opacity: 0;
+      /* Para animación de entrada */
+      transform: translateY(20px);
+      transition: transform 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-card.full-width {
+      grid-column: span 2;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Decoración de fondo para la tarjeta principal */
+    .stat-card.full-width::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -20%;
+      width: 200px;
+      height: 200px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+    }
+
+    .stat-card h3 {
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-bottom: 5px;
+      opacity: 0.9;
+    }
+
+    .stat-card.full-width h3 {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .stat-card.full-width .value {
+      color: white;
+      font-size: 2.8rem;
+    }
+
+    .stat-card.full-width .sub-info {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .stat-card .value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .stat-card .unit {
+      font-size: 0.8rem;
+      font-weight: 400;
+    }
+
+    .stat-card .sub-info {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+
+    /* Animaciones Keyframes */
+    @keyframes slideUpFade {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Clases de utilidad para JS */
+    .animate-enter {
+      animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #b0bec5;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app-container">
+    <header>
+      <div class="icon-medical">
+        <!-- SVG Icono Cruz/Hoja -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L12 22"></path>
+          <path d="M17 7L7 17"></path>
+          <path d="M7 7L17 17"></path>
+        </svg>
+      </div>
+      <h1>SEDILE CALCULO PRO</h1>
+      <p>Formulación Clínica Pediátrica</p>
+    </header>
+
+    <section class="input-section">
+      <form id="calcForm">
+        <!-- Selector -->
+        <div class="input-group">
+          <label>Fórmula Láctea</label>
+          <div class="input-wrapper">
+            <span class="input-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            </span>
+            <select id="formulaSelect" required>
+              <option value="" disabled selected>Seleccione fórmula...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Volumen -->
+          <div class="input-group">
+            <label>Volumen (ml)</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 3v15h6V3"></path>
+                  <path d="M3 15h3"></path>
+                  <path d="M18 15h3"></path>
+                  <path d="M3 11h3"></path>
+                  <path d="M18 11h3"></path>
+                </svg>
+              </span>
+              <input type="number" id="volume" placeholder="150" min="1" required>
+            </div>
+          </div>
+
+          <!-- Dilución -->
+          <div class="input-group">
+            <label>Dilución (%)</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="5" x2="5" y2="19"></line>
+                  <circle cx="6.5" cy="6.5" r="2.5"></circle>
+                  <circle cx="17.5" cy="17.5" r="2.5"></circle>
+                </svg>
+              </span>
+              <input type="number" id="dilution" placeholder="13.5" step="0.1" min="0.1" required>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-calc">Calcular Fórmulación</button>
+      </form>
+    </section>
+
+    <div id="results-area">
+      <!-- Instrucción -->
+      <div class="instruction-card" id="card-instr">
+        <div class="instruction-title">Indicación Médica</div>
+        <div class="instruction-text" id="txtPrep"></div>
+      </div>
+
+      <!-- Dashboard -->
+      <div class="dashboard-grid">
+        <!-- Main KPI -->
+        <div class="stat-card full-width" id="card-kcal">
+          <h3>CALORÍAS TOTALES</h3>
+          <div class="value"><span class="count-up" id="valKcal">0</span> <span class="unit">Kcal</span></div>
+          <div class="sub-info">Densidad Calórica: <span id="valDens">0</span> Kcal/ml</div>
+        </div>
+
+        <!-- Detalles -->
+        <div class="stat-card" id="card-prot">
+          <h3>Proteínas</h3>
+          <div class="value"><span class="count-up" id="valProt">0</span> <span class="unit">g</span></div>
+        </div>
+
+        <div class="stat-card" id="card-fat">
+          <h3>Lípidos</h3>
+          <div class="value"><span class="count-up" id="valFat">0</span> <span class="unit">g</span></div>
+        </div>
+
+        <div class="stat-card" id="card-carb">
+          <h3>Carbohidratos</h3>
+          <div class="value"><span class="count-up" id="valCarb">0</span> <span class="unit">g</span></div>
+        </div>
+
+        <div class="stat-card" id="card-grams">
+          <h3>Polvo a Pesar</h3>
+          <div class="value" style="color: var(--primary)"><span class="count-up" id="valGrams">0</span> <span class="unit">g</span></div>
+        </div>
+      </div>
+
+      <footer>Hospital Tech © 2024</footer>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. DATOS (Database) ---
+    const formulas = [{
+        id: 'nan_prem',
+        cat: 'Prematuros',
+        name: 'Nan Prematuros',
+        k: 493,
+        p: 14.4,
+        f: 23.6,
+        c: 57.4
+      },
+      {
+        id: 'sim_neo',
+        cat: 'Prematuros',
+        name: 'Similac Neosure',
+        k: 513,
+        p: 13.3,
+        f: 28.2,
+        c: 52.8
+      },
+      {
+        id: 'nan_1',
+        cat: 'Inicio (0-6m)',
+        name: 'Nan Optipro 1',
+        k: 519,
+        p: 9.6,
+        f: 27.7,
+        c: 57.8
+      },
+      {
+        id: 'sim_1',
+        cat: 'Inicio (0-6m)',
+        name: 'Similac 1 HMO',
+        k: 512,
+        p: 10.6,
+        f: 27.1,
+        c: 54.3
+      },
+      {
+        id: 'nidal_1',
+        cat: 'Inicio (0-6m)',
+        name: 'Nidal Inicio',
+        k: 500,
+        p: 10.9,
+        f: 24.5,
+        c: 59
+      },
+      {
+        id: 'nan_2',
+        cat: 'Continuación',
+        name: 'Nan Optipro 2',
+        k: 479,
+        p: 14.3,
+        f: 21.6,
+        c: 56.6
+      },
+      {
+        id: 'nidal_2',
+        cat: 'Continuación',
+        name: 'Nidal 2',
+        k: 468,
+        p: 14.5,
+        f: 20,
+        c: 58
+      },
+      {
+        id: 'alfare',
+        cat: 'Especiales',
+        name: 'Alfaré (Hidrolizado)',
+        k: 504,
+        p: 13,
+        f: 24.8,
+        c: 57
+      },
+      {
+        id: 'neocate',
+        cat: 'Especiales',
+        name: 'Neocate (AA)',
+        k: 483,
+        p: 13,
+        f: 24.5,
+        c: 52.5
+      },
+      {
+        id: 'lp',
+        cat: 'Especiales',
+        name: 'LP (Baja Proteína)',
+        k: 515,
+        p: 6.5,
+        f: 22,
+        c: 61
+      } // Ejemplo LP
+    ];
+    // --- 2. INICIALIZACIÓN ---
+    const select = document.getElementById('formulaSelect');
+    const groups = {};
+    formulas.forEach(f => {
+      if (!groups[f.cat]) {
+        const grp = document.createElement('optgroup');
+        grp.label = f.cat;
+        groups[f.cat] = grp;
+        select.appendChild(grp);
+      }
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.innerText = f.name;
+      groups[f.cat].appendChild(opt);
+    });
+    // --- 3. ANIMACIÓN DE NÚMEROS (Count Up) ---
+    function animateValue(obj, start, end, duration, isFloat) {
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        // Efecto de easing "easeOutExpo" manual
+        // 1 - Math.pow(2, -10 * progress) 
+        const current = start + (end - start) * progress;
+        obj.innerHTML = isFloat ? current.toFixed(1) : Math.round(current);
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        } else {
+          obj.innerHTML = isFloat ? end.toFixed(1) : Math.round(end); // Asegurar valor final
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+    // --- 4. LÓGICA Y CONTROL ---
+    document.getElementById('calcForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      // Obtener datos
+      const fID = select.value;
+      const vol = parseFloat(document.getElementById('volume').value);
+      const dil = parseFloat(document.getElementById('dilution').value);
+      const formula = formulas.find(x => x.id === fID);
+      if (!formula) return;
+      // Cálculos
+      const grams = (vol * dil) / 100;
+      const kcal = (grams * formula.k) / 100;
+      const prot = (grams * formula.p) / 100;
+      const fat = (grams * formula.f) / 100;
+      const carb = (grams * formula.c) / 100;
+      const density = kcal / vol;
+      // Mostrar Contenedor
+      const resultsArea = document.getElementById('results-area');
+      resultsArea.style.display = 'block';
+      // Actualizar Textos estáticos
+      document.getElementById('txtPrep').innerHTML = `Mezclar <strong>${grams.toFixed(1)} g</strong> de polvo con agua hasta alcanzar <strong>${vol} ml</strong> de volumen final.`;
+      document.getElementById('valDens').innerText = density.toFixed(2);
+      // ANIMACIONES DE ENTRADA (Staggered)
+      // Reseteamos las animaciones eliminando y re-agregando la clase
+      const elementsToAnimate = [
+        document.getElementById('card-instr'),
+        document.getElementById('card-kcal'),
+        document.getElementById('card-prot'),
+        document.getElementById('card-fat'),
+        document.getElementById('card-carb'),
+        document.getElementById('card-grams')
+      ];
+      elementsToAnimate.forEach((el, index) => {
+        el.classList.remove('animate-enter');
+        el.style.animationDelay = `${index * 0.1}s`; // Retraso escalonado 0.1s, 0.2s...
+        void el.offsetWidth; // Trigger reflow (truco para reiniciar animación CSS)
+        el.classList.add('animate-enter');
+      });
+      // EJECUTAR CONTADORES NUMÉRICOS
+      animateValue(document.getElementById('valKcal'), 0, kcal, 1500, false);
+      animateValue(document.getElementById('valProt'), 0, prot, 1200, true);
+      animateValue(document.getElementById('valFat'), 0, fat, 1200, true);
+      animateValue(document.getElementById('valCarb'), 0, carb, 1200, true);
+      animateValue(document.getElementById('valGrams'), 0, grams, 1000, true);
+      // Auto-scroll en móviles
+      if (window.innerWidth < 600) {
+        resultsArea.scrollIntoView({
+          behavior: 'smooth'
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>
