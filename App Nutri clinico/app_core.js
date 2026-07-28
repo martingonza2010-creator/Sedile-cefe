@@ -6725,14 +6725,14 @@ Hospital Regional de Antofagasta`;
         const kcalFinal = totalKcalVal > 0 ? Math.round(totalKcalVal) : Math.round(goal);
         const protFinal = totalProtVal > 0 ? totalProtVal.toFixed(1) : pTotal.toFixed(1);
 
-        const pesoCalc = p.pesoAjustado || pesoFisico || 1;
+        const pesoAportes = p.pesoAjustado || pesoFisico || 1;
         let aporteStr = `Aporte: ${kcalFinal} kcal`;
-        if (pesoCalc > 0) {
-            aporteStr += ` (${(kcalFinal / pesoCalc).toFixed(1)} kcal/kg)`;
+        if (pesoAportes > 0) {
+            aporteStr += ` (${(kcalFinal / pesoAportes).toFixed(1)} kcal/kg)`;
         }
         aporteStr += ` / ${protFinal} g proteína`;
-        if (pesoCalc > 0) {
-            aporteStr += ` (${(parseFloat(protFinal) / pesoCalc).toFixed(2)} g/kg)`;
+        if (pesoAportes > 0) {
+            aporteStr += ` (${(parseFloat(protFinal) / pesoAportes).toFixed(2)} g/kg)`;
         }
 
         let regimenParts = [];
@@ -9408,7 +9408,7 @@ window.renderWardBedsGrid = async function() {
         const selectMode = document.getElementById('wardViewModeSelect');
         if (selectMode) selectMode.value = viewMode;
 
-        const floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
+        let floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
 
         if (viewMode === 'table') {
             let tableHTML = `
@@ -9853,7 +9853,7 @@ window.renderWardBedsGrid = async function() {
         });
 
         // 4. Render active patients who are not assigned to a bed in the configured bedsList (Floating / Cupos)
-        const floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
+        floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
         if (floatingPatients.length > 0) {
             const elementId = `room-group-floating`;
             const roomGroup = document.createElement('div');
