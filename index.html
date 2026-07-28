@@ -77,6 +77,98 @@
             grid-row: 2 !important;
             max-width: 100% !important;
         }
+
+        /* Estilos Premium Planilla Censo */
+        .clinical-census-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .clinical-census-table th {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border-bottom: 2px solid #cbd5e1;
+            border-right: 1px solid rgba(255, 255, 255, 0.15);
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%) !important;
+            color: white !important;
+            font-weight: 800;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+            padding: 10px 12px;
+        }
+        .clinical-census-table th:last-child {
+            border-right: none;
+        }
+        .clinical-census-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #f1f5f9;
+            color: #334155;
+            vertical-align: middle;
+            transition: background-color 0.15s ease;
+        }
+        .clinical-census-table td:last-child {
+            border-right: none;
+        }
+        .clinical-census-table tbody tr {
+            transition: all 0.2s ease;
+        }
+        .clinical-census-table tbody tr:hover {
+            background-color: #f8fafc !important;
+            transform: scale(1.001);
+            box-shadow: inset 2px 0 0 #3b82f6;
+        }
+        .btn-register-patient {
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.68rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .btn-register-patient:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.4);
+        }
+        .circle-action-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .circle-action-btn:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        .circle-action-btn.success {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+            color: #15803d;
+        }
+        .circle-action-btn.success:hover {
+            background: #dcfce7;
+            border-color: #86efac;
+            box-shadow: 0 3px 6px rgba(21, 128, 61, 0.15);
+        }
     </style>
 </head>
 
@@ -289,25 +381,50 @@
                         </div>
                     </div>
                     <form id="form-paciente" class="compact-form">
-                        <div class="input-row">
+                        <div class="input-row grid-col-3" style="grid-template-columns: 2fr 1fr 1fr; display: grid; gap: 10px; margin-bottom: 10px;">
                             <input type="text" id="nombre" placeholder="Nombre completo" required>
+                            <input type="text" id="num_ficha" placeholder="N° de Ficha" style="font-size:0.85rem;">
+                            <input type="text" id="fecha_ingreso_servicio" placeholder="Ingreso: DD/MM" style="font-size:0.85rem;">
                         </div>
-                        <!-- NEW: Diagnosis & Bed -->
-                        <div class="input-row grid-col-2">
+                        <div class="input-row" style="margin-bottom: 10px; display: flex; gap: 15px; align-items: center;">
+                            <input type="text" id="antecedentes_morbidos" placeholder="Antecedentes Mórbidos" style="font-size:0.85rem; flex: 1;">
+                            <div style="display: flex; gap: 12px; font-size: 0.8rem; font-weight: 700; color: #475569;">
+                                <label style="cursor:pointer; display: flex; align-items: center; gap: 4px;">
+                                    <input type="checkbox" id="patologia_dm"> DM
+                                </label>
+                                <label style="cursor:pointer; display: flex; align-items: center; gap: 4px;">
+                                    <input type="checkbox" id="patologia_hta"> HTA
+                                </label>
+                                <label style="cursor:pointer; display: flex; align-items: center; gap: 4px;">
+                                    <input type="checkbox" id="patologia_erc"> ERC
+                                </label>
+                            </div>
+                        </div>
+                        <!-- NEW: Diagnosis & Bed & LPP -->
+                        <div class="input-row grid-col-3" style="display: grid; grid-template-columns: 1.2fr 1fr 1.2fr; gap: 10px; margin-bottom: 10px;">
                             <input type="text" id="diagnostico" placeholder="Diagnóstico" style="font-size:0.85rem;">
                             <input type="text" id="cama" placeholder="Cama / Sala" style="font-size:0.85rem;">
+                            <select id="riesgo_lpp" style="font-size:0.8rem; border-radius:6px; border:1px solid #cbd5e1; padding:5px; background: white; outline: none; height: 100%;">
+                                <option value="Sin evaluar" selected>Riesgo LPP: Sin evaluar</option>
+                                <option value="Bajo">Riesgo LPP: Bajo</option>
+                                <option value="Medio">Riesgo LPP: Medio</option>
+                                <option value="Alto">Riesgo LPP: Alto</option>
+                            </select>
+                        </div>
+                        <div class="input-row" style="margin-bottom: 10px;">
+                            <input type="text" id="observaciones_generales" placeholder="Observaciones Generales (Se muestra en la planilla del censo)" style="font-size:0.85rem; width:100%;">
                         </div>
 
                         <!-- NEW V3.80: Patient Type Selector -->
                         <div
                             style="display:flex; gap:10px; margin-bottom:10px; justify-content:center; background:#f4f6f7; padding:8px; border-radius:8px;">
-                            <label style="cursor:pointer; font-size:0.8rem; font-weight:600;"><input type="radio"
+                            <label style="cursor:pointer; font-size:0.8rem; font-weight:600;" id="lblPtAdult"><input type="radio"
                                     name="patientType" id="ptAdult" value="adult" checked
                                     onchange="togglePatientMode()"> Adulto</label>
-                            <label style="cursor:pointer; font-size:0.8rem; font-weight:600;"><input type="radio"
+                            <label style="cursor:pointer; font-size:0.8rem; font-weight:600;" id="lblPtPediatric"><input type="radio"
                                     name="patientType" id="ptPediatric" value="pediatric"
                                     onchange="togglePatientMode()"> Pediátrico (0-19A)</label>
-                            <label style="cursor:pointer; font-size:0.8rem; font-weight:600;"><input type="radio"
+                            <label style="cursor:pointer; font-size:0.8rem; font-weight:600;" id="lblPtNeonate"><input type="radio"
                                     name="patientType" id="ptNeonate" value="neonate" onchange="togglePatientMode()">
                                 Neonato</label>
                         </div>
@@ -1972,9 +2089,9 @@
                 </section>
             </div>
 
-            <!-- GENERADOR DE EVOLUCIÓN CLÍNICA ADIME -->
+            <!-- GENERADOR DE VALORACIÓN DE INGRESO -->
             <div style="margin: 25px 15px; border-top: 1px solid #eee; padding-top: 15px;">
-                <h3 style="color:#2c3e50; font-size:1.1rem; margin-bottom:15px; font-weight:600;">Evolución Clínica ADIME</h3>
+                <h3 style="color:#2c3e50; font-size:1.1rem; margin-bottom:15px; font-weight:600;">Valoración de Ingreso</h3>
 
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
                     <div style="flex:1;">
@@ -1994,12 +2111,50 @@
                     </div>
                 </div>
 
+                <div style="margin-bottom:12px; background:rgba(52, 152, 219, 0.08); padding:12px; border-radius:8px; border-left:4px solid #3498db;">
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;">
+                        <div style="flex:1; min-width:220px;">
+                            <label style="font-size:0.75rem; font-weight:700; color:#2c3e50; display:block; margin-bottom:4px;">
+                                🏥 Servicio Clínico Activo (Firma y Estructura VGO):
+                            </label>
+                            <select id="vgoServiceSelect" onchange="window.updateVGOServiceConfig()" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem; font-weight:600; background:white;">
+                                <option value="uti_cardio_qx">7mo D - UTI Cardio Qx (Firma: Nutricionista UTI Cardio Qx)</option>
+                                <option value="uci_adulto">UCI Adultos (Firma: Nutricionista UCI Adultos)</option>
+                                <option value="tim_adulto">TIM Adultos (Firma: Nutricionista TIM Adultos)</option>
+                                <option value="uco">UCO - UCI Coronaria (Firma: Nutricionista UCI Coronaria)</option>
+                                <option value="uciped">UCIPED (Firma: Nutricionista UCIPED)</option>
+                                <option value="timped">TIMPED (Firma: Nutricionista TIMPED)</option>
+                                <option value="oncologia_pediatrica">Oncología Pediátrica (Firma: Nutricionista Oncología Pediátrica)</option>
+                                <option value="pediatria">Pediatría General (Firma: Nutricionista clínica pediatría)</option>
+                                <option value="cirugia_infantil">Cirugía Infantil (Firma: Nutricionista clínica cirugía infantil)</option>
+                                <option value="neonatologia">Neonatología (Firma: Nutricionista clínica neonatología)</option>
+                                <option value="urgencias">Unidad de Emergencia (Firma: Nutricionista Unidad de Emergencia)</option>
+                                <option value="aro">ARO - Alto Riesgo Obstétrico (Firma: Nutricionista clínica ARO)</option>
+                                <option value="ginecologia">Ginecología (Firma: Nutricionista clínica ginecología)</option>
+                                <option value="puerperio">Puerperio (Firma: Nutricionista clínica puerperio)</option>
+                                <option value="oncologia_adultos">Oncología Adultos (Firma: Nutricionista Oncología Adultos)</option>
+                                <option value="cirugia_adultos">Cirugía Adultos (Firma: Nutricionista Cirugía UCM)</option>
+                                <option value="medicina_adultos">Medicina Adultos (Firma: Nutricionista clínica medicina)</option>
+                                <option value="psiquiatria">Psiquiatría (Firma: Nutricionista Psiquiatría)</option>
+                                <option value="custom">Otro Servicio / Personalizado...</option>
+                            </select>
+                        </div>
+                        <div id="vgoCustomServiceWrapper" style="display:none; flex:1; min-width:200px;">
+                            <label style="font-size:0.75rem; font-weight:700; color:#2c3e50; display:block; margin-bottom:4px;">Cargo/Firma Personalizado:</label>
+                            <input type="text" id="vgoCustomServiceInput" placeholder="Ej: Nutricionista Traumatología" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem; background:white;">
+                        </div>
+                        <button type="button" onclick="window.openVGOStructureModal()" style="background:#8e44ad; color:white; border:none; padding:8px 12px; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px; margin-top:16px;">
+                            ⚙️ Personalizar Estructura VGO
+                        </button>
+                    </div>
+                </div>
+
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <button id="btnGenerateNote"
+                    <button id="btnGenerateNote" onclick="window.generateValoracionIngreso()"
                         style="flex:1; background: #2c3e50; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:600; cursor:pointer; font-size:0.9rem;">
-                        📝 Generar Evolución ADIME
+                        📝 Valoración de ingreso (VI)
                     </button>
-                    <button id="btnGenerateVGO"
+                    <button id="btnGenerateVGO" onclick="window.generateVGO()"
                         style="flex:1; background: #27ae60; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:600; cursor:pointer; font-size:0.9rem;">
                         📋 Generar VGO
                     </button>
@@ -2008,14 +2163,29 @@
                     style="display:none; padding:15px; border: 1px solid #bdc3c7; background: #fafbfc;">
                     <div
                         style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
-                        <h4 style="margin:0; color:#34495e; font-size:0.9rem;">Vista Previa de Evolución ADIME</h4>
-                        <button id="btnCopyNote"
-                            style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:600;">Copiar
-                            Texto</button>
+                        <h4 style="margin:0; color:#34495e; font-size:0.9rem;">Vista Previa de Evolución / Reporte</h4>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <!-- Font select -->
+                            <select id="noteFontFamily" onchange="window.updateNoteStyle()" style="font-size:0.7rem; padding:4px 6px; border-radius:6px; border:1px solid #cbd5e1; background:white; outline:none; font-weight:600;">
+                                <option value="monospace">Monospace</option>
+                                <option value="Arial, sans-serif">Arial (Sans-serif)</option>
+                                <option value="Georgia, serif">Georgia (Serif)</option>
+                                <option value="'Segoe UI', Calibri, sans-serif">Calibri / Segoe</option>
+                            </select>
+                            <!-- Size select -->
+                            <select id="noteFontSize" onchange="window.updateNoteStyle()" style="font-size:0.7rem; padding:4px 6px; border-radius:6px; border:1px solid #cbd5e1; background:white; outline:none; font-weight:600;">
+                                <option value="0.7rem">Pequeño (11px)</option>
+                                <option value="0.8rem" selected>Mediano (13px)</option>
+                                <option value="0.95rem">Grande (15px)</option>
+                                <option value="1.1rem">Muy Grande (18px)</option>
+                            </select>
+                            <button id="btnCopyNote"
+                                style="background:#3498db; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; cursor:pointer; font-weight:600;">Copiar Texto</button>
+                        </div>
                     </div>
                     <div id="noteContent"
                         style="font-size:0.8rem; line-height:1.6; color:#2c3e50; white-space:pre-wrap; font-family:monospace; background:white; padding:10px; border:1px solid #eee; border-radius:4px;">
-                        <!-- Generated Evolución ADIME Content -->
+                        <!-- Generated Valoración de Ingreso Content -->
                     </div>
                 </div>
             </div>
@@ -2210,6 +2380,10 @@
                     <button id="btnUploadCensus" class="btn-micro" style="background:#7c3aed; color:white;" onclick="document.getElementById('fileCensusInput').click()">📷 Subir Censo</button>
                     <button id="btnWardHistory" class="btn-micro" style="background:#4f46e5; color:white;" onclick="window.openWardHistory()">📁 Historial de Sala</button>
                     <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;" onclick="window.renderWardBedsGrid()">🔄 Actualizar</button>
+                    <select id="wardViewModeSelect" onchange="window.toggleWardViewMode()" style="padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1; font-size:0.75rem; font-weight:600; background:white; outline:none; cursor:pointer; color:#312e81;">
+                        <option value="grid" selected>🗂️ Vista Tarjetas</option>
+                        <option value="table">📊 Vista Planilla (Tabla)</option>
+                    </select>
                     <input type="file" id="fileCensusInput" accept="image/*,application/pdf" style="display:none;" onchange="window.handleCensusUpload(event)">
                 </div>
             </div>
@@ -2606,6 +2780,37 @@
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
                     <button class="btn-primary" style="background:#64748b;" id="btnCensusCancel">Cancelar</button>
                     <button class="btn-primary" style="background:#7c3aed;" id="btnCensusConfirm">Confirmar y Aplicar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL PERSONALIZACIÓN DE ESTRUCTURA VGO -->
+        <div class="protocol-modal" id="vgoStructureModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:99999; justify-content:center; align-items:center;">
+            <div class="modal-content" style="background:white; width:90%; max-width: 580px; border-radius: 16px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+                    <h3 style="font-size: 1.1rem; color: #8e44ad; margin:0;">⚙️ Personalizar Estructura VGO por Servicio</h3>
+                    <button class="btn-close" onclick="window.closeVGOStructureModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 15px 0;">
+                    <p style="font-size: 0.82rem; color: #475569; margin-bottom: 12px;">
+                        Agrega secciones o campos personalizados a la estructura de la VGO según las necesidades de tu servicio:
+                    </p>
+                    <div style="margin-bottom:12px;">
+                        <label style="font-size:0.75rem; font-weight:700; color:#1e293b; display:block; margin-bottom:4px;">Servicio Seleccionado:</label>
+                        <input type="text" id="modalVgoServiceName" readonly style="width:100%; padding:8px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; font-weight:700; color:#334155; font-size:0.85rem;">
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="font-size:0.75rem; font-weight:700; color:#1e293b; display:block; margin-bottom:4px;">Título de Sección Adicional (Opcional):</label>
+                        <input type="text" id="vgoCustomSectionTitle" placeholder="Ej: Parámetros Críticos de UCI / Accesos Vasculares" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.85rem;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:700; color:#1e293b; display:block; margin-bottom:4px;">Texto / Campos Adicionales para la Estructura VGO:</label>
+                        <textarea id="vgoCustomSectionBody" rows="5" placeholder="Ej:&#10;o Accesos vasculares: [Completar]&#10;o Monitoreo Hemodinámico: [Completar]&#10;o Balance hídrico acumulado: [Completar]" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem; font-family:monospace; line-height:1.4;"></textarea>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px; border-top:1px solid #eee; padding-top:12px;">
+                    <button type="button" class="btn-primary" style="background:#64748b; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;" onclick="window.closeVGOStructureModal()">Cancelar</button>
+                    <button type="button" class="btn-primary" style="background:#8e44ad; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;" onclick="window.saveVGOStructureCustomization()">💾 Guardar Estructura</button>
                 </div>
             </div>
         </div>

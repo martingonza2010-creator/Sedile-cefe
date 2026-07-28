@@ -1041,6 +1041,15 @@ function initCompactLayout() {
                     patient_type: AppState.patient.type || 'adult',
                     weight_history: AppState.patient.weight_history || [],
                     location: activeLocStr ? JSON.parse(activeLocStr) : null,
+                    num_ficha: document.getElementById('num_ficha')?.value || '',
+                    antecedentes_morbidos: document.getElementById('antecedentes_morbidos')?.value || '',
+                    riesgo_lpp: document.getElementById('riesgo_lpp')?.value || 'Sin evaluar',
+                    patologia_dm: document.getElementById('patologia_dm')?.checked || false,
+                    patologia_hta: document.getElementById('patologia_hta')?.checked || false,
+                    patologia_erc: document.getElementById('patologia_erc')?.checked || false,
+                    fecha_ingreso_servicio: document.getElementById('fecha_ingreso_servicio')?.value || '',
+                    nrs_score: document.getElementById('nrsTotalScore')?.innerText || 'No evaluado',
+                    observaciones_generales: document.getElementById('observaciones_generales')?.value || '',
                     simulator: {
                         formula: document.getElementById('formulaSelect')?.value || "",
                         volume: document.getElementById('volume')?.value || "",
@@ -1524,13 +1533,41 @@ window.restorePatient = async (id) => {
     }
 
     // Return to generic 'activo' state for all history rows tied to this name
-    const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
+    const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre, cama, metadata').eq('id', id).single();
     if (fetchErr || !p) {
         alert("No se pudo restaurar (error de lectura): " + (fetchErr?.message || ""));
         return;
     }
 
-    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'activo' }).eq('nombre', p.nombre).eq('user_id', AppState.user.id);
+    let targetBed = p.cama || '';
+    if (targetBed) {
+        // Check if another active patient is currently in this bed
+        const { data: activeOnBed } = await supabaseClient
+            .from('pacientes')
+            .select('nombre')
+            .eq('cama', targetBed)
+            .neq('nombre', p.nombre)
+            .neq('estado_sala', 'de_alta')
+            .neq('estado_sala', 'eliminado')
+            .eq('user_id', AppState.user.id);
+            
+        if (activeOnBed && activeOnBed.length > 0) {
+            const conflictingName = activeOnBed[0].nombre;
+            const confirmRestore = confirm(`⚠️ Conflicto de Cama: La cama "${targetBed}" está ocupada actualmente por "${conflictingName}".\n\n¿Deseas restaurar a "${p.nombre}" en la sección de "Cupos del Servicio" (sin cama asignada)?`);
+            if (!confirmRestore) return; // Cancel operation
+            targetBed = ''; // Clear bed so they appear in generic room group / service slots
+        }
+    }
+
+    const { error } = await supabaseClient
+        .from('pacientes')
+        .update({ 
+            estado_sala: 'activo',
+            cama: targetBed
+        })
+        .eq('nombre', p.nombre)
+        .eq('user_id', AppState.user.id);
+
     if (!error) {
         window.loadHistoryList(true);
         if (typeof loadWardKanban === 'function') loadWardKanban();
@@ -2119,6 +2156,30 @@ window.loadPatient = async (id) => {
         if (document.getElementById('actividad')) document.getElementById('actividad').value = data.actividad || '1.2';
         if (document.getElementById('diagnostico')) document.getElementById('diagnostico').value = data.diagnostico || '';
         if (document.getElementById('cama')) document.getElementById('cama').value = data.cama || '';
+        if (document.getElementById('num_ficha')) {
+            document.getElementById('num_ficha').value = (data.metadata && data.metadata.num_ficha) || '';
+        }
+        if (document.getElementById('antecedentes_morbidos')) {
+            document.getElementById('antecedentes_morbidos').value = (data.metadata && data.metadata.antecedentes_morbidos) || '';
+        }
+        if (document.getElementById('riesgo_lpp')) {
+            document.getElementById('riesgo_lpp').value = (data.metadata && data.metadata.riesgo_lpp) || 'Sin evaluar';
+        }
+        if (document.getElementById('patologia_dm')) {
+            document.getElementById('patologia_dm').checked = (data.metadata && data.metadata.patologia_dm) || false;
+        }
+        if (document.getElementById('patologia_hta')) {
+            document.getElementById('patologia_hta').checked = (data.metadata && data.metadata.patologia_hta) || false;
+        }
+        if (document.getElementById('patologia_erc')) {
+            document.getElementById('patologia_erc').checked = (data.metadata && data.metadata.patologia_erc) || false;
+        }
+        if (document.getElementById('fecha_ingreso_servicio')) {
+            document.getElementById('fecha_ingreso_servicio').value = (data.metadata && data.metadata.fecha_ingreso_servicio) || '';
+        }
+        if (document.getElementById('observaciones_generales')) {
+            document.getElementById('observaciones_generales').value = (data.metadata && data.metadata.observaciones_generales) || '';
+        }
 
         // Restore stress factor before running calculations
         if (data.metadata && data.metadata.simulator && data.metadata.simulator.estres) {
@@ -2208,6 +2269,10 @@ window.loadPatient = async (id) => {
         // Update Chart for loaded patient (nuevo panel en cálculo)
         if (typeof updatePatientEvolutionChart === 'function') {
             updatePatientEvolutionChart(data.nombre);
+        }
+        
+        if (typeof window.switchAppView === 'function') {
+            window.switchAppView('dashboard');
         }
     }
 };
@@ -2726,7 +2791,56 @@ function calcFactorialNoRecursion() {
     }
 }
 
-// === NEW V3.80: PEDIATRIC & NEONATAL ENGINE ===
+window.setPatientTypeUI = function(mode) {
+    const rAdult = document.getElementById('ptAdult');
+    const rPed = document.getElementById('ptPediatric');
+    const rNeo = document.getElementById('ptNeonate');
+    
+    if (mode === 'adult' && rAdult) {
+        rAdult.checked = true;
+    } else if (mode === 'pediatric' && rPed) {
+        rPed.checked = true;
+    } else if (mode === 'neonate' && rNeo) {
+        rNeo.checked = true;
+    }
+    
+    if (typeof window.updatePatientModeUI === 'function') {
+        window.updatePatientModeUI(mode);
+    }
+};
+
+window.syncPatientTypeSelector = function() {
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) return;
+    const activeLoc = JSON.parse(activeLocStr);
+    const serviceType = activeLoc.type || 'adult'; 
+
+    const lblAdult = document.getElementById('lblPtAdult');
+    const lblPed = document.getElementById('lblPtPediatric');
+    const lblNeo = document.getElementById('lblPtNeonate');
+
+    if (lblAdult) lblAdult.style.display = serviceType === 'adult' ? 'inline-block' : 'none';
+    if (lblPed) lblPed.style.display = serviceType === 'pediatric' ? 'inline-block' : 'none';
+    if (lblNeo) lblNeo.style.display = serviceType === 'neonate' ? 'inline-block' : 'none';
+
+    window.setPatientTypeUI(serviceType);
+};
+
+window.updateNoteStyle = function() {
+    const fontSelect = document.getElementById('noteFontFamily');
+    const sizeSelect = document.getElementById('noteFontSize');
+    const noteEl = document.getElementById('noteContent');
+    if (!noteEl) return;
+    
+    if (fontSelect) {
+        noteEl.style.fontFamily = fontSelect.value;
+        localStorage.setItem('notePrefFont', fontSelect.value);
+    }
+    if (sizeSelect) {
+        noteEl.style.fontSize = sizeSelect.value;
+        localStorage.setItem('notePrefSize', sizeSelect.value);
+    }
+};
 
 window.updatePatientModeUI = (mode) => {
     const colEdad = document.getElementById('colEdad');
@@ -4823,7 +4937,7 @@ function clearAllInputsForMode(mode) {
     AppState.userOverridesGoal = false;
 
     const idsToClear = [
-        'nombre', 'edad', 'peso', 'estatura', 'diagnostico', 'cama',
+        'nombre', 'num_ficha', 'antecedentes_morbidos', 'riesgo_lpp', 'fecha_ingreso_servicio', 'observaciones_generales', 'edad', 'peso', 'estatura', 'diagnostico', 'cama',
         'formulaSearch', 'formulaSelect', 'volume', 'dilution',
         'modNessucar', 'modMCT', 'modEnterex', 'modBanatrol', 'modProteinex', 'modFresubin',
         'oralKcal', 'oralProt', 'oralCHO', 'oralLip', 'oralWater',
@@ -4836,6 +4950,13 @@ function clearAllInputsForMode(mode) {
         'altrodilla', 'cpantorrilla', 'pcefalico', 'gestacional_nacimiento_semanas', 
         'gestacional_nacimiento_dias'
     ];
+
+    const patDM = document.getElementById('patologia_dm');
+    if (patDM) patDM.checked = false;
+    const patHTA = document.getElementById('patologia_hta');
+    if (patHTA) patHTA.checked = false;
+    const patERC = document.getElementById('patologia_erc');
+    if (patERC) patERC.checked = false;
     
     idsToClear.forEach(id => {
         const el = document.getElementById(id);
@@ -4909,7 +5030,7 @@ async function resetPatientForm(skipConfirm = false) {
     AppState.userOverridesGoal = false;
 
     // 1. Dashboard Inputs
-    const dashIds = ['nombre', 'edad', 'sexo', 'peso', 'estatura', 'diagnostico', 'cama', 'actividad', 'goalTotal', 'goalKcalBox'];
+    const dashIds = ['nombre', 'num_ficha', 'antecedentes_morbidos', 'edad', 'sexo', 'peso', 'estatura', 'diagnostico', 'cama', 'actividad', 'goalTotal', 'goalKcalBox'];
     dashIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = (id === 'actividad') ? '1.2' : (id === 'sexo' ? 'm' : '');
@@ -4944,14 +5065,21 @@ async function resetPatientForm(skipConfirm = false) {
     });
 
     // 4. Clear Dynamic UI
-    const containers = ['examsContainer', 'iaResultContainer', 'clinicalNoteContainer', 'rossContainer', 'frisanchoContainer'];
+    const containers = ['examsContainer', 'iaResultContainer', 'rossContainer', 'frisanchoContainer'];
     containers.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.innerHTML = id.includes('Container') ? '' : el.innerHTML;
+            el.innerHTML = '';
             el.style.display = 'none';
         }
     });
+
+    const noteContainer = document.getElementById('clinicalNoteContainer');
+    if (noteContainer) {
+        noteContainer.style.display = 'none';
+        const noteContent = document.getElementById('noteContent');
+        if (noteContent) noteContent.innerText = '';
+    }
 
     // 5. Nutri IA State
     const iaInitial = document.getElementById('iaInitialState');
@@ -5782,43 +5910,53 @@ function calcChumleaWeight() {
         let stature = 0;
         let weight = 0;
 
-        if (method === 'ross') {
-            // Ross Stature Formula (identical to Chumlea stature)
-            if (sex === 'f') {
-                stature = (1.83 * atr) + (84.8 - (0.24 * age));
-            } else {
-                stature = (2.02 * atr) + (64.19 - (0.04 * age));
-            }
-            // Ross Weight Formula (2-variable)
-            const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30; // Default Mid-arm circumference
-            if (sex === 'f') {
-                if (age >= 60) {
-                    weight = (1.09 * atr) + (2.68 * cb) - 65.51;
+        if (method === 'ross' || method === 'chumlea') {
+            // Stature Formula based on Age Group
+            if (age < 18) {
+                // Pediatric / Adolescent formula (Stevenson / Chumlea 6-18)
+                stature = (2.15 * atr) + 38.0;
+            } else if (age >= 60) {
+                // Elderly (>= 60 years)
+                if (sex === 'f') {
+                    stature = (1.83 * atr) - (0.24 * age) + 84.88;
                 } else {
-                    weight = (1.01 * atr) + (2.81 * cb) - 66.04;
+                    stature = (2.02 * atr) - (0.04 * age) + 64.19;
                 }
             } else {
-                if (age >= 60) {
-                    weight = (1.10 * atr) + (3.07 * cb) - 75.81;
+                // Adult (18-59 years)
+                if (sex === 'f') {
+                    stature = (1.83 * atr) - (0.06 * age) + 82.47;
                 } else {
-                    weight = (1.19 * atr) + (3.21 * cb) - 86.82;
+                    stature = (2.08 * atr) + 66.02;
                 }
             }
-        } else {
-            // Chumlea Stature Formula
-            if (sex === 'f') {
-                stature = (1.83 * atr) + (84.8 - (0.24 * age));
+
+            if (method === 'ross') {
+                // Ross Weight Formula (2-variable)
+                const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30; // Default Mid-arm circumference
+                if (sex === 'f') {
+                    if (age >= 60) {
+                        weight = (1.09 * atr) + (2.68 * cb) - 65.51;
+                    } else {
+                        weight = (1.01 * atr) + (2.81 * cb) - 66.04;
+                    }
+                } else {
+                    if (age >= 60) {
+                        weight = (1.10 * atr) + (3.07 * cb) - 75.81;
+                    } else {
+                        weight = (1.19 * atr) + (3.21 * cb) - 86.82;
+                    }
+                }
             } else {
-                stature = (2.02 * atr) + (64.19 - (0.04 * age));
-            }
-            // Chumlea Weight Formula (4-variable using standard clinical defaults or inputs)
-            const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30;
-            const pt = parseFloat(document.getElementById('ptricipital')?.value) || 15; // default PT
-            const cp = parseFloat(document.getElementById('cpantorrilla')?.value) || 30; // default CP
-            if (sex === 'f') {
-                weight = (1.27 * atr) + (0.87 * cb) + (0.41 * pt) + (0.11 * cp) - 43.1;
-            } else {
-                weight = (0.98 * atr) + (1.16 * cb) + (0.37 * pt) + (1.16 * cp) - 35.8;
+                // Chumlea Weight Formula (4-variable using standard clinical defaults or inputs)
+                const cb = parseFloat(document.getElementById('cbraquial')?.value) || 30;
+                const pt = parseFloat(document.getElementById('ptricipital')?.value) || 15; // default PT
+                const cp = parseFloat(document.getElementById('cpantorrilla')?.value) || 30; // default CP
+                if (sex === 'f') {
+                    weight = (1.27 * atr) + (0.87 * cb) + (0.41 * pt) + (0.11 * cp) - 43.1;
+                } else {
+                    weight = (0.98 * atr) + (1.16 * cb) + (0.37 * pt) + (1.16 * cp) - 35.8;
+                }
             }
         }
 
@@ -6182,18 +6320,36 @@ function initGlobalEvents() {
         };
     }
 
-    // Clinical Note Generator V3.50 (Updated to ADIME V4.14)
-    const btnNote = document.getElementById('btnGenerateNote');
-    if (btnNote) btnNote.onclick = function () {
+    // Restore notes preview preferences if they exist
+    const prefFont = localStorage.getItem('notePrefFont');
+    const prefSize = localStorage.getItem('notePrefSize');
+    if (prefFont) {
+        const sel = document.getElementById('noteFontFamily');
+        if (sel) sel.value = prefFont;
+    }
+    if (prefSize) {
+        const sel = document.getElementById('noteFontSize');
+        if (sel) sel.value = prefSize;
+    }
+    if (typeof window.updateNoteStyle === 'function') {
+        window.updateNoteStyle();
+    }
+
+    if (typeof window.syncPatientTypeSelector === 'function') {
+        window.syncPatientTypeSelector();
+    }
+
+    // Clinical Note Generator V3.50 (Updated to Valoración de Ingreso VI)
+    window.generateValoracionIngreso = function () {
         const container = document.getElementById('clinicalNoteContainer');
         const content = document.getElementById('noteContent');
         if (!container || !content) return;
 
-        const p = AppState.patient;
+        const p = AppState.patient || {};
 
         const fId = document.getElementById('formulaSelect')?.value;
         const formula = AppState.formulas ? AppState.formulas.find(f => f.id === fId) : null;
-        const vol = window.getEffectiveSimulationVolume();
+        const vol = window.getEffectiveSimulationVolume ? window.getEffectiveSimulationVolume() : 0;
         const goal = parseFloat(document.getElementById('goalTotal')?.value) || 0;
 
         let pTotal = parseFloat(document.getElementById('goalProt')?.dataset.val) || 0;
@@ -6215,11 +6371,11 @@ function initGlobalEvents() {
         const pesoCalc = document.getElementById('pesoCalculoSelect')?.value === 'real' ? pesoFisico : (p.peso_calculo || pesoFisico);
 
         const cm = (document.getElementById('tallaCM')?.value || (p.estatura * 100)) || 0;
-        const sctVal = document.getElementById('valSCT')?.innerText || '-- mÂ²';
+        const sctVal = document.getElementById('valSCT')?.innerText || '-- m²';
 
         const isBotellin = formula && formula.isBotellin;
         const rawVol = parseFloat(document.getElementById('volume')?.value) || 0;
-        const mode = AppState.patient.type || 'adult';
+        const mode = AppState.patient?.type || 'adult';
         let volText = "";
         if (mode === 'pediatric' || mode === 'neonate') {
             const tInp = document.getElementById('volumeTimes');
@@ -6230,11 +6386,13 @@ function initGlobalEvents() {
                 volText = `${rawVol} ml`;
             }
         } else {
-            volText = isBotellin ? `${vol} Unidad(es) (${vol * formula.volUnit} ml totales)` : `${vol} ml`;
+            volText = isBotellin ? `${vol} Unidad(es) (${vol * (formula.volUnit || 1)} ml totales)` : `${vol} ml`;
         }
 
-        // Build ADIME Clinical Note Text
+        // Build VI Clinical Note Text
         const pName = document.getElementById('nombre')?.value || p.nombre || 'Sin nombre';
+        const numFicha = document.getElementById('num_ficha')?.value || 'S/N';
+        const antecedentesMorbidos = document.getElementById('antecedentes_morbidos')?.value || 'Sin antecedentes reportados';
         const pAgeVal = document.getElementById('edad')?.value || p.edad;
         const pAge = pAgeVal ? `${pAgeVal} años` : (p.exactMonths ? `${p.exactMonths.toFixed(1)} meses` : '--');
         const pSexVal = document.getElementById('sexo')?.value || p.sexo;
@@ -6289,7 +6447,7 @@ function initGlobalEvents() {
         }
 
         const regimenAdded = regimenParts.length > 0 ? regimenParts.join(' | ') : 'Régimen: Según indicación clínica';
-        const dietoterapia = `${regimenAdded} | ${aporteStr}\nSe realizara control de examenes, ingesta, deposiciones, y suplementacion en caso de no cubrir requerimientos nutricionales.`;
+        const dietoterapia = `${regimenAdded} | ${aporteStr}\nSe realizará control de exámenes, ingesta, deposiciones, y suplementación en caso de no cubrir requerimientos nutricionales.`;
 
         const userName = AppState.user?.user_metadata?.full_name || "[Nombre del Profesional]";
 
@@ -6340,13 +6498,7 @@ function initGlobalEvents() {
         let compBraquialText = "";
         const testStatus = p.amaStatus || p.cbStatus;
         if (testStatus) {
-            if (testStatus === 'Normal') {
-                compBraquialText = "con compartimiento braquial adecuado o conservado";
-            } else if (testStatus === 'Disminuido' || testStatus === 'Muy Disminuido') {
-                compBraquialText = "con compartimiento braquial deficiente";
-            } else if (testStatus === 'Elevado' || testStatus === 'Muy Elevado') {
-                compBraquialText = "con compartimiento braquial elevado";
-            }
+            compBraquialText = `(${testStatus})`;
         }
 
         let dniBreve = `${ageCategory}, ${sexText}, ${estadoNutricional}`;
@@ -6354,13 +6506,89 @@ function initGlobalEvents() {
             dniBreve += ` ${compBraquialText}`;
         }
 
-        const adimeText = `EVOLUCIÓN CLÍNICA NUTRICIONAL (ADIME)
+        const cargoFirmaVI = window.getVGOServiceSignature ? window.getVGOServiceSignature() : "Nutricionista clínica";
+
+        let viText = "";
+        if (patientType === 'adult') {
+            const isElderly = pAgeVal >= 65;
+            let clasifIMC = "Normopeso";
+            if (isElderly) {
+                if (imcNum > 0) {
+                    if (imcNum < 23) clasifIMC = "Enflaquecido";
+                    else if (imcNum < 28) clasifIMC = "Normopeso";
+                    else if (imcNum < 32) clasifIMC = "Sobrepeso";
+                    else clasifIMC = "Obeso";
+                }
+            } else {
+                if (imcNum > 0) {
+                    if (imcNum < 18.5) clasifIMC = "Bajo Peso";
+                    else if (imcNum < 25) clasifIMC = "Normopeso";
+                    else if (imcNum < 30) clasifIMC = "Sobrepeso";
+                    else if (imcNum < 35) clasifIMC = "Obesidad Grado I";
+                    else if (imcNum < 40) clasifIMC = "Obesidad Grado II";
+                    else clasifIMC = "Obesidad Grado III";
+                }
+            }
+
+            const isEstimated = (document.getElementById('altrodilla')?.value || document.getElementById('mediaenv')?.value || document.getElementById('pesoCalculoSelect')?.value !== 'real');
+            const dataAntropoStr = isEstimated ? 'Antropometría estimada' : 'Antropometría en bipedestación';
+
+            // Anamnesis and gastro signs
+            const dSign = getToggleVal('anamnesisDentadura') === 'sí' ? '+' : '-';
+            const alSign = getToggleVal('anamnesisAlergias') === 'sí' ? '+' : '-';
+            const degSign = getToggleVal('anamnesisDeglucion') === 'sí' ? '+' : '-';
+            const apSign = getToggleVal('anamnesisApetito') === 'sí' ? '+' : '-';
+
+            const nSign = getToggleVal('sintomaNauseas') === 'sí' ? '+' : '-';
+            const vSign = getToggleVal('sintomaVomitos') === 'sí' ? '+' : '-';
+            const rSign = getToggleVal('sintomaReflujo') === 'sí' ? '+' : '-';
+            const depSign = getToggleVal('sintomaDeposiciones') === 'sí' ? '-' : '+';
+            const distSign = getToggleVal('sintomaDistension') === 'sí' ? '+' : '-';
+            const gSign = getToggleVal('sintomaGases') === 'sí' ? '+' : '-';
+
+            const regimenVal = document.getElementById('regimenSelect')?.value || 'N/A';
+            const viaVal = document.getElementById('viaSelect')?.value || 'N/A';
+            let dietoterapiaFinal = `Régimen ${regimenVal}`;
+            if (viaVal === 'oral') {
+                dietoterapiaFinal += ` distribuido en 4 servicios principales`;
+            } else {
+                dietoterapiaFinal += ` por ${viaVal === 'enteral' ? 'SNG/SNE' : 'Vía Central'} | ${dietoterapia}`;
+            }
+
+            viText = `INGRESO NUTRICIONAL 
+
+${dataAntropoStr} 
+• Peso: ${pesoFisico} Kg        • Talla: ${(cm / 100).toFixed(2).replace('.', ',')} mt           IMC: ${imcValText.replace('.', ',')} kg/mt2 (${clasifIMC})
+
+Screening NRS 2002:
+·	Puntaje: ${nrsTotal} ${parseInt(nrsTotal) === 1 ? 'punto' : 'puntos'}
+·	Interpretación: ${nrsClassif ? nrsClassif.toLowerCase() : 'sin riesgo nutricional'}. Paciente ${parseInt(nrsTotal) >= 3 ? 'requiere soporte nutricional' : 'no requiere soporte nutricional'}
+
+Anamnesis alimentaria:
+Dentadura (${dSign}) - Alergias alimentarias (${alSign}) Intolerancia alimentaria (-) Dificultad para deglutir (${degSign}) apetito (${apSign}) 
+
+Síntomas gastrointestinales:
+Náuseas (${nSign}) Vómitos (${vSign}) Reflujo gastroesofágico (${rSign}) Deposiciones (${depSign}) Distensión abd (${distSign}) gases (${gSign}) 
+
+
+Dietoterapia: ${dietoterapiaFinal} 
+
+Plan: 
+Seguimiento de deposiciones, síntomas gastrointestinales, presión arterial y glicemias. 
+informar eventualidades
+
+
+${userName}
+${cargoFirmaVI}
+Unidad de Alimentación y Nutrición`;
+        } else {
+            viText = `VALORACIÓN DE INGRESO NUTRICIONAL (VI)
 
 [A - ASSESSMENT / VALORACIÓN]
-• Datos del Paciente: Nombre: ${pName} | Edad: ${pAge} | Sexo: ${pSex} | Cama: ${pCama}
+• Datos del Paciente: Nombre: ${pName} | N° Ficha: ${numFicha} | Edad: ${pAge} | Sexo: ${pSex} | Cama: ${pCama}
 • Diagnóstico Médico: ${dxMedico}
 • Anamnesis y Síntomas: ${symptomsText}
-• Antecedentes Mórbidos: [Ingresar antecedentes mórbidos]
+• Antecedentes Mórbidos: ${antecedentesMorbidos}
 
 Antropometría Básica:
 - IMC: ${imcValText} kg/m² | Talla: ${tallaVal} | Peso: ${pesoVal} | CB: ${cbVal} cm
@@ -6375,18 +6603,27 @@ Antropometría Básica:
 [M - MONITORING & E - EVALUATION / MONITOREO Y EVALUACIÓN]
 • Monitoreo: Control diario de tolerancia, ingesta, exámenes y deposiciones.
 
-Nutricionista Responsable: ${userName}`;
+Nutricionista Responsable: ${userName}
+${cargoFirmaVI}
+Unidad de nutrición y alimentación
+Hospital Regional de Antofagasta`;
+        }
 
-        content.innerText = adimeText;
+        content.innerText = viText;
+        if (typeof window.updateNoteStyle === 'function') {
+            window.updateNoteStyle();
+        }
         const titleH4 = document.querySelector('#clinicalNoteContainer h4');
-        if (titleH4) titleH4.innerText = "Vista Previa de Evolución ADIME";
+        if (titleH4) titleH4.innerText = "Vista Previa de Valoración de Ingreso (VI)";
         container.style.display = 'block';
         container.scrollIntoView({ behavior: 'smooth' });
     };
 
+    const btnNote = document.getElementById('btnGenerateNote');
+    if (btnNote) btnNote.onclick = window.generateValoracionIngreso;
+
     // VGO Generator
-    const btnVGO = document.getElementById('btnGenerateVGO');
-    if (btnVGO) btnVGO.onclick = function () {
+    window.generateVGO = function () {
         const container = document.getElementById('clinicalNoteContainer');
         const content = document.getElementById('noteContent');
         if (!container || !content) return;
@@ -6394,6 +6631,8 @@ Nutricionista Responsable: ${userName}`;
         const p = AppState.patient;
         const now = new Date();
         const dateStr = now.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const numFicha = document.getElementById('num_ficha')?.value || 'S/N';
+        const antecedentesMorbidos = document.getElementById('antecedentes_morbidos')?.value || 'Sin antecedentes reportados';
 
         let ageStr = '--';
         if (p.ageParts) {
@@ -6403,9 +6642,10 @@ Nutricionista Responsable: ${userName}`;
         const sexStr = p.sexo === 'm' ? 'Masculino' : (p.sexo === 'f' ? 'Femenino' : 'No especificado');
 
         const pesoFisico = p.peso || 0;
+        const pesoCalc = document.getElementById('pesoCalculoSelect')?.value === 'real' ? pesoFisico : (p.peso_calculo || pesoFisico);
         const cm = (document.getElementById('tallaCM')?.value || (p.estatura * 100)) || 0;
         const tallaMt = (cm / 100).toFixed(3);
-        const cCintura = document.getElementById('cCintura')?.value || '--';
+        const cCintura = document.getElementById('ccintura')?.value || '--';
         const cBraquialVal = document.getElementById('cbraquial')?.value || '[Completar]';
 
         const imcVal = document.getElementById('valIMC')?.innerText || '--';
@@ -6450,36 +6690,256 @@ Nutricionista Responsable: ${userName}`;
         const deglucionVal = anam.anamnesisDeglucion || 'No';
         const apetitoVal = anam.anamnesisApetito || 'Sí';
 
-        const vgoText = `VALORACION GLOBAL OBJETIVA POR NUTRICIONISTA
+        // Obtener diagnóstico médico
+        const dxMedico = document.getElementById('diagnostico')?.value || p.diagnostico || 'Sin diagnóstico médico';
+
+        // Obtener dietoterapia actual dinámicamente
+        let volText = "";
+        let modulesText = "";
+        const formula = AppState.formulas?.find(f => f.id === AppState.patient.formulaId);
+        if (formula) {
+            const isBotellin = formula.type === 'l' && (formula.id.includes('botellin') || formula.id.includes('liquido') || formula.id.includes('ready'));
+            const vol = parseFloat(document.getElementById('volumen')?.value) || 0;
+            volText = isBotellin ? `${vol} Unidad(es) (${vol * formula.volUnit} ml totales)` : `${vol} ml`;
+        }
+
+        // Modular supplements details
+        const mod1Id = document.getElementById('modularType1')?.value;
+        const mod1Pct = parseFloat(document.getElementById('modularPct1')?.value) || 0;
+        if (mod1Id && mod1Id !== 'none' && mod1Pct > 0) {
+            const modItem = AppState.formulas?.find(f => f.id === mod1Id);
+            if (modItem) modulesText += `${modItem.name} al ${mod1Pct}%, `;
+        }
+        const mod2Id = document.getElementById('modularType2')?.value;
+        const mod2Pct = parseFloat(document.getElementById('modularPct2')?.value) || 0;
+        if (mod2Id && mod2Id !== 'none' && mod2Pct > 0) {
+            const modItem = AppState.formulas?.find(f => f.id === mod2Id);
+            if (modItem) modulesText += `${modItem.name} al ${mod2Pct}%, `;
+        }
+
+        const valKcalEl = document.getElementById('valKcal');
+        const valProtEl = document.getElementById('valProt');
+        const totalKcalVal = valKcalEl ? parseFloat(valKcalEl.innerText) || 0 : 0;
+        const totalProtVal = valProtEl ? parseFloat(valProtEl.innerText) || 0 : 0;
+
+        const kcalFinal = totalKcalVal > 0 ? Math.round(totalKcalVal) : Math.round(goal);
+        const protFinal = totalProtVal > 0 ? totalProtVal.toFixed(1) : pTotal.toFixed(1);
+
+        const pesoCalc = p.pesoAjustado || pesoFisico || 1;
+        let aporteStr = `Aporte: ${kcalFinal} kcal`;
+        if (pesoCalc > 0) {
+            aporteStr += ` (${(kcalFinal / pesoCalc).toFixed(1)} kcal/kg)`;
+        }
+        aporteStr += ` / ${protFinal} g proteína`;
+        if (pesoCalc > 0) {
+            aporteStr += ` (${(parseFloat(protFinal) / pesoCalc).toFixed(2)} g/kg)`;
+        }
+
+        let regimenParts = [];
+        const dietSelect = document.getElementById('oralDietType');
+        if (dietSelect && dietSelect.value !== 'custom') {
+            const rawOpt = dietSelect.options[dietSelect.selectedIndex].text;
+            const cleanOpt = rawOpt.replace(/\s*\(\d+\s*kcal\)/i, '');
+            regimenParts.push(`Régimen: ${cleanOpt}`);
+        }
+        if (formula) {
+            let fStr = `Fórmula: ${formula.name} (${volText}`;
+            const dilVal = document.getElementById('dilution')?.value;
+            if (dilVal && parseFloat(dilVal) > 0) fStr += `, Dilución: ${dilVal}%`;
+            fStr += `)`;
+            regimenParts.push(fStr);
+        }
+        if (modulesText) {
+            regimenParts.push(`Módulos: ${modulesText.slice(0, -2)}`);
+        }
+
+        const dietoterapiaStr = regimenParts.length > 0 ? `${regimenParts.join(' | ')} | ${aporteStr}` : 'Según indicación clínica';
+
+        // Obtener cargo de firma dinámicamente según el servicio seleccionado
+        const cargoFirma = window.getVGOServiceSignature ? window.getVGOServiceSignature() : "Nutricionista clínica";
+
+        // Obtener estructura personalizada si existe para este servicio
+        const selService = document.getElementById('vgoServiceSelect')?.value || 'uti_cardio_qx';
+        let customStructureText = "";
+        const savedKey = `vgoCustomStructure_${selService}`;
+        const savedDataStr = localStorage.getItem(savedKey);
+        if (savedDataStr) {
+            try {
+                const savedData = JSON.parse(savedDataStr);
+                if (savedData.body && savedData.body.trim()) {
+                    const headerTitle = savedData.title && savedData.title.trim() ? savedData.title.trim() : 'Campos Adicionales del Servicio';
+                    customStructureText = `\n${headerTitle}:\n${savedData.body.trim()}\n`;
+                }
+            } catch (e) {}
+        }
+
+        // Dynamic Anthropometric Indicators & Screening based on Patient Mode
+        const pMode = p.type || 'adult';
+        const ageValYears = parseFloat(document.getElementById('edad')?.value) || p.edad || 0;
+
+        let indicadoresText = "";
+        let tamizajeText = "";
+
+        if (pMode === 'pediatric') {
+            const zImcVal = document.getElementById('valZBMI')?.innerText || '--';
+            const zTallaVal = document.getElementById('valZHFA')?.innerText || '--';
+            const waistStatus = document.getElementById('valWaistClass')?.innerText || 'No evaluada';
+
+            indicadoresText = `Indicadores nutricionales: (OMS / WHO Anthro Pediátrico)
+o IMC: ${imcVal} kg/m²
+o Zscore IMC/E o P/T: ${zImcVal} DE
+o Zscore T/E: ${zTallaVal} DE
+o C. Cintura / E: ${cCintura !== '--' ? `${cCintura} cm (${waistStatus})` : '[Completar si aplica]'}`;
+
+            tamizajeText = `Tamizaje: (STRONGkids)
+o Puntaje: ${sk.score || 0} pts
+o Interpretación: ${(sk.classification || 'Riesgo bajo').toUpperCase()}`;
+
+        } else if (pMode === 'neonate') {
+            const semNac = document.getElementById('egSemanas')?.value || '--';
+            const diasNac = document.getElementById('egDias')?.value || '0';
+            const pittPeso = document.getElementById('valPittPeso')?.innerText || 'Pittaluga / EG';
+            const pittTalla = document.getElementById('valPittTalla')?.innerText || 'Pittaluga / EG';
+            const pittCC = document.getElementById('valPittCC')?.innerText || 'Pittaluga / EG';
+
+            indicadoresText = `Indicadores nutricionales: (Curvas Intrauterinas Pittaluga / Fenton)
+o EG al nacer: ${semNac} +${diasNac} semanas
+o Peso / EG: ${pittPeso}
+o Talla / EG: ${pittTalla}
+o C. Craneano / EG: ${pittCC}`;
+
+            tamizajeText = `Tamizaje: (Evaluación Neonatal)
+o Interpretación: Evaluación según Edad Gestacional y Curvas de Crecimiento Intrauterino`;
+
+        } else {
+            // Adult or Adulto Mayor
+            const isElderly = ageValYears >= 65;
+            const imcNum = parseFloat(imcVal) || (pesoFisico > 0 && cm > 0 ? (pesoFisico / Math.pow(cm / 100, 2)) : 0);
+            
+            let clasifIMC = "Normal / Eutrófico";
+            if (isElderly) {
+                // MINSAL Adulto Mayor Criteria (<23 Enflaquecido, 23-27.9 Normal, 28-31.9 Sobrepeso, >=32 Obeso)
+                if (imcNum > 0) {
+                    if (imcNum < 23) clasifIMC = "Enflaquecido / Deficitario";
+                    else if (imcNum < 28) clasifIMC = "Normal / Eutrófico";
+                    else if (imcNum < 32) clasifIMC = "Sobrepeso";
+                    else clasifIMC = "Obeso";
+                }
+            } else {
+                // OMS Adult Criteria (<18.5 Bajo Peso, 18.5-24.9 Normal, 25-29.9 Sobrepeso, >=30 Obesidad)
+                if (imcNum > 0) {
+                    if (imcNum < 18.5) clasifIMC = "Bajo Peso / Desnutrición";
+                    else if (imcNum < 25) clasifIMC = "Eutrófico / Normal";
+                    else if (imcNum < 30) clasifIMC = "Sobrepeso";
+                    else if (imcNum < 35) clasifIMC = "Obesidad Grado I";
+                    else if (imcNum < 40) clasifIMC = "Obesidad Grado II";
+                    else clasifIMC = "Obesidad Grado III (Mórbida)";
+                }
+            }
+
+            const categoryLabel = isElderly ? "Adulto Mayor - MINSAL" : "Adulto - OMS";
+            const waistStatus = document.getElementById('valWaistClass')?.innerText || (cCintura !== '--' ? 'Normal' : 'No evaluada');
+
+            indicadoresText = `Indicadores nutricionales: (${categoryLabel})
+o IMC: ${imcNum > 0 ? imcNum.toFixed(1) : imcVal} kg/m² (${clasifIMC})
+o C. Cintura: ${cCintura !== '--' ? `${cCintura} cm (${waistStatus})` : 'No evaluado'}`;
+
+            tamizajeText = `Tamizaje: (NRS 2002)
+o Puntaje: ${nrs.score || 0} pts
+o Interpretación: ${(nrs.classification || 'Sin riesgo nutricional').toUpperCase()}`;
+        }
+
+        let vgoText = "";
+        if (pMode === 'adult') {
+            const isEstimated = (document.getElementById('altrodilla')?.value || document.getElementById('mediaenv')?.value || document.getElementById('pesoCalculoSelect')?.value !== 'real');
+            const dataAntropoStr = isEstimated ? '(estimado)' : '(Bipedestado)';
+            
+            // Risk of LPP
+            const riesgoLpp = document.getElementById('riesgo_lpp')?.value || 'Sin evaluar';
+            
+            // Biochem parameters
+            const evoExamenes = document.getElementById('evoExamenes')?.value || 'Sin reportar';
+
+            // Diagnostic
+            let diagNutri = `Paciente adulto ${sexStr.toLowerCase()} con estado nutricional ${clasifIMC.toLowerCase()} según IMC.`;
+            const compBraquialText = p.amaStatus || p.cbStatus ? ` Con compartimiento braquial ${p.amaStatus || p.cbStatus}.` : '';
+            if (compBraquialText) diagNutri += compBraquialText;
+            if (des && des !== 'Sin diagnóstico ingresado') {
+                diagNutri = des;
+            }
+
+            // Factors calculation for Requirements
+            const factorKcalVal = parseFloat(document.getElementById('factorKcal')?.value) || (pesoCalc > 0 ? (goal / pesoCalc).toFixed(0) : 0);
+            const factorProtVal = parseFloat(document.getElementById('goalProtKg')?.value) || (pesoCalc > 0 ? (pTotal / pesoCalc).toFixed(1) : 0);
+
+            // Aporte
+            const curKcal = document.getElementById('valKcal')?.innerText || '0';
+            const curProt = document.getElementById('valProt')?.innerText || '0';
+            const curCho = document.getElementById('valCHO')?.innerText || '0';
+            const curLip = document.getElementById('valLip')?.innerText || '0';
+
+            vgoText = `Valoracion global objetiva
+ANTROPOMETRÍA
+Datos Antropométricos:  ${dataAntropoStr}
+Peso: ${pesoFisico} kg	
+Talla: ${tallaMt} mt 				
+IMC: ${imcNum > 0 ? imcNum.toFixed(1) : imcVal} kg/m2
+Screening nutricional:  ${nrs.score || 0}  pts, ${nrs.score >= 3 ? 'con riesgo de malnutrición.' : 'sin riesgo nutricional.'}  
+
+Valoración de riesgo de LPP: ${riesgoLpp.toUpperCase()}
+
+EXÁMENES DE RELEVANCIA NUTRICIONAL: 
+${evoExamenes}
+
+DIAGNÓSTICO NUTRICIONAL: ${diagNutri}
+
+REQUERIMIENTOS NUTRICIONALES 
+Calorías: ${Math.round(goal)} kcals (${factorKcalVal} kcal/kg peso)
+Proteínas: ${pTotal.toFixed(1)} gr        (${factorProtVal} gr/kg peso)
+
+Aporte: ${curKcal} kcals, ${curProt} gr prot, ${curCho} gr cho, ${curLip} gr lip
+
+DIETOTERAPIA: 
+${dietoterapiaStr}
+
+Observaciones/Plan:
+${customStructureText || `o Paciente tolerando nutrición
+o Producto cubre requerimientos nutricionales calóricos proteicos
+o Seguimiento a deposiciones, tolerancia 
+o Seguimiento nutricional continuo`}
+
+_________________
+${userName} 
+${cargoFirma} 
+Unidad de Nutrición
+Hospital Regional de Antofagasta`;
+        } else {
+            vgoText = `VALORACION GLOBAL OBJETIVA POR NUTRICIONISTA
 
 o Fecha de evaluación: ${dateStr}
 
 Fecha de nacimiento: ${fNacStr}
+N° Ficha: ${numFicha}
 Edad: ${ageStr}
 Sexo: ${sexStr}
 
 Diagnóstico:
-o 1. [Completar diagnóstico médico]
+o 1. ${dxMedico}
+o Antecedentes Mórbidos: ${antecedentesMorbidos}
 
 Antropometría: (Evaluación en bipedestación por nutricionista del servicio)
-o Peso ciego: ${pesoFisico} kg
+o Peso actual: ${pesoFisico} kg
 o Talla: ${tallaMt} mt
 o C. braquial: ${cBraquialVal} cm
 o C. cintura: ${cCintura} cm
 
-Indicadores nutricionales: (WHO Antrho)
-o IMC: ${imcVal} kg/m2
-o Zscore IMC/E: ${zImcVal} DE
-o Zscore T/E: ${zTallaVal} DE
-o C. Cintura /E: [Completar si aplica]
+${indicadoresText}
 
 Anamnesis:
 o Síntomas gastrointestinales: Nauseas (${nauseasVal}) Vómitos (${vomitosVal}) Reflujo gastroesofágico (${reflujoVal}) Deposiciones (${deposicionesVal}) Distensión abdominal (${distensionVal}) Gases (${gasesVal}).
 o Anamnesis alimentaria: Dentadura (${dentaduraVal}) Alergias/intolerancias alimentarias (${alergiasVal}) Trastorno de deglución (${deglucionVal}) Apetito (${apetitoVal}).
 
-Tamizaje: ${p.type === 'adult' ? '(NRS 2002)' : '(STRONG KIDS)'}
-o Puntaje: ${p.type === 'adult' ? nrs.score : sk.score} pts
-o Interpretación: ${p.type === 'adult' ? nrs.classification.toUpperCase() : sk.classification.toUpperCase()}
+${tamizajeText}
 
 Diagnóstico Nutricional Integrado:
 o ${des}
@@ -6490,28 +6950,143 @@ o Proteínas: ${pTotal.toFixed(1)} gr -> VCT ${pPct} %
 o Carbohidratos: ${cTotal.toFixed(1)} gr -> VCT ${cPct} %
 o Lípidos: ${lTotal.toFixed(1)} gr -> VCT ${lPct} %
 
-Dietoterapia actual: [Completar]
-
+Dietoterapia actual:
+o ${dietoterapiaStr}
+${customStructureText}
 Observaciones/Plan/Sugerencias:
 o [Completar]
 
 ${userName}
-Nutricionista clínica pediatría - psiquiatría infantojuvenil
+${cargoFirma}
 Unidad de nutrición y alimentación
 Hospital Regional de Antofagasta`;
+        }
 
         content.innerText = vgoText;
+        if (typeof window.updateNoteStyle === 'function') {
+            window.updateNoteStyle();
+        }
         const titleH4 = document.querySelector('#clinicalNoteContainer h4');
         if (titleH4) titleH4.innerText = "Vista Previa de Evolución (VGO)";
         container.style.display = 'block';
         container.scrollIntoView({ behavior: 'smooth' });
     };
 
+    const btnVGO = document.getElementById('btnGenerateVGO');
+    if (btnVGO) btnVGO.onclick = window.generateVGO;
+
+// --- VGO SERVICE & CUSTOM STRUCTURE HANDLERS ---
+window.updateVGOServiceConfig = function () {
+    const sel = document.getElementById('vgoServiceSelect');
+    const customWrapper = document.getElementById('vgoCustomServiceWrapper');
+    if (!sel) return;
+
+    const val = sel.value;
+    if (customWrapper) {
+        customWrapper.style.display = val === 'custom' ? 'block' : 'none';
+    }
+    localStorage.setItem('selectedVGOService', val);
+};
+
+window.getVGOServiceSignature = function () {
+    const sel = document.getElementById('vgoServiceSelect');
+    const customInput = document.getElementById('vgoCustomServiceInput');
+    const selectedVal = sel?.value || localStorage.getItem('selectedVGOService') || 'uti_cardio_qx';
+
+    const serviceMap = {
+        'uti_cardio_qx': 'Nutricionista UTI Cardio Qx',
+        'uci_adulto': 'Nutricionista UCI Adultos',
+        'tim_adulto': 'Nutricionista TIM Adultos',
+        'uco': 'Nutricionista UCI Coronaria (UCO)',
+        'uciped': 'Nutricionista UCIPED',
+        'timped': 'Nutricionista TIMPED',
+        'oncologia_pediatrica': 'Nutricionista Oncología Pediátrica',
+        'pediatria': 'Nutricionista clínica pediatría',
+        'cirugia_infantil': 'Nutricionista clínica cirugía infantil',
+        'neonatologia': 'Nutricionista clínica neonatología',
+        'urgencias': 'Nutricionista Unidad de Emergencia',
+        'aro': 'Nutricionista clínica ARO',
+        'ginecologia': 'Nutricionista clínica ginecología',
+        'puerperio': 'Nutricionista clínica puerperio',
+        'oncologia_adultos': 'Nutricionista Oncología Adultos',
+        'cirugia_adultos': 'Nutricionista Cirugía UCM',
+        'medicina_adultos': 'Nutricionista clínica medicina',
+        'psiquiatria': 'Nutricionista Psiquiatría Adultos'
+    };
+
+    if (selectedVal === 'custom') {
+        const customVal = customInput?.value || localStorage.getItem('vgoCustomServiceTitle') || '';
+        if (customVal.trim()) {
+            localStorage.setItem('vgoCustomServiceTitle', customVal.trim());
+            return customVal.trim();
+        }
+        return 'Nutricionista clínica';
+    }
+
+    return serviceMap[selectedVal] || 'Nutricionista clínica';
+};
+
+window.openVGOStructureModal = function () {
+    const modal = document.getElementById('vgoStructureModal');
+    const sel = document.getElementById('vgoServiceSelect');
+    const serviceNameEl = document.getElementById('modalVgoServiceName');
+    const titleInp = document.getElementById('vgoCustomSectionTitle');
+    const bodyInp = document.getElementById('vgoCustomSectionBody');
+
+    if (!modal || !sel) return;
+
+    const currentService = sel.value;
+    const serviceText = sel.options[sel.selectedIndex]?.text || currentService;
+    if (serviceNameEl) serviceNameEl.value = serviceText;
+
+    // Load saved structure for this service
+    const savedKey = `vgoCustomStructure_${currentService}`;
+    const savedDataStr = localStorage.getItem(savedKey);
+    if (savedDataStr) {
+        try {
+            const savedData = JSON.parse(savedDataStr);
+            if (titleInp) titleInp.value = savedData.title || '';
+            if (bodyInp) bodyInp.value = savedData.body || '';
+        } catch (e) {
+            if (titleInp) titleInp.value = '';
+            if (bodyInp) bodyInp.value = '';
+        }
+    } else {
+        if (titleInp) titleInp.value = '';
+        if (bodyInp) bodyInp.value = '';
+    }
+
+    modal.style.display = 'flex';
+};
+
+window.closeVGOStructureModal = function () {
+    const modal = document.getElementById('vgoStructureModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.saveVGOStructureCustomization = function () {
+    const sel = document.getElementById('vgoServiceSelect');
+    const titleInp = document.getElementById('vgoCustomSectionTitle');
+    const bodyInp = document.getElementById('vgoCustomSectionBody');
+    if (!sel) return;
+
+    const currentService = sel.value;
+    const savedKey = `vgoCustomStructure_${currentService}`;
+    const payload = {
+        title: titleInp?.value.trim() || '',
+        body: bodyInp?.value.trim() || ''
+    };
+
+    localStorage.setItem(savedKey, JSON.stringify(payload));
+    alert(`✅ Estructura personalizada guardada para el servicio: ${sel.options[sel.selectedIndex]?.text}`);
+    window.closeVGOStructureModal();
+};
+
     // Copy Button
     const btnCopy = document.getElementById('btnCopyNote');
     if (btnCopy) btnCopy.onclick = () => {
         const text = document.getElementById('noteContent').innerText;
-        navigator.clipboard.writeText(text).then(() => alert("Evolución Clínica (ADIME) copiada al portapapeles."));
+        navigator.clipboard.writeText(text).then(() => alert("Nota clínica copiada al portapapeles."));
     };
 
     // Module Input Watcher
@@ -7219,13 +7794,15 @@ window.evaluateWaist = (makeBadgeFn = null) => {
             }
         }
     } else {
-        // Adult Logic (MINSAL)
+        // Adult Logic (MINSAL + Umbrales de Depleción Severa)
         if (p.sexo === 'm') {
             if (cc >= 102) { status = "Obesidad Abdominal"; color = "#c0392b"; }
             else if (cc >= 94) { status = "Riesgo Cardiovascular"; color = "#f39c12"; }
+            else if (cc < 65) { status = "Depleción Severa / Cintura Disminuida"; color = "#e67e22"; }
         } else {
             if (cc >= 88) { status = "Obesidad Abdominal"; color = "#c0392b"; }
             else if (cc >= 80) { status = "Riesgo Cardiovascular"; color = "#f39c12"; }
+            else if (cc < 58) { status = "Depleción Severa / Cintura Disminuida"; color = "#e67e22"; }
         }
     }
 
@@ -8466,6 +9043,9 @@ window.confirmLocationSelection = async function() {
     }
     
     window.updateActiveLocationBadge();
+    if (typeof window.syncPatientTypeSelector === 'function') {
+        window.syncPatientTypeSelector();
+    }
     
     const overlay = document.getElementById('location-selector-screen');
     if (overlay) overlay.style.display = 'none';
@@ -8495,6 +9075,13 @@ window.updateActiveLocationBadge = function() {
     if (subLabel) {
         subLabel.innerHTML = `Visualizando camas del servicio <b>${activeLoc.serviceName}</b> en el Piso ${activeLoc.floor}.`;
     }
+};
+
+window.toggleWardViewMode = function() {
+    const select = document.getElementById('wardViewModeSelect');
+    if (!select) return;
+    localStorage.setItem('wardViewMode', select.value);
+    window.renderWardBedsGrid();
 };
 
 function getDefaultBeds(floor, serviceId) {
@@ -8817,6 +9404,332 @@ window.renderWardBedsGrid = async function() {
             collapsedRooms = [];
         }
 
+        const viewMode = localStorage.getItem('wardViewMode') || 'grid';
+        const selectMode = document.getElementById('wardViewModeSelect');
+        if (selectMode) selectMode.value = viewMode;
+
+        const floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
+
+        if (viewMode === 'table') {
+            let tableHTML = `
+                <div style="overflow-x: auto; width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-top: 15px;">
+                    <table class="clinical-census-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.75rem; font-family: sans-serif; min-width: 1400px; line-height: 1.2;">
+                        <thead style="background: #f1f5f9; position: sticky; top: 0; z-index: 10;">
+                            <tr style="border-bottom: 2px solid #cbd5e1; height: 38px; background: #e2e8f0;">
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 85px;">CAMA</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 100px;">FICHA/RUT</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 220px;">NOMBRE</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 45px; text-align: center;">EDAD</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 220px;">DIAGNÓSTICO</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-left:1px solid #cbd5e1; border-right:1px solid #cbd5e1;">DM</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1;">HTA</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1;">ERC</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 140px;">DIETOTERAPIA</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 260px;">OBSERVACIONES GENERALES</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 70px; text-align: center;">PESO</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 60px; text-align: center;">TALLA</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 55px; text-align: center; background: #dcfce7; color: #14532d;">IMC</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 75px; text-align: center; background: #dcfce7; color: #14532d;">EST NUT</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 50px; text-align: center;">SCRG</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 80px; text-align: center;">RIESGO LPP</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 65px; text-align: center;">EVAL</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 45px; text-align: center;">SEXO</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 95px; text-align: center;">FECHA INGR</th>
+                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 110px; text-align: center;">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            groupOrder.forEach((roomName, roomIndex) => {
+                const bedsInRoom = groupedBeds[roomName];
+                
+                tableHTML += `
+                    <tr style="background: #f8fafc; font-weight: 800; color: #1e3a8a; border-top: 2px solid #cbd5e1; height: 32px;">
+                        <td colspan="20" style="padding: 8px 10px; font-size: 0.8rem; border-bottom: 1px solid #cbd5e1; text-transform: uppercase;">
+                            🏢 ${roomName === 'Cupos del Servicio' ? 'Área / Cupos del Servicio' : roomName}
+                        </td>
+                    </tr>
+                `;
+
+                bedsInRoom.forEach(bedName => {
+                    const patient = matchedPatients.find(p => p.cama === bedName);
+                    
+                    if (patient) {
+                        const isCritico = patient.estado_sala === 'critico' || patient.requiere_atencion;
+                        const rowStyle = isCritico ? 'background: #fff5f5; border-bottom: 1px solid #fecaca;' : 'border-bottom: 1px solid #e2e8f0;';
+                        
+                        // Parse history entries for Observaciones Generales
+                        const allHistoryForName = activePatients.filter(ap => ap.nombre === patient.nombre && ap.user_id === AppState.user.id);
+                        allHistoryForName.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                        
+                        const obsEntries = [];
+                        allHistoryForName.forEach(h => {
+                            const d = new Date(h.created_at);
+                            const dateLabel = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                            let parts = [];
+                            
+                            const examsList = h.metadata?.assessment?.exams || [];
+                            if (examsList.length > 0) {
+                                const examsStr = examsList.map(e => `${e.type} ${e.res}`).join(' - ');
+                                parts.push(examsStr);
+                            }
+                            if (h.metadata?.antecedentes_morbidos && parts.length === 0) {
+                                parts.push(h.metadata.antecedentes_morbidos);
+                            }
+                            if (parts.length > 0) {
+                                obsEntries.push(`${dateLabel}: ${parts.join(' - ')}`);
+                            }
+                        });
+                        const customObs = patient.metadata?.observaciones_generales || '';
+                        let obsGeneralesText = obsEntries.slice(0, 3).join(' | ') || 'Sin registros';
+                        if (customObs) {
+                            obsGeneralesText = `<b>${customObs}</b>` + (obsGeneralesText !== 'Sin registros' ? ` | ${obsGeneralesText}` : '');
+                        }
+
+                        // Age format
+                        const ageStr = patient.edad || '--';
+                        
+                        // Height in meters
+                        const tallaStr = patient.estatura_m ? (patient.estatura_m).toFixed(2).replace('.', ',') : '--';
+
+                        // BMI & status
+                        const imcNum = patient.peso_kg > 0 && patient.estatura_m > 0 ? (patient.peso_kg / (patient.estatura_m * patient.estatura_m)) : 0;
+                        const imcStr = imcNum > 0 ? imcNum.toFixed(1).replace('.', ',') : '--';
+                        
+                        let abbrevStatus = '--';
+                        if (imcNum > 0) {
+                            const isElderly = patient.edad >= 65;
+                            if (isElderly) {
+                                if (imcNum < 23) abbrevStatus = 'BP';
+                                else if (imcNum < 28) abbrevStatus = 'N';
+                                else if (imcNum < 32) abbrevStatus = 'SP';
+                                else abbrevStatus = 'OB';
+                            } else {
+                                if (imcNum < 18.5) abbrevStatus = 'BP';
+                                else if (imcNum < 25) abbrevStatus = 'N';
+                                else if (imcNum < 30) abbrevStatus = 'SP';
+                                else abbrevStatus = 'OB';
+                            }
+                        }
+
+                        // DM, HTA, ERC flags
+                        const dmCheck = patient.metadata?.patologia_dm ? 'X' : '';
+                        const htaCheck = patient.metadata?.patologia_hta ? 'X' : '';
+                        const ercCheck = patient.metadata?.patologia_erc ? 'X' : '';
+
+                        // Dietoterapia text
+                        let dietText = 'Normal';
+                        const formula = patient.metadata?.simulator?.formula || '';
+                        if (formula) {
+                            dietText = formula;
+                        } else if (patient.metadata?.simulator?.oral?.kcal) {
+                            dietText = `Oral (${patient.metadata.simulator.oral.kcal} kcal)`;
+                        }
+
+                        // NRS score
+                        const nrsVal = patient.metadata?.nrs_score || patient.tmt || '--';
+
+                        // Evaluacion type
+                        const evalType = patient.metadata?.patient_type === 'pediatric' ? 'Peds' : (patient.metadata?.patient_type === 'neonate' ? 'Neo' : 'VGO');
+
+                        // Sex letter
+                        const sexLetter = patient.sexo === 'm' ? 'M' : (patient.sexo === 'f' ? 'F' : '--');
+
+                        // Admission date
+                        const fIngr = patient.metadata?.fecha_ingreso_servicio || '--';
+
+                        // Format evaluation date for Name column
+                        let dateStr = '';
+                        if (patient.created_at) {
+                            const d = new Date(patient.created_at);
+                            const day = String(d.getDate()).padStart(2, '0');
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            dateStr = `${day}-${month}`;
+                        }
+                        const nameColHtml = `<div onclick="loadPatient('${patient.id}')" style="cursor:pointer; font-weight:700; color:#312e81;">${patient.nombre}</div>` +
+                                            (dateStr ? `<span style="font-size:0.65rem; color:#7c3aed; font-weight:bold;">EVA ${dateStr}</span>` : '');
+
+                        tableHTML += `
+                            <tr style="${rowStyle} height: 42px;">
+                                <td style="padding: 6px 10px; font-weight:700; color: #475569;">🛏️ ${bedName}</td>
+                                <td style="padding: 6px 10px; font-weight: 500; font-family: monospace;">${patient.metadata?.num_ficha || '--'}</td>
+                                <td style="padding: 6px 10px; line-height: 1.3;">${nameColHtml}</td>
+                                <td style="padding: 6px 10px; text-align: center;">${ageStr}</td>
+                                <td style="padding: 6px 10px; font-size:0.7rem; color:#475569; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${patient.diagnostico || ''}">${patient.diagnostico || '--'}</td>
+                                <td style="padding: 6px 10px; text-align: center; background:#f8fafc; font-weight:800; color:#dc2626; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">${dmCheck}</td>
+                                <td style="padding: 6px 10px; text-align: center; background:#f8fafc; font-weight:800; color:#dc2626; border-right:1px solid #e2e8f0;">${htaCheck}</td>
+                                <td style="padding: 6px 10px; text-align: center; background:#f8fafc; font-weight:800; color:#dc2626; border-right:1px solid #e2e8f0;">${ercCheck}</td>
+                                <td style="padding: 6px 10px; font-weight:600; color:#0f766e;">${dietText}</td>
+                                <td style="padding: 6px 10px; font-size: 0.65rem; color: #64748b; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${obsGeneralesText}">${obsGeneralesText}</td>
+                                <td style="padding: 6px 10px; text-align: center; font-weight:700;">${patient.peso_kg || '--'} kg</td>
+                                <td style="padding: 6px 10px; text-align: center;">${tallaStr}</td>
+                                <td style="padding: 6px 10px; text-align: center; background:#dcfce7; font-weight:700; color:#166534;">${imcStr}</td>
+                                <td style="padding: 6px 10px; text-align: center; background:#dcfce7; font-weight:700; color:#166534;">${abbrevStatus}</td>
+                                <td style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
+                                <td style="padding: 6px 10px; text-align: center; font-weight:700; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}">${patient.metadata?.riesgo_lpp || '--'}</td>
+                                <td style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
+                                <td style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
+                                <td style="padding: 6px 10px; text-align: center;">${fIngr}</td>
+                                <td style="padding: 6px 10px; text-align: center;">
+                                    <div style="display:flex; gap:4px; justify-content:center;">
+                                        <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">📝</button>
+                                        <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')" style="padding:2px 4px; font-size:0.7rem;">${isCritico ? '↩️' : '🚨'}</button>
+                                        <button class="circle-action-btn" title="Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">🚑</button>
+                                        <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">✔️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        tableHTML += `
+                            <tr style="border-bottom: 1px solid #e2e8f0; height: 42px; background: #fafafa;">
+                                <td style="padding: 6px 10px; font-weight:700; color: #94a3b8;">🛏️ ${bedName}</td>
+                                <td colspan="18" style="padding: 6px 10px; text-align: left; color: #94a3b8;">
+                                    <span style="font-size:0.7rem; font-weight:700; background:#e2e8f0; color:#475569; padding:2px 6px; border-radius:4px; margin-right: 15px;">DISPONIBLE</span>
+                                    <button class="btn-register-patient" onclick="window.registerPatientInBed('${bedName}')" style="padding: 2px 8px; font-size: 0.65rem;">
+                                        ➕ Registrar Paciente
+                                    </button>
+                                </td>
+                                <td style="padding: 6px 10px; text-align: center;">
+                                    ${isAdmin ? `<button class="circle-action-btn" title="Eliminar Cama" onclick="window.removeBedFromService('${bedName}')" style="padding:2px 4px; font-size:0.7rem;">🗑️</button>` : ''}
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Floating patients at the bottom of the table
+            if (floatingPatients.length > 0) {
+                tableHTML += `
+                    <tr style="background: #fdf2f8; font-weight: 800; color: #db2777; border-top: 2px solid #fbcfe8; height: 32px;">
+                        <td colspan="20" style="padding: 8px 10px; font-size: 0.8rem; border-bottom: 1px solid #fbcfe8; text-transform: uppercase;">
+                            ⚠️ Pacientes sin Cama (Cupos / Tránsito)
+                        </td>
+                    </tr>
+                `;
+
+                floatingPatients.forEach(patient => {
+                    const isCritico = patient.estado_sala === 'critico' || patient.requiere_atencion;
+                    const rowStyle = 'background: #fff5f8; border-bottom: 1px solid #fbcfe8;';
+
+                    const allHistoryForName = activePatients.filter(ap => ap.nombre === patient.nombre && ap.user_id === AppState.user.id);
+                    allHistoryForName.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    
+                    const obsEntries = [];
+                    allHistoryForName.forEach(h => {
+                        const d = new Date(h.created_at);
+                        const dateLabel = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                        let parts = [];
+                        const examsList = h.metadata?.assessment?.exams || [];
+                        if (examsList.length > 0) {
+                            const examsStr = examsList.map(e => `${e.type} ${e.res}`).join(' - ');
+                            parts.push(examsStr);
+                        }
+                        if (h.metadata?.antecedentes_morbidos && parts.length === 0) {
+                            parts.push(h.metadata.antecedentes_morbidos);
+                        }
+                        if (parts.length > 0) {
+                            obsEntries.push(`${dateLabel}: ${parts.join(' - ')}`);
+                        }
+                    });
+                    const customObs = patient.metadata?.observaciones_generales || '';
+                    let obsGeneralesText = obsEntries.slice(0, 3).join(' | ') || 'Sin registros';
+                    if (customObs) {
+                        obsGeneralesText = `<b>${customObs}</b>` + (obsGeneralesText !== 'Sin registros' ? ` | ${obsGeneralesText}` : '');
+                    }
+
+                    const ageStr = patient.edad || '--';
+                    const tallaStr = patient.estatura_m ? (patient.estatura_m).toFixed(2).replace('.', ',') : '--';
+                    const imcNum = patient.peso_kg > 0 && patient.estatura_m > 0 ? (patient.peso_kg / (patient.estatura_m * patient.estatura_m)) : 0;
+                    const imcStr = imcNum > 0 ? imcNum.toFixed(1).replace('.', ',') : '--';
+                    
+                    let abbrevStatus = '--';
+                    if (imcNum > 0) {
+                        const isElderly = patient.edad >= 65;
+                        if (isElderly) {
+                            if (imcNum < 23) abbrevStatus = 'BP';
+                            else if (imcNum < 28) abbrevStatus = 'N';
+                            else if (imcNum < 32) abbrevStatus = 'SP';
+                            else abbrevStatus = 'OB';
+                        } else {
+                            if (imcNum < 18.5) abbrevStatus = 'BP';
+                            else if (imcNum < 25) abbrevStatus = 'N';
+                            else if (imcNum < 30) abbrevStatus = 'SP';
+                            else abbrevStatus = 'OB';
+                        }
+                    }
+
+                    const dmCheck = patient.metadata?.patologia_dm ? 'X' : '';
+                    const htaCheck = patient.metadata?.patologia_hta ? 'X' : '';
+                    const ercCheck = patient.metadata?.patologia_erc ? 'X' : '';
+
+                    let dietText = 'Normal';
+                    const formula = patient.metadata?.simulator?.formula || '';
+                    if (formula) {
+                        dietText = formula;
+                    } else if (patient.metadata?.simulator?.oral?.kcal) {
+                        dietText = `Oral (${patient.metadata.simulator.oral.kcal} kcal)`;
+                    }
+
+                    const nrsVal = patient.metadata?.nrs_score || patient.tmt || '--';
+                    const evalType = patient.metadata?.patient_type === 'pediatric' ? 'Peds' : (patient.metadata?.patient_type === 'neonate' ? 'Neo' : 'VGO');
+                    const sexLetter = patient.sexo === 'm' ? 'M' : (patient.sexo === 'f' ? 'F' : '--');
+                    const fIngr = patient.metadata?.fecha_ingreso_servicio || '--';
+
+                    let dateStr = '';
+                    if (patient.created_at) {
+                        const d = new Date(patient.created_at);
+                        dateStr = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    }
+                    const nameColHtml = `<div onclick="loadPatient('${patient.id}')" style="cursor:pointer; font-weight:700; color:#312e81;">${patient.nombre}</div>` +
+                                        (dateStr ? `<span style="font-size:0.65rem; color:#7c3aed; font-weight:bold;">EVA ${dateStr}</span>` : '');
+
+                    tableHTML += `
+                        <tr style="${rowStyle} height: 42px;">
+                            <td style="padding: 6px 10px; font-weight:700; color: #db2777;">📋 Sin Cama</td>
+                            <td style="padding: 6px 10px; font-family: monospace;">${patient.metadata?.num_ficha || '--'}</td>
+                            <td style="padding: 6px 10px; line-height: 1.3;">${nameColHtml}</td>
+                            <td style="padding: 6px 10px; text-align: center;">${ageStr}</td>
+                            <td style="padding: 6px 10px; font-size:0.7rem; color:#475569; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${patient.diagnostico || ''}">${patient.diagnostico || '--'}</td>
+                            <td style="padding: 6px 10px; text-align: center; background:#fdf2f8; font-weight:800; color:#dc2626; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">${dmCheck}</td>
+                            <td style="padding: 6px 10px; text-align: center; background:#fdf2f8; font-weight:800; color:#dc2626; border-right:1px solid #e2e8f0;">${htaCheck}</td>
+                            <td style="padding: 6px 10px; text-align: center; background:#fdf2f8; font-weight:800; color:#dc2626; border-right:1px solid #e2e8f0;">${ercCheck}</td>
+                            <td style="padding: 6px 10px; font-weight:600; color:#0f766e;">${dietText}</td>
+                            <td style="padding: 6px 10px; font-size: 0.65rem; color: #64748b; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${obsGeneralesText}">${obsGeneralesText}</td>
+                            <td style="padding: 6px 10px; text-align: center; font-weight:700;">${patient.peso_kg || '--'} kg</td>
+                            <td style="padding: 6px 10px; text-align: center;">${tallaStr}</td>
+                            <td style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${imcStr}</td>
+                            <td style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${abbrevStatus}</td>
+                            <td style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
+                            <td style="padding: 6px 10px; text-align: center; font-weight:700; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}">${patient.metadata?.riesgo_lpp || '--'}</td>
+                            <td style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
+                            <td style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
+                            <td style="padding: 6px 10px; text-align: center;">${fIngr}</td>
+                            <td style="padding: 6px 10px; text-align: center;">
+                                <div style="display:flex; gap:4px; justify-content:center;">
+                                    <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">📝</button>
+                                    <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')" style="padding:2px 4px; font-size:0.7rem;">${isCritico ? '↩️' : '🚨'}</button>
+                                    <button class="circle-action-btn" title="Asignar Cama" onclick="window.transferPatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">🚑</button>
+                                    <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">✔️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            tableHTML += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            grid.innerHTML = tableHTML;
+            return;
+        }
+
         grid.innerHTML = '';
         
         groupOrder.forEach((roomName, roomIndex) => {
@@ -8938,6 +9851,77 @@ window.renderWardBedsGrid = async function() {
             roomGroup.appendChild(bedsGridDiv);
             grid.appendChild(roomGroup);
         });
+
+        // 4. Render active patients who are not assigned to a bed in the configured bedsList (Floating / Cupos)
+        const floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
+        if (floatingPatients.length > 0) {
+            const elementId = `room-group-floating`;
+            const roomGroup = document.createElement('div');
+            roomGroup.id = elementId;
+            roomGroup.className = `room-group`;
+            
+            let summaryHTML = `
+                <span class="room-summary-badge occupied">${floatingPatients.length} ${floatingPatients.length === 1 ? 'paciente' : 'pacientes'}</span>
+            `;
+            
+            const headerHTML = `
+                <div class="room-group-header" style="background: #fdf2f8; border-left: 4px solid #db2777; cursor: default;">
+                    <div class="room-title-container">
+                        <span class="room-toggle-icon">▼</span>
+                        <span style="color: #db2777; font-weight: bold;">⚠️ Pacientes sin Cama (Cupos / Tránsito)</span>
+                    </div>
+                    <div class="room-badges-container">
+                        ${summaryHTML}
+                    </div>
+                </div>
+            `;
+            
+            const bedsGridDiv = document.createElement('div');
+            bedsGridDiv.className = 'room-beds-grid beds-grid';
+            bedsGridDiv.style.marginTop = '0';
+            
+            floatingPatients.forEach(patient => {
+                const card = document.createElement('div');
+                const isCritico = patient.estado_sala === 'critico' || patient.requiere_atencion;
+                card.className = `bed-card occupied ${isCritico ? 'critical' : 'active'}`;
+                
+                const tmtKcal = patient.tmt || '--';
+                const weight = patient.peso_kg || '--';
+                const dx = patient.diagnostico || 'Sin diagnóstico';
+                const formula = patient.metadata?.simulator?.formula || 'Ninguna';
+                const displayBed = patient.cama || 'Sin Cama';
+                
+                card.innerHTML = `
+                    <div class="bed-header" style="background: #fdf2f8;">
+                        <span class="bed-badge occupied" style="background: #db2777; color: white;">📋 ${displayBed}</span>
+                        ${isCritico ? '<span class="status-alert-tag critical">🚨 CRÍTICO</span>' : '<span class="status-alert-tag active">🟢 ACTIVO</span>'}
+                    </div>
+                    <div class="bed-patient-info" onclick="loadPatient('${patient.id}')" style="cursor:pointer;" title="Haga clic para editar ficha">
+                        <div class="patient-name">${patient.nombre}</div>
+                        <div class="patient-dx">${dx}</div>
+                        <div class="patient-metrics-row">
+                            <span class="metric-item" title="Edad">🎂 ${patient.edad}a</span>
+                            <span class="metric-item" title="Peso">⚖️ ${weight}kg</span>
+                        </div>
+                        <div class="patient-regime-row">
+                            <div class="regime-formula" title="Fórmula">🍼 ${formula}</div>
+                            <div class="regime-req" title="Requerimiento">⚡ ${tmtKcal} kcal</div>
+                        </div>
+                    </div>
+                    <div class="bed-actions-row">
+                        <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
+                        <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
+                        <button class="circle-action-btn" title="Asignar / Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
+                        <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
+                    </div>
+                `;
+                bedsGridDiv.appendChild(card);
+            });
+            
+            roomGroup.innerHTML = headerHTML;
+            roomGroup.appendChild(bedsGridDiv);
+            grid.appendChild(roomGroup);
+        }
         
     } catch (err) {
         console.error("Error rendering beds grid:", err);
@@ -9011,36 +9995,145 @@ window.dischargePatientGrid = async function(id) {
 };
 
 window.transferPatientGrid = async function(id) {
-    const activeLocStr = localStorage.getItem('activeLocation');
-    if (!activeLocStr) return;
-    const activeLoc = JSON.parse(activeLocStr);
+    if (!supabaseClient) {
+        alert("Supabase no está configurado.");
+        return;
+    }
+
+    // 1. Fetch patient details to get patient type & name
+    const { data: p, error: fetchErr } = await supabaseClient
+        .from('pacientes')
+        .select('nombre, metadata, cama')
+        .eq('id', id)
+        .single();
     
-    // Fetch customized beds list to show options
-    const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
-    let bedsList = getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
-    if (supabaseClient) {
-        const { data: configRecord } = await supabaseClient
-            .from('config_camas')
-            .select('*')
-            .eq('location_key', locationKey)
-            .maybeSingle();
-            
-        if (configRecord && configRecord.beds) {
-            bedsList = configRecord.beds;
+    if (fetchErr || !p) {
+        alert("Error al leer datos del paciente: " + (fetchErr?.message || "No encontrado"));
+        return;
+    }
+
+    const patientType = (p.metadata && p.metadata.patient_type) || 'adult';
+
+    // 2. Collect all matching services from SERVICES_BY_FLOOR based on type
+    const availableServices = [];
+    for (const floor in SERVICES_BY_FLOOR) {
+        SERVICES_BY_FLOOR[floor].forEach(srv => {
+            if (srv.type === patientType) {
+                availableServices.push({
+                    floor: parseInt(floor),
+                    id: srv.id,
+                    name: srv.name
+                });
+            }
+        });
+    }
+
+    if (availableServices.length === 0) {
+        alert(`No hay servicios configurados para el tipo de paciente: ${patientType}`);
+        return;
+    }
+
+    // 3. Prompt user to select target service
+    let promptMsg = `Traslado de "${p.nombre}" (${patientType === 'adult' ? 'Adulto' : (patientType === 'neonate' ? 'Neonato' : 'Pediátrico')})\n\n`;
+    promptMsg += `Seleccione el SERVICIO DE DESTINO ingresando su número correspondiente:\n\n`;
+    availableServices.forEach((srv, idx) => {
+        promptMsg += `[${idx + 1}] Piso ${srv.floor} - ${srv.name}\n`;
+    });
+    promptMsg += `\nIngrese el número de opción:`;
+
+    const optionStr = prompt(promptMsg, "");
+    if (optionStr === null) return; // Cancel
+    const optionIdx = parseInt(optionStr) - 1;
+    if (isNaN(optionIdx) || optionIdx < 0 || optionIdx >= availableServices.length) {
+        alert("Opción ingresada no es válida.");
+        return;
+    }
+
+    const selectedSrv = availableServices[optionIdx];
+
+    // 4. Fetch target beds list
+    const targetLocationKey = `HRA-${selectedSrv.floor}-${selectedSrv.id}`;
+    let targetBeds = getDefaultBeds(selectedSrv.floor, selectedSrv.id);
+    const { data: configRecord } = await supabaseClient
+        .from('config_camas')
+        .select('*')
+        .eq('location_key', targetLocationKey)
+        .maybeSingle();
+        
+    if (configRecord && configRecord.beds) {
+        targetBeds = configRecord.beds;
+    }
+
+    // 5. Prompt for target bed number
+    const bedPromptMsg = `Servicio destino: ${selectedSrv.name}\n` +
+                        `Camas configuradas en este servicio:\n${targetBeds.join(', ')}\n\n` +
+                        `Ingrese el número de cama (deje vacío para enviar a "Cupos del Servicio"):`;
+
+    const newBed = prompt(bedPromptMsg, "");
+    if (newBed === null) return; // Cancel
+    let targetBed = newBed.trim();
+
+    // 6. Check for occupied bed conflict in the target service
+    if (targetBed) {
+        // Find if anyone active has that bed name
+        const { data: occupiedTarget } = await supabaseClient
+            .from('pacientes')
+            .select('nombre, metadata')
+            .eq('cama', targetBed)
+            .neq('estado_sala', 'de_alta')
+            .neq('estado_sala', 'eliminado')
+            .eq('user_id', AppState.user.id);
+
+        let isConflicting = false;
+        let conflictingName = '';
+
+        if (occupiedTarget && occupiedTarget.length > 0) {
+            for (const occP of occupiedTarget) {
+                if (occP.metadata && occP.metadata.location) {
+                    if (occP.metadata.location.floor === selectedSrv.floor && 
+                        occP.metadata.location.serviceId === selectedSrv.id) {
+                        isConflicting = true;
+                        conflictingName = occP.nombre;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (isConflicting) {
+            const confirmConflict = confirm(`⚠️ Cama Ocupada: La cama "${targetBed}" en "${selectedSrv.name}" ya está ocupada por "${conflictingName}".\n\n¿Deseas trasladar al paciente a la sección de "Cupos del Servicio" (sin cama asignada) o cancelar el traslado?`);
+            if (!confirmConflict) return; // Cancel operation
+            targetBed = ''; // Clear to send to Cupos
         }
     }
-    
-    const newBed = prompt(`Ingrese la nueva cama para el traslado.\nOpciones disponibles en este servicio:\n${bedsList.join(', ')}`, "");
-    if (newBed === null) return;
-    const bedClean = newBed.trim();
-    if (!bedClean) return;
-    
-    const { error } = await supabaseClient.from('pacientes').update({ cama: bedClean }).eq('id', id);
+
+    // 7. Update location metadata and bed in database
+    const newLocation = {
+        floor: selectedSrv.floor,
+        serviceId: selectedSrv.id,
+        name: selectedSrv.name,
+        type: patientType
+    };
+
+    const updatedMetadata = {
+        ...(p.metadata || {}),
+        location: newLocation
+    };
+
+    const { error } = await supabaseClient
+        .from('pacientes')
+        .update({ 
+            cama: targetBed,
+            estado_sala: 'activo',
+            metadata: updatedMetadata
+        })
+        .eq('id', id);
+
     if (!error) {
-        showToast(`✅ Trasladado con éxito a: ${bedClean}`);
+        showToast(`✅ Paciente trasladado a ${selectedSrv.name} (Cama: ${targetBed || 'Cupos'})`);
         await window.renderWardBedsGrid();
     } else {
-        alert("Error al trasladar paciente: " + error.message);
+        alert("Error al realizar el traslado: " + error.message);
     }
 };
 
@@ -9238,3 +10331,12 @@ window.renderRTHMinerals = (rthObj, vol) => {
         `;
     }).join('');
 };
+
+// Automatic Global Initialization
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof initGlobalEvents === 'function') initGlobalEvents();
+    });
+} else {
+    if (typeof initGlobalEvents === 'function') initGlobalEvents();
+}
