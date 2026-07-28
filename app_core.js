@@ -9411,31 +9411,33 @@ window.renderWardBedsGrid = async function() {
         let floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
 
         if (viewMode === 'table') {
+            grid.style.display = 'block';
+            grid.style.width = '100%';
             let tableHTML = `
                 <div style="overflow-x: auto; width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-top: 15px;">
                     <table class="clinical-census-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.75rem; font-family: sans-serif; min-width: 1400px; line-height: 1.2;">
                         <thead style="background: #f1f5f9; position: sticky; top: 0; z-index: 10;">
                             <tr style="border-bottom: 2px solid #cbd5e1; height: 38px; background: #e2e8f0;">
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 85px;">CAMA</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 100px;">FICHA/RUT</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 220px;">NOMBRE</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 45px; text-align: center;">EDAD</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 220px;">DIAGNÓSTICO</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-left:1px solid #cbd5e1; border-right:1px solid #cbd5e1;">DM</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1;">HTA</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1;">ERC</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 140px;">DIETOTERAPIA</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 260px;">OBSERVACIONES GENERALES</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 70px; text-align: center;">PESO</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 60px; text-align: center;">TALLA</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 55px; text-align: center; background: #dcfce7; color: #14532d;">IMC</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 75px; text-align: center; background: #dcfce7; color: #14532d;">EST NUT</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 50px; text-align: center;">SCRG</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 80px; text-align: center;">RIESGO LPP</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 65px; text-align: center;">EVAL</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 45px; text-align: center;">SEXO</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 95px; text-align: center;">FECHA INGR</th>
-                                <th style="padding: 8px 10px; color: #1e293b; font-weight: 800; width: 110px; text-align: center;">ACCIONES</th>
+                                <th style="color: #1e293b; font-weight: 800; width: 85px; padding: 0;"><div class="resizable-th" style="width: 85px;">CAMA</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 100px; padding: 0;"><div class="resizable-th" style="width: 100px;">FICHA/RUT</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 220px; padding: 0;"><div class="resizable-th" style="width: 220px;">NOMBRE</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 45px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 45px;">EDAD</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 220px; padding: 0;"><div class="resizable-th" style="width: 220px;">DIAGNÓSTICO</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-left:1px solid #cbd5e1; border-right:1px solid #cbd5e1; padding: 0;"><div class="resizable-th" style="width: 35px;">DM</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1; padding: 0;"><div class="resizable-th" style="width: 35px;">HTA</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1; padding: 0;"><div class="resizable-th" style="width: 35px;">ERC</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 140px; padding: 0;"><div class="resizable-th" style="width: 140px;">DIETOTERAPIA</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 260px; padding: 0;"><div class="resizable-th" style="width: 260px;">OBSERVACIONES GENERALES</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 70px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 70px;">PESO</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 60px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 60px;">TALLA</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 55px; text-align: center; background: #dcfce7; color: #14532d; padding: 0;"><div class="resizable-th" style="width: 55px;">IMC</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 75px; text-align: center; background: #dcfce7; color: #14532d; padding: 0;"><div class="resizable-th" style="width: 75px;">EST NUT</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 50px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 50px;">SCRG</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 80px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 80px;">RIESGO LPP</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 65px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 65px;">EVAL</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 45px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 45px;">SEXO</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 95px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 95px;">FECHA INGR</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 110px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 110px;">ACCIONES</div></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -9552,7 +9554,7 @@ window.renderWardBedsGrid = async function() {
 
                         tableHTML += `
                             <tr style="${rowStyle} height: 42px;">
-                                <td style="padding: 6px 10px; font-weight:700; color: #475569;">🛏️ ${bedName}</td>
+                                <td style="color: #475569; padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
                                 <td style="padding: 6px 10px; font-weight: 500; font-family: monospace;">${patient.metadata?.num_ficha || '--'}</td>
                                 <td style="padding: 6px 10px; line-height: 1.3;">${nameColHtml}</td>
                                 <td style="padding: 6px 10px; text-align: center;">${ageStr}</td>
@@ -9584,7 +9586,7 @@ window.renderWardBedsGrid = async function() {
                     } else {
                         tableHTML += `
                             <tr style="border-bottom: 1px solid #e2e8f0; height: 42px; background: #fafafa;">
-                                <td style="padding: 6px 10px; font-weight:700; color: #94a3b8;">🛏️ ${bedName}</td>
+                                <td style="color: #94a3b8; padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
                                 <td colspan="18" style="padding: 6px 10px; text-align: left; color: #94a3b8;">
                                     <span style="font-size:0.7rem; font-weight:700; background:#e2e8f0; color:#475569; padding:2px 6px; border-radius:4px; margin-right: 15px;">DISPONIBLE</span>
                                     <button class="btn-register-patient" onclick="window.registerPatientInBed('${bedName}')" style="padding: 2px 8px; font-size: 0.65rem;">
@@ -9688,7 +9690,7 @@ window.renderWardBedsGrid = async function() {
 
                     tableHTML += `
                         <tr style="${rowStyle} height: 42px;">
-                            <td style="padding: 6px 10px; font-weight:700; color: #db2777;">📋 Sin Cama</td>
+                            <td style="color: #db2777; padding: 0;"><div class="resizable-tr">📋 Sin Cama</div></td>
                             <td style="padding: 6px 10px; font-family: monospace;">${patient.metadata?.num_ficha || '--'}</td>
                             <td style="padding: 6px 10px; line-height: 1.3;">${nameColHtml}</td>
                             <td style="padding: 6px 10px; text-align: center;">${ageStr}</td>
@@ -9731,6 +9733,8 @@ window.renderWardBedsGrid = async function() {
         }
 
         grid.innerHTML = '';
+        grid.style.display = '';
+        grid.style.width = '';
         
         groupOrder.forEach((roomName, roomIndex) => {
             const bedsInRoom = groupedBeds[roomName];
