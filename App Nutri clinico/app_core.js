@@ -8744,9 +8744,14 @@ window.closeGeminiApiKeyModal = function() {
 
 window.saveGeminiApiKeyFromModal = function() {
     const input = document.getElementById('txtGeminiApiKeyInput');
-    const val = input ? input.value.trim() : '';
+    let val = input ? input.value.trim() : '';
+    val = val.replace(/^["']|["']$/g, '').trim();
     if (!val) {
-        alert("Por favor ingresa una clave de API de Gemini válida.");
+        alert("Por favor ingresa tu API Key de Gemini (puedes obtenerla gratis en https://aistudio.google.com/app/apikey).");
+        return;
+    }
+    if (!val.startsWith('AIzaSy')) {
+        alert("⚠️ La API Key de Google Gemini debe comenzar con 'AIzaSy...'. Por favor verifica que la copiaste correctamente desde Google AI Studio.");
         return;
     }
     localStorage.setItem('user_gemini_api_key', val);
@@ -8761,12 +8766,12 @@ window.setGeminiApiKeyPrompt = function() {
 
 async function callGeminiMultimodalOCR(base64Data, mimeType, bedsList) {
     let apiKey = window.getGeminiApiKey();
+    apiKey = apiKey.replace(/^["']|["']$/g, '').trim();
     if (!apiKey) {
         window.openGeminiApiKeyModal();
         throw new Error("Ingresa tu API Key de Gemini en la ventana emergente para procesar el censo.");
     }
 
-    const model = 'gemini-1.5-flash';
     const prompt = `Analiza esta imagen o documento que contiene un censo clínico o reporte de dietas hospitalario (formato Dietools u otro).
 Las camas configuradas en este servicio son: ${bedsList.join(', ')}.
 
@@ -8794,45 +8799,65 @@ Devuelve el resultado únicamente como un arreglo JSON de objetos:
 ]
 Devuelve SOLAMENTE el JSON plano sin código markdown ni comentarios.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{
-                parts: [
-                    { text: prompt },
-                    {
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: base64Data
-                        }
-                    }
-                ]
-            }]
-        })
-    });
+    const endpointsToTry = [
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+    ];
 
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        const msg = errorData.error?.message || res.statusText || 'Error de API';
-        
-        // Remove bad key and open modal immediately
-        console.warn("Error en respuesta de Gemini API:", res.status, msg);
-        localStorage.removeItem('user_gemini_api_key');
-        window.openGeminiApiKeyModal();
-        throw new Error(`La clave de API de Gemini no es válida o expiró (${msg}). Se ha abierto la ventana emergente para ingresar una clave válida de Google AI Studio.`);
+    let lastErrorMsg = '';
+
+    for (const url of endpointsToTry) {
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: base64Data
+                                }
+                            }
+                        ]
+                    }]
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+                text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const firstBracket = text.indexOf('[');
+                const lastBracket = text.lastIndexOf(']');
+                if (firstBracket !== -1 && lastBracket !== -1) {
+                    text = text.substring(firstBracket, lastBracket + 1);
+                }
+                return text;
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                lastErrorMsg = errorData.error?.message || res.statusText || 'Error de API';
+                console.warn(`Intento fallido con URL ${url}:`, res.status, lastErrorMsg);
+
+                if (res.status === 400 && (lastErrorMsg.includes("API key") || lastErrorMsg.includes("INVALID_ARGUMENT")) || res.status === 403) {
+                    localStorage.removeItem('user_gemini_api_key');
+                    window.openGeminiApiKeyModal();
+                    throw new Error(`Acceso Denegado por Google (${lastErrorMsg}). Revisa tu API Key en Google AI Studio e ingrésala en la ventana emergente.`);
+                }
+            }
+        } catch (err) {
+            if (err.message && err.message.includes("Acceso Denegado")) throw err;
+            console.warn("Error en intento de OCR:", err);
+        }
     }
 
-    const data = await res.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-    const firstBracket = text.indexOf('[');
-    const lastBracket = text.lastIndexOf(']');
-    if (firstBracket !== -1 && lastBracket !== -1) {
-        text = text.substring(firstBracket, lastBracket + 1);
-    }
-    return text;
+    localStorage.removeItem('user_gemini_api_key');
+    window.openGeminiApiKeyModal();
+    throw new Error(`No se pudo procesar la imagen con los modelos de Gemini (${lastErrorMsg}). Se ha abierto la ventana emergente para verificar/ingresar una nueva API Key válida de Google AI Studio.`);
 }
 
 window.pendingCensusChanges = [];
