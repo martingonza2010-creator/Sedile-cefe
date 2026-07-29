@@ -8658,206 +8658,131 @@ window.openWardHistory = () => {
 // ==========================================
 // MULTIMODAL OCR CENSUS IMPORT SYSTEM (V4.90)
 // ==========================================
+// --- NUTRI IA OCR CENSUS SYNC (V4.90) ---
+// ==========================================
 
 window.handleCensusUpload = async function(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    showToast("📷 Procesando captura de censo con Nutria IA...");
-    
-    const reader = new FileReader();
-    reader.onload = async function() {
-        try {
-            const base64Data = reader.result.split(',')[1];
-            let mimeType = file.type || 'image/jpeg';
-            if (mimeType.includes('pdf')) mimeType = 'application/pdf';
-            
-            const activeLocStr = localStorage.getItem('activeLocation');
-            if (!activeLocStr) {
-                alert("Por favor selecciona un piso y servicio primero.");
-                return;
-            }
-            const activeLoc = JSON.parse(activeLocStr);
-            const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
-            
-            let bedsList = getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
-            if (supabaseClient) {
-                const { data: configRecord } = await supabaseClient
-                    .from('config_camas')
-                    .select('*')
-                    .eq('location_key', locationKey)
-                    .maybeSingle();
-                if (configRecord && configRecord.beds && configRecord.beds.length > 0) {
-                    bedsList = configRecord.beds;
-                }
-            }
-            
-            if (!bedsList || bedsList.length === 0) {
-                alert("No se encontraron camas configuradas para este servicio.");
-                return;
-            }
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) {
+        alert("Por favor selecciona un piso y servicio primero en la vista de sala.");
+        event.target.value = '';
+        return;
+    }
 
-            const resultJSON = await callGeminiMultimodalOCR(base64Data, mimeType, bedsList);
-            let extracted = [];
-            try {
-                extracted = JSON.parse(resultJSON);
-            } catch (pErr) {
-                console.error("Error interpretando JSON de IA:", pErr, resultJSON);
-                const match = resultJSON.match(/\[[\s\S]*\]/);
-                if (match) {
-                    extracted = JSON.parse(match[0]);
-                } else {
-                    throw new Error("No se pudo estructurar el censo. Asegúrate de que la foto o documento sea claro e intentalo de nuevo.");
-                }
+    showToast("🔍 Nutria OCR leyendo foto de Dietools en tu navegador... Por favor espera unos segundos.");
+
+    try {
+        const activeLoc = JSON.parse(activeLocStr);
+        const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+
+        let bedsList = getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
+        if (supabaseClient) {
+            const { data: configRecord } = await supabaseClient
+                .from('config_camas')
+                .select('*')
+                .eq('location_key', locationKey)
+                .maybeSingle();
+            if (configRecord && configRecord.beds && configRecord.beds.length > 0) {
+                bedsList = configRecord.beds;
             }
-            
-            await showCensusReviewModal(extracted, bedsList, activeLoc);
-        } catch (err) {
-            console.error("Error al procesar censo:", err);
-            alert("Error al procesar el censo con Nutria IA: " + err.message);
-        } finally {
-            event.target.value = '';
         }
-    };
-    reader.readAsDataURL(file);
-};
 
-window.getGeminiApiKey = function() {
-    const userKey = localStorage.getItem('user_gemini_api_key');
-    if (userKey && userKey.trim() !== '') return userKey.trim();
-    return '';
-};
+        if (!bedsList || bedsList.length === 0) {
+            alert("No se encontraron camas configuradas para este servicio.");
+            return;
+        }
 
-window.openGeminiApiKeyModal = function() {
-    const modal = document.getElementById('geminiApiKeyModal');
-    const input = document.getElementById('txtGeminiApiKeyInput');
-    if (input) {
-        input.value = localStorage.getItem('user_gemini_api_key') || '';
-    }
-    if (modal) modal.classList.add('active');
-};
-
-window.closeGeminiApiKeyModal = function() {
-    const modal = document.getElementById('geminiApiKeyModal');
-    if (modal) modal.classList.remove('active');
-};
-
-window.saveGeminiApiKeyFromModal = function() {
-    const input = document.getElementById('txtGeminiApiKeyInput');
-    let val = input ? input.value.trim() : '';
-    val = val.replace(/^["']|["']$/g, '').trim();
-    if (!val) {
-        alert("Por favor ingresa tu API Key de Gemini (puedes obtenerla gratis en https://aistudio.google.com/app/apikey).");
-        return;
-    }
-    if (!val.startsWith('AIzaSy')) {
-        alert("⚠️ El código ingresado (" + val.substring(0, 8) + "...) es un Secreto de Proyecto/OAuth de Google, no la API Key de Gemini.\n\nEn tu pantalla de Google AI Studio, haz clic en el icono de Copiar (📋) al lado derecho de la clave '...CXFA' (o haz clic sobre '...CXFA') para obtener el código real que comienza obligatoriamente con 'AIzaSy...'.");
-        return;
-    }
-    localStorage.setItem('user_gemini_api_key', val);
-    showToast("✅ Clave de Nutria IA guardada correctamente.");
-    window.closeGeminiApiKeyModal();
-};
-
-window.setGeminiApiKeyPrompt = function() {
-    window.openGeminiApiKeyModal();
-    return localStorage.getItem('user_gemini_api_key') || '';
-};
-
-async function callGeminiMultimodalOCR(base64Data, mimeType, bedsList) {
-    let apiKey = window.getGeminiApiKey();
-    apiKey = apiKey.replace(/^["']|["']$/g, '').trim();
-    if (!apiKey) {
-        window.openGeminiApiKeyModal();
-        throw new Error("Ingresa tu API Key de Gemini en la ventana emergente para procesar el censo.");
-    }
-
-    const prompt = `Analiza esta imagen o documento que contiene un censo clínico o reporte de dietas hospitalario (formato Dietools u otro).
-Las camas configuradas en este servicio son: ${bedsList.join(', ')}.
-
-Tu tarea es extraer los datos de cada paciente mapeándolos a su cama correspondiente.
-Para cada cama detectada en la imagen (por ejemplo 749CX_1, 749CX_2, o números de cama), extrae:
-- "cama": Nombre de la cama que coincida exactamente o se aproxime a la lista de camas (${bedsList.join(', ')}).
-- "nombre": Nombre completo del paciente en mayúsculas (ej: "AHUMADA PINTO, PAOLA JANET"). Si la cama está vacía o sin paciente, usa "".
-- "num_ficha": Número de ficha o HC (ej: "78936", "865663").
-- "edad": Edad del paciente en números si figura (ej: "56", "68").
-- "regimen": Descripción corta de la dieta o régimen (ej: "Dieta Hipoglucídica", "Dieta Hiperproteica").
-- "patologia_dm": true si especifica "(DIABÉTICO)" o "HIPOGLUCIDICA", false si no.
-- "observaciones": Alergias u observaciones por ingesta (ej: "ALERGIAS: ARROZ. NO ENVIAR VACUNO").
-
-Devuelve el resultado únicamente como un arreglo JSON de objetos:
-[
-  {
-    "cama": "${bedsList[0] || '101'}",
-    "nombre": "AHUMADA PINTO, PAOLA JANET",
-    "num_ficha": "78936",
-    "edad": "56",
-    "regimen": "Dieta Hipoglucídica",
-    "patologia_dm": true,
-    "observaciones": "NO ENVIAR VACUNO NI POLLO"
-  }
-]
-Devuelve SOLAMENTE el JSON plano sin código markdown ni comentarios.`;
-
-    const endpointsToTry = [
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`
-    ];
-
-    let lastErrorMsg = '';
-
-    for (const url of endpointsToTry) {
-        try {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { text: prompt },
-                            {
-                                inlineData: {
-                                    mimeType: mimeType,
-                                    data: base64Data
-                                }
-                            }
-                        ]
-                    }]
-                })
+        // Dynamically load Tesseract.js if not already present
+        if (typeof Tesseract === 'undefined') {
+            showToast("⌛ Cargando motor OCR en tu navegador...");
+            await new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+                s.onload = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
             });
-
-            if (res.ok) {
-                const data = await res.json();
-                let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-                text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-                const firstBracket = text.indexOf('[');
-                const lastBracket = text.lastIndexOf(']');
-                if (firstBracket !== -1 && lastBracket !== -1) {
-                    text = text.substring(firstBracket, lastBracket + 1);
-                }
-                return text;
-            } else {
-                const errorData = await res.json().catch(() => ({}));
-                lastErrorMsg = errorData.error?.message || res.statusText || 'Error de API';
-                console.warn(`Intento fallido con URL ${url}:`, res.status, lastErrorMsg);
-
-                if (res.status === 400 && (lastErrorMsg.includes("API key") || lastErrorMsg.includes("INVALID_ARGUMENT")) || res.status === 403) {
-                    localStorage.removeItem('user_gemini_api_key');
-                    window.openGeminiApiKeyModal();
-                    throw new Error(`Acceso Denegado por Google (${lastErrorMsg}). Revisa tu API Key en Google AI Studio e ingrésala en la ventana emergente.`);
-                }
-            }
-        } catch (err) {
-            if (err.message && err.message.includes("Acceso Denegado")) throw err;
-            console.warn("Error en intento de OCR:", err);
         }
-    }
 
-    localStorage.removeItem('user_gemini_api_key');
-    window.openGeminiApiKeyModal();
-    throw new Error(`No se pudo procesar la imagen con los modelos de Gemini (${lastErrorMsg}). Se ha abierto la ventana emergente para verificar/ingresar una nueva API Key válida de Google AI Studio.`);
+        const { data: { text } } = await Tesseract.recognize(file, 'spa');
+        console.log("📄 Texto extraído por OCR local en navegador:", text);
+
+        const extracted = parseDietoolsOCRText(text, bedsList);
+        await showCensusReviewModal(extracted, bedsList, activeLoc);
+
+    } catch (err) {
+        console.error("Error al procesar censo con OCR local:", err);
+        alert("Error al leer la foto con OCR local: " + (err.message || err));
+    } finally {
+        event.target.value = '';
+    }
+};
+
+function parseDietoolsOCRText(ocrText, bedsList) {
+    const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const results = [];
+
+    bedsList.forEach(bedName => {
+        const cleanBedName = bedName.replace(/[^a-zA-Z0-9]/gi, '').toUpperCase();
+        
+        const matchedIndex = lines.findIndex(l => {
+            const cleanLine = l.replace(/[^a-zA-Z0-9]/gi, '').toUpperCase();
+            return cleanLine.includes(cleanBedName) || (cleanBedName.length > 3 && cleanLine.includes(cleanBedName.slice(-4)));
+        });
+
+        if (matchedIndex !== -1) {
+            const block = lines.slice(matchedIndex, matchedIndex + 4).join(' ');
+
+            const fichaMatch = block.match(/\b\d{5,8}\b/);
+            const ficha = fichaMatch ? fichaMatch[0] : '';
+
+            const edadMatch = block.match(/(?:EDAD[:\s]*)?(\d{1,3})\s*(?:AÑOS|AÑOS|A)?/i);
+            const edad = edadMatch ? parseInt(edadMatch[1]) : 0;
+
+            const nameMatch = block.match(/([A-ZÑÁÉÍÓÚ]{3,}(?:\s+[A-ZÑÁÉÍÓÚ]{3,}){1,4})/);
+            let name = nameMatch ? nameMatch[1].trim() : '';
+            name = name.replace(/DIETA|DIABETICO|HIPOGLUCIDICA|HPGL|ALERGIAS|EDAD|CAMA/gi, '').trim();
+
+            let regimen = '';
+            if (/HPGL|HIPOGLUCIDICA/i.test(block)) regimen = 'Dieta Hipoglucídica';
+            else if (/HIPERPROTEICA/i.test(block)) regimen = 'Dieta Hiperproteica';
+            else if (/HIPOSODICA/i.test(block)) regimen = 'Dieta Hiposódica';
+            else if (/LIVIANA/i.test(block)) regimen = 'Dieta Liviana';
+            else if (/BLANDA/i.test(block)) regimen = 'Dieta Blanda';
+            else if (/COMPLETA|NORMAL/i.test(block)) regimen = 'Dieta Completa';
+
+            const isDM = /DIABÉTICO|DIABETICO|HPGL|HIPOGLUCIDICA/i.test(block);
+
+            let obs = '';
+            const obsMatch = block.match(/(?:ALERGIAS|OBS(?:ERVACIONES)?[:\s]*)([^.]+)/i);
+            if (obsMatch) obs = obsMatch[1].trim();
+
+            results.push({
+                cama: bedName,
+                nombre: name,
+                num_ficha: ficha,
+                edad: edad,
+                regimen: regimen,
+                patologia_dm: isDM,
+                observaciones: obs
+            });
+        } else {
+            results.push({
+                cama: bedName,
+                nombre: '',
+                num_ficha: '',
+                edad: 0,
+                regimen: '',
+                patologia_dm: false,
+                observaciones: ''
+            });
+        }
+    });
+
+    return results;
 }
 
 window.pendingCensusChanges = [];

@@ -10,6 +10,7 @@
         rel="stylesheet">
     <script src="libs/supabase.js"></script>
     <script src="libs/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link rel="stylesheet" href="style.css?v=4.99">
     <link rel="manifest" href="manifest.json">
     <style>
@@ -2397,6 +2398,7 @@
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <button id="btnPrintHandoff" class="btn-micro" style="background:#27ae60; color:white;">🖨️ Imprimir Entrega</button>
+                    <button id="btnUploadCensus" class="btn-micro" style="background:#7c3aed; color:white; font-weight:700;" onclick="document.getElementById('fileCensusInput').click()">📷 Escanear Censo Dietools</button>
                     <button id="btnWardHistory" class="btn-micro" style="background:#4f46e5; color:white;" onclick="window.openWardHistory()">📁 Historial de Sala</button>
                     <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;" onclick="window.renderWardBedsGrid()">🔄 Actualizar</button>
                     <button id="btnPrintSheetTable" class="btn-micro" style="background:#0284c7; color:white; display:none;" onclick="window.printCensusSheetTable()">🖨️ Imprimir Planilla</button>
@@ -2404,6 +2406,7 @@
                         <option value="grid" selected>🗂️ Vista Tarjetas</option>
                         <option value="table">📊 Vista Planilla (Tabla)</option>
                     </select>
+                    <input type="file" id="fileCensusInput" accept="image/*" style="display:none;" onchange="window.handleCensusUpload(event)">
                 </div>
             </div>
 
