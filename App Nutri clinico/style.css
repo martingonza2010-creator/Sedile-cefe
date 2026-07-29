@@ -2188,3 +2188,72 @@ body {
 .room-group.collapsed .room-beds-grid {
     display: none !important;
 }
+
+/* --- PRINT STYLES FOR SHEET CENSUS TABLE --- */
+@media print {
+    .main-header,
+    .app-tabs,
+    .protocol-fab,
+    .admin-bed-controls,
+    .btn-micro,
+    .btn-register-patient,
+    .circle-action-btn,
+    #wardViewModeSelect,
+    #btnPrintSheetTable,
+    .location-overlay,
+    .protocol-modal {
+        display: none !important;
+    }
+
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 8pt !important;
+    }
+
+    .app-container,
+    .view-section,
+    .ward-beds-container,
+    #wardBedsGrid {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .clinical-census-table {
+        min-width: 100% !important;
+        font-size: 8pt !important;
+        border: 1px solid #94a3b8 !important;
+    }
+
+    .clinical-census-table th,
+    .clinical-census-table td {
+        border: 1px solid #cbd5e1 !important;
+        color: black !important;
+        padding: 3px 5px !important;
+    }
+
+    .clinical-census-table th {
+        background: #e2e8f0 !important;
+        color: #0f172a !important;
+    }
+
+    .clinical-census-table input,
+    .clinical-census-table select {
+        border: none !important;
+        background: transparent !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        color: black !important;
+        box-shadow: none !important;
+    }
+
+    @page {
+        size: landscape;
+        margin: 8mm;
+    }
+}

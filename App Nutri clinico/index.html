@@ -10,7 +10,7 @@
         rel="stylesheet">
     <script src="libs/supabase.js"></script>
     <script src="libs/chart.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.93">
+    <link rel="stylesheet" href="style.css?v=4.94">
     <link rel="manifest" href="manifest.json">
     <style>
         #rthComparisonModal {
@@ -2400,6 +2400,7 @@
                     <button id="btnUploadCensus" class="btn-micro" style="background:#7c3aed; color:white;" onclick="document.getElementById('fileCensusInput').click()">📷 Subir Censo</button>
                     <button id="btnWardHistory" class="btn-micro" style="background:#4f46e5; color:white;" onclick="window.openWardHistory()">📁 Historial de Sala</button>
                     <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;" onclick="window.renderWardBedsGrid()">🔄 Actualizar</button>
+                    <button id="btnPrintSheetTable" class="btn-micro" style="background:#0284c7; color:white; display:none;" onclick="window.printCensusSheetTable()">🖨️ Imprimir Planilla</button>
                     <select id="wardViewModeSelect" onchange="window.toggleWardViewMode()" style="padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1; font-size:0.75rem; font-weight:600; background:white; outline:none; cursor:pointer; color:#312e81;">
                         <option value="grid" selected>🗂️ Vista Tarjetas</option>
                         <option value="table">📊 Vista Planilla (Tabla)</option>

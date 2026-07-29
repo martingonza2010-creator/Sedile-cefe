@@ -9081,7 +9081,83 @@ window.toggleWardViewMode = function() {
     const select = document.getElementById('wardViewModeSelect');
     if (!select) return;
     localStorage.setItem('wardViewMode', select.value);
+    
+    const btnPrintSheet = document.getElementById('btnPrintSheetTable');
+    if (btnPrintSheet) {
+        btnPrintSheet.style.display = select.value === 'table' ? 'inline-flex' : 'none';
+    }
+
     window.renderWardBedsGrid();
+};
+
+window.printCensusSheetTable = function() {
+    const select = document.getElementById('wardViewModeSelect');
+    if (select && select.value !== 'table') {
+        select.value = 'table';
+        window.toggleWardViewMode();
+    }
+    setTimeout(() => {
+        window.print();
+    }, 250);
+};
+
+window.quickUpdatePatientField = async function(id, field, value) {
+    if (!supabaseClient) return;
+
+    // Fetch existing patient metadata
+    const { data: p, error: fetchErr } = await supabaseClient
+        .from('pacientes')
+        .select('cama, metadata, peso_kg, talla_cm, nombre, diagnostico')
+        .eq('id', id)
+        .single();
+
+    if (fetchErr || !p) return;
+
+    let updateObj = {};
+    let updatedMetadata = { ...(p.metadata || {}) };
+
+    if (field === 'nombre') {
+        updateObj.nombre = value;
+    } else if (field === 'diagnostico') {
+        updateObj.diagnostico = value;
+    } else if (field === 'peso_kg') {
+        updateObj.peso_kg = value ? parseFloat(value) : null;
+    } else if (field === 'talla_cm') {
+        updateObj.talla_cm = value ? parseFloat(value) : null;
+    } else if (field === 'num_ficha') {
+        updatedMetadata.num_ficha = value;
+        updateObj.metadata = updatedMetadata;
+    } else if (field === 'patologia_dm') {
+        updatedMetadata.patologia_dm = !!value;
+        updateObj.metadata = updatedMetadata;
+    } else if (field === 'patologia_hta') {
+        updatedMetadata.patologia_hta = !!value;
+        updateObj.metadata = updatedMetadata;
+    } else if (field === 'patologia_erc') {
+        updatedMetadata.patologia_erc = !!value;
+        updateObj.metadata = updatedMetadata;
+    } else if (field === 'regimen') {
+        updatedMetadata.regimen = value;
+        updateObj.metadata = updatedMetadata;
+    } else if (field === 'obs_generales') {
+        updatedMetadata.obs_generales = value;
+        updateObj.metadata = updatedMetadata;
+    } else if (field === 'riesgo_lpp') {
+        updatedMetadata.riesgo_lpp = value;
+        updateObj.metadata = updatedMetadata;
+    }
+
+    const { error: updErr } = await supabaseClient
+        .from('pacientes')
+        .update(updateObj)
+        .eq('id', id);
+
+    if (!updErr) {
+        showToast(`✅ Cama ${p.cama || 'Cupo'}: Datos actualizados.`);
+        await window.renderWardBedsGrid();
+    } else {
+        alert("Error al actualizar dato: " + updErr.message);
+    }
 };
 
 function getDefaultBeds(floor, serviceId) {
@@ -9520,14 +9596,16 @@ window.renderWardBedsGrid = async function() {
                         const htaCheck = patient.metadata?.patologia_hta ? 'X' : '';
                         const ercCheck = patient.metadata?.patologia_erc ? 'X' : '';
 
-                        // Dietoterapia text
-                        let dietText = 'Normal';
+                        // Dietoterapia text (Régimen FIRST)
+                        const regimenVal = patient.metadata?.regimen || '';
+                        let dietDetail = '';
                         const formula = patient.metadata?.simulator?.formula || '';
                         if (formula) {
-                            dietText = formula;
+                            dietDetail = formula;
                         } else if (patient.metadata?.simulator?.oral?.kcal) {
-                            dietText = `Oral (${patient.metadata.simulator.oral.kcal} kcal)`;
+                            dietDetail = `Oral (${patient.metadata.simulator.oral.kcal} kcal)`;
                         }
+                        let dietText = regimenVal ? (dietDetail ? `${regimenVal} | ${dietDetail}` : regimenVal) : (dietDetail || 'Normal');
 
                         // NRS score
                         const nrsVal = patient.metadata?.nrs_score || patient.tmt || '--';
@@ -9549,27 +9627,35 @@ window.renderWardBedsGrid = async function() {
                             const month = String(d.getMonth() + 1).padStart(2, '0');
                             dateStr = `${day}-${month}`;
                         }
-                        const nameColHtml = `<div onclick="loadPatient('${patient.id}')" style="cursor:pointer; font-weight:700; color:#312e81;">${patient.nombre}</div>` +
-                                            (dateStr ? `<span style="font-size:0.65rem; color:#7c3aed; font-weight:bold;">EVA ${dateStr}</span>` : '');
 
                         tableHTML += `
                             <tr style="${rowStyle} height: 42px;">
                                 <td style="color: #475569; padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
-                                <td style="padding: 6px 10px; font-weight: 500; font-family: monospace;">${patient.metadata?.num_ficha || '--'}</td>
-                                <td style="padding: 6px 10px; line-height: 1.3;">${nameColHtml}</td>
+                                <td style="padding: 2px 4px;"><input type="text" value="${patient.metadata?.num_ficha || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-family:monospace; font-size:0.75rem; color:#334155; font-weight:600; outline:none; text-align:center;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Ficha/RUT (Editar)"></td>
+                                <td style="padding: 2px 6px; line-height: 1.2;">
+                                    <input type="text" value="${patient.nombre || ''}" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#312e81; font-weight:700; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'nombre', this.value)" title="Nombre (Editar)">
+                                    ${dateStr ? `<span style="font-size:0.6rem; color:#7c3aed; font-weight:bold; display:block; cursor:pointer;" onclick="loadPatient('${patient.id}')">EVA ${dateStr}</span>` : ''}
+                                </td>
                                 <td style="padding: 6px 10px; text-align: center;">${ageStr}</td>
-                                <td style="padding: 6px 10px; font-size:0.7rem; color:#475569; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${patient.diagnostico || ''}">${patient.diagnostico || '--'}</td>
-                                <td style="padding: 6px 10px; text-align: center; background:#f8fafc; font-weight:800; color:#dc2626; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">${dmCheck}</td>
-                                <td style="padding: 6px 10px; text-align: center; background:#f8fafc; font-weight:800; color:#dc2626; border-right:1px solid #e2e8f0;">${htaCheck}</td>
-                                <td style="padding: 6px 10px; text-align: center; background:#f8fafc; font-weight:800; color:#dc2626; border-right:1px solid #e2e8f0;">${ercCheck}</td>
-                                <td style="padding: 6px 10px; font-weight:600; color:#0f766e;">${dietText}</td>
-                                <td style="padding: 6px 10px; font-size: 0.65rem; color: #64748b; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${obsGeneralesText}">${obsGeneralesText}</td>
-                                <td style="padding: 6px 10px; text-align: center; font-weight:700;">${patient.peso_kg || '--'} kg</td>
-                                <td style="padding: 6px 10px; text-align: center;">${tallaStr}</td>
+                                <td style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
+                                <td style="padding: 2px; text-align: center; background:#f8fafc; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
+                                <td style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
+                                <td style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
+                                <td style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
+                                <td style="padding: 2px 4px;"><input type="text" value="${customObs || ''}" placeholder="Observaciones..." style="width:100%; border:none; background:transparent; font-size:0.65rem; color:#64748b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" title="Observaciones (Editar)"></td>
+                                <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
+                                <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || (patient.estatura_m ? Math.round(patient.estatura_m * 100) : '')}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla cm (Editar)"></td>
                                 <td style="padding: 6px 10px; text-align: center; background:#dcfce7; font-weight:700; color:#166534;">${imcStr}</td>
                                 <td style="padding: 6px 10px; text-align: center; background:#dcfce7; font-weight:700; color:#166534;">${abbrevStatus}</td>
                                 <td style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
-                                <td style="padding: 6px 10px; text-align: center; font-weight:700; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}">${patient.metadata?.riesgo_lpp || '--'}</td>
+                                <td style="padding: 2px; text-align: center;">
+                                    <select onchange="window.quickUpdatePatientField('${patient.id}', 'riesgo_lpp', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}; outline:none; cursor:pointer;" title="Riesgo LPP (Editar)">
+                                        <option value="Sin evaluar" ${!patient.metadata?.riesgo_lpp || patient.metadata?.riesgo_lpp === 'Sin evaluar' ? 'selected' : ''}>--</option>
+                                        <option value="Bajo" ${patient.metadata?.riesgo_lpp === 'Bajo' ? 'selected' : ''}>Bajo</option>
+                                        <option value="Medio" ${patient.metadata?.riesgo_lpp === 'Medio' ? 'selected' : ''}>Medio</option>
+                                        <option value="Alto" ${patient.metadata?.riesgo_lpp === 'Alto' ? 'selected' : ''}>Alto</option>
+                                    </select>
+                                </td>
                                 <td style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
                                 <td style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
                                 <td style="padding: 6px 10px; text-align: center;">${fIngr}</td>
@@ -9667,13 +9753,16 @@ window.renderWardBedsGrid = async function() {
                     const htaCheck = patient.metadata?.patologia_hta ? 'X' : '';
                     const ercCheck = patient.metadata?.patologia_erc ? 'X' : '';
 
-                    let dietText = 'Normal';
+                    // Dietoterapia text (Régimen FIRST)
+                    const regimenVal = patient.metadata?.regimen || '';
+                    let dietDetail = '';
                     const formula = patient.metadata?.simulator?.formula || '';
                     if (formula) {
-                        dietText = formula;
+                        dietDetail = formula;
                     } else if (patient.metadata?.simulator?.oral?.kcal) {
-                        dietText = `Oral (${patient.metadata.simulator.oral.kcal} kcal)`;
+                        dietDetail = `Oral (${patient.metadata.simulator.oral.kcal} kcal)`;
                     }
+                    let dietText = regimenVal ? (dietDetail ? `${regimenVal} | ${dietDetail}` : regimenVal) : (dietDetail || 'Normal');
 
                     const nrsVal = patient.metadata?.nrs_score || patient.tmt || '--';
                     const evalType = patient.metadata?.patient_type === 'pediatric' ? 'Peds' : (patient.metadata?.patient_type === 'neonate' ? 'Neo' : 'VGO');
@@ -9685,27 +9774,35 @@ window.renderWardBedsGrid = async function() {
                         const d = new Date(patient.created_at);
                         dateStr = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                     }
-                    const nameColHtml = `<div onclick="loadPatient('${patient.id}')" style="cursor:pointer; font-weight:700; color:#312e81;">${patient.nombre}</div>` +
-                                        (dateStr ? `<span style="font-size:0.65rem; color:#7c3aed; font-weight:bold;">EVA ${dateStr}</span>` : '');
 
                     tableHTML += `
                         <tr style="${rowStyle} height: 42px;">
                             <td style="color: #db2777; padding: 0;"><div class="resizable-tr">📋 Sin Cama</div></td>
-                            <td style="padding: 6px 10px; font-family: monospace;">${patient.metadata?.num_ficha || '--'}</td>
-                            <td style="padding: 6px 10px; line-height: 1.3;">${nameColHtml}</td>
+                            <td style="padding: 2px 4px;"><input type="text" value="${patient.metadata?.num_ficha || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-family:monospace; font-size:0.75rem; color:#334155; font-weight:600; outline:none; text-align:center;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Ficha/RUT (Editar)"></td>
+                            <td style="padding: 2px 6px; line-height: 1.2;">
+                                <input type="text" value="${patient.nombre || ''}" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#312e81; font-weight:700; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'nombre', this.value)" title="Nombre (Editar)">
+                                ${dateStr ? `<span style="font-size:0.6rem; color:#7c3aed; font-weight:bold; display:block; cursor:pointer;" onclick="loadPatient('${patient.id}')">EVA ${dateStr}</span>` : ''}
+                            </td>
                             <td style="padding: 6px 10px; text-align: center;">${ageStr}</td>
-                            <td style="padding: 6px 10px; font-size:0.7rem; color:#475569; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${patient.diagnostico || ''}">${patient.diagnostico || '--'}</td>
-                            <td style="padding: 6px 10px; text-align: center; background:#fdf2f8; font-weight:800; color:#dc2626; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">${dmCheck}</td>
-                            <td style="padding: 6px 10px; text-align: center; background:#fdf2f8; font-weight:800; color:#dc2626; border-right:1px solid #e2e8f0;">${htaCheck}</td>
-                            <td style="padding: 6px 10px; text-align: center; background:#fdf2f8; font-weight:800; color:#dc2626; border-right:1px solid #e2e8f0;">${ercCheck}</td>
-                            <td style="padding: 6px 10px; font-weight:600; color:#0f766e;">${dietText}</td>
-                            <td style="padding: 6px 10px; font-size: 0.65rem; color: #64748b; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${obsGeneralesText}">${obsGeneralesText}</td>
-                            <td style="padding: 6px 10px; text-align: center; font-weight:700;">${patient.peso_kg || '--'} kg</td>
-                            <td style="padding: 6px 10px; text-align: center;">${tallaStr}</td>
+                            <td style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
+                            <td style="padding: 2px; text-align: center; background:#fdf2f8; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
+                            <td style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
+                            <td style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
+                            <td style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
+                            <td style="padding: 2px 4px;"><input type="text" value="${customObs || ''}" placeholder="Observaciones..." style="width:100%; border:none; background:transparent; font-size:0.65rem; color:#64748b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" title="Observaciones (Editar)"></td>
+                            <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
+                            <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || (patient.estatura_m ? Math.round(patient.estatura_m * 100) : '')}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla cm (Editar)"></td>
                             <td style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${imcStr}</td>
                             <td style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${abbrevStatus}</td>
                             <td style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
-                            <td style="padding: 6px 10px; text-align: center; font-weight:700; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}">${patient.metadata?.riesgo_lpp || '--'}</td>
+                            <td style="padding: 2px; text-align: center;">
+                                <select onchange="window.quickUpdatePatientField('${patient.id}', 'riesgo_lpp', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}; outline:none; cursor:pointer;" title="Riesgo LPP (Editar)">
+                                    <option value="Sin evaluar" ${!patient.metadata?.riesgo_lpp || patient.metadata?.riesgo_lpp === 'Sin evaluar' ? 'selected' : ''}>--</option>
+                                    <option value="Bajo" ${patient.metadata?.riesgo_lpp === 'Bajo' ? 'selected' : ''}>Bajo</option>
+                                    <option value="Medio" ${patient.metadata?.riesgo_lpp === 'Medio' ? 'selected' : ''}>Medio</option>
+                                    <option value="Alto" ${patient.metadata?.riesgo_lpp === 'Alto' ? 'selected' : ''}>Alto</option>
+                                </select>
+                            </td>
                             <td style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
                             <td style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
                             <td style="padding: 6px 10px; text-align: center;">${fIngr}</td>
