@@ -9998,11 +9998,17 @@ window.dischargePatientGrid = async function(id) {
     }
 };
 
+let currentTransferringPatientId = null;
+let currentTransferringPatientType = 'adult';
+let currentAvailableServices = [];
+
 window.transferPatientGrid = async function(id) {
     if (!supabaseClient) {
         alert("Supabase no está configurado.");
         return;
     }
+
+    currentTransferringPatientId = id;
 
     // 1. Fetch patient details to get patient type & name
     const { data: p, error: fetchErr } = await supabaseClient
@@ -10017,13 +10023,14 @@ window.transferPatientGrid = async function(id) {
     }
 
     const patientType = (p.metadata && p.metadata.patient_type) || 'adult';
+    currentTransferringPatientType = patientType;
 
     // 2. Collect all matching services from SERVICES_BY_FLOOR based on type
-    const availableServices = [];
+    currentAvailableServices = [];
     for (const floor in SERVICES_BY_FLOOR) {
         SERVICES_BY_FLOOR[floor].forEach(srv => {
             if (srv.type === patientType) {
-                availableServices.push({
+                currentAvailableServices.push({
                     floor: parseInt(floor),
                     id: srv.id,
                     name: srv.name
@@ -10032,32 +10039,56 @@ window.transferPatientGrid = async function(id) {
         });
     }
 
-    if (availableServices.length === 0) {
+    if (currentAvailableServices.length === 0) {
         alert(`No hay servicios configurados para el tipo de paciente: ${patientType}`);
         return;
     }
 
-    // 3. Prompt user to select target service
-    let promptMsg = `Traslado de "${p.nombre}" (${patientType === 'adult' ? 'Adulto' : (patientType === 'neonate' ? 'Neonato' : 'Pediátrico')})\n\n`;
-    promptMsg += `Seleccione el SERVICIO DE DESTINO ingresando su número correspondiente:\n\n`;
-    availableServices.forEach((srv, idx) => {
-        promptMsg += `[${idx + 1}] Piso ${srv.floor} - ${srv.name}\n`;
-    });
-    promptMsg += `\nIngrese el número de opción:`;
+    // 3. Setup Modal HTML content
+    const patientNameSpan = document.getElementById('transferPatientName');
+    if (patientNameSpan) patientNameSpan.innerText = p.nombre;
 
-    const optionStr = prompt(promptMsg, "");
-    if (optionStr === null) return; // Cancel
-    const optionIdx = parseInt(optionStr) - 1;
-    if (isNaN(optionIdx) || optionIdx < 0 || optionIdx >= availableServices.length) {
-        alert("Opción ingresada no es válida.");
-        return;
+    const srvSelect = document.getElementById('transferPatientServiceSelect');
+    if (srvSelect) {
+        srvSelect.innerHTML = currentAvailableServices.map((srv, idx) => 
+            `<option value="${idx}">Piso ${srv.floor} - ${srv.name}</option>`
+        ).join('');
     }
 
-    const selectedSrv = availableServices[optionIdx];
+    // 4. Update the target beds list for the default selected service
+    await window.updateTransferPatientBedsDropdown();
 
-    // 4. Fetch target beds list
+    // 5. Show modal
+    const modal = document.getElementById('transferPatientModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+};
+
+window.closeTransferPatientModal = function() {
+    const modal = document.getElementById('transferPatientModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    currentTransferringPatientId = null;
+};
+
+window.updateTransferPatientBedsDropdown = async function() {
+    const srvSelect = document.getElementById('transferPatientServiceSelect');
+    const bedSelect = document.getElementById('transferPatientBedSelect');
+    const conflictAlert = document.getElementById('transferPatientConflictAlert');
+    if (!srvSelect || !bedSelect) return;
+
+    if (conflictAlert) conflictAlert.style.display = 'none';
+
+    const selectedIdx = parseInt(srvSelect.value);
+    const selectedSrv = currentAvailableServices[selectedIdx];
+    if (!selectedSrv) return;
+
     const targetLocationKey = `HRA-${selectedSrv.floor}-${selectedSrv.id}`;
     let targetBeds = getDefaultBeds(selectedSrv.floor, selectedSrv.id);
+    
+    // Fetch custom bed config
     const { data: configRecord } = await supabaseClient
         .from('config_camas')
         .select('*')
@@ -10068,36 +10099,37 @@ window.transferPatientGrid = async function(id) {
         targetBeds = configRecord.beds;
     }
 
-    // 5. Prompt for target bed number
-    const bedPromptMsg = `Servicio destino: ${selectedSrv.name}\n` +
-                        `Camas configuradas en este servicio:\n${targetBeds.join(', ')}\n\n` +
-                        `Ingrese el número de cama (deje vacío para enviar a "Cupos del Servicio"):`;
+    // Populate beds select with default option for "Cupos del Servicio (Sin Cama)"
+    let optionsHtml = `<option value="">Cupos del Servicio (Sin Cama)</option>`;
+    targetBeds.forEach(bedName => {
+        optionsHtml += `<option value="${bedName}">Cama ${bedName}</option>`;
+    });
+    bedSelect.innerHTML = optionsHtml;
 
-    const newBed = prompt(bedPromptMsg, "");
-    if (newBed === null) return; // Cancel
-    let targetBed = newBed.trim();
+    // Helper function for checking occupied beds
+    const checkConflict = async () => {
+        const bedVal = bedSelect.value;
+        if (!bedVal) {
+            if (conflictAlert) conflictAlert.style.display = 'none';
+            return;
+        }
 
-    // 6. Check for occupied bed conflict in the target service
-    if (targetBed) {
-        // Find if anyone active has that bed name
+        // Check if bed is occupied in the target service
         const { data: occupiedTarget } = await supabaseClient
             .from('pacientes')
             .select('nombre, metadata')
-            .eq('cama', targetBed)
+            .eq('cama', bedVal)
             .neq('estado_sala', 'de_alta')
             .neq('estado_sala', 'eliminado')
             .eq('user_id', AppState.user.id);
 
         let isConflicting = false;
-        let conflictingName = '';
-
         if (occupiedTarget && occupiedTarget.length > 0) {
             for (const occP of occupiedTarget) {
                 if (occP.metadata && occP.metadata.location) {
                     if (occP.metadata.location.floor === selectedSrv.floor && 
                         occP.metadata.location.serviceId === selectedSrv.id) {
                         isConflicting = true;
-                        conflictingName = occP.nombre;
                         break;
                     }
                 }
@@ -10105,25 +10137,58 @@ window.transferPatientGrid = async function(id) {
         }
 
         if (isConflicting) {
-            const confirmConflict = confirm(`⚠️ Cama Ocupada: La cama "${targetBed}" en "${selectedSrv.name}" ya está ocupada por "${conflictingName}".\n\n¿Deseas trasladar al paciente a la sección de "Cupos del Servicio" (sin cama asignada) o cancelar el traslado?`);
-            if (!confirmConflict) return; // Cancel operation
-            targetBed = ''; // Clear to send to Cupos
+            if (conflictAlert) conflictAlert.style.display = 'block';
+        } else {
+            if (conflictAlert) conflictAlert.style.display = 'none';
         }
+    };
+
+    // Run initial check and bind to change event
+    await checkConflict();
+    bedSelect.onchange = checkConflict;
+};
+
+window.confirmTransferPatientAction = async function() {
+    if (!currentTransferringPatientId) return;
+
+    const srvSelect = document.getElementById('transferPatientServiceSelect');
+    const bedSelect = document.getElementById('transferPatientBedSelect');
+    if (!srvSelect || !bedSelect) return;
+
+    const selectedIdx = parseInt(srvSelect.value);
+    const selectedSrv = currentAvailableServices[selectedIdx];
+    if (!selectedSrv) return;
+
+    let targetBed = bedSelect.value;
+
+    // If conflict alert is visible, warn the user
+    const conflictAlert = document.getElementById('transferPatientConflictAlert');
+    if (conflictAlert && conflictAlert.style.display === 'block') {
+        const proceed = confirm("La cama seleccionada está ocupada. ¿Deseas trasladar al paciente a 'Cupos del Servicio (Sin Cama)'?");
+        if (!proceed) return;
+        targetBed = ''; // Clear to send to Cupos
     }
 
-    // 7. Update location metadata and bed in database
     const newLocation = {
         floor: selectedSrv.floor,
         serviceId: selectedSrv.id,
         name: selectedSrv.name,
-        type: patientType
+        type: currentTransferringPatientType
     };
 
+    // 1. Fetch current patient metadata to extend it
+    const { data: p } = await supabaseClient
+        .from('pacientes')
+        .select('metadata')
+        .eq('id', currentTransferringPatientId)
+        .single();
+
     const updatedMetadata = {
-        ...(p.metadata || {}),
+        ...(p?.metadata || {}),
         location: newLocation
     };
 
+    // 2. Perform DB update
     const { error } = await supabaseClient
         .from('pacientes')
         .update({ 
@@ -10131,10 +10196,11 @@ window.transferPatientGrid = async function(id) {
             estado_sala: 'activo',
             metadata: updatedMetadata
         })
-        .eq('id', id);
+        .eq('id', currentTransferringPatientId);
 
     if (!error) {
         showToast(`✅ Paciente trasladado a ${selectedSrv.name} (Cama: ${targetBed || 'Cupos'})`);
+        window.closeTransferPatientModal();
         await window.renderWardBedsGrid();
     } else {
         alert("Error al realizar el traslado: " + error.message);
