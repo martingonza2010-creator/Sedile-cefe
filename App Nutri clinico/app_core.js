@@ -8672,7 +8672,7 @@ window.handleCensusUpload = async function(event) {
         return;
     }
 
-    showToast("🔍 Nutria OCR leyendo foto de Dietools en tu navegador... Por favor espera unos segundos.");
+    showToast("🔍 Nutria OCR procesando captura de Dietools en tu navegador...");
 
     try {
         const activeLoc = JSON.parse(activeLocStr);
@@ -8695,7 +8695,7 @@ window.handleCensusUpload = async function(event) {
             return;
         }
 
-        // Dynamically load Tesseract.js if not already present
+        // Load Tesseract.js dynamically if needed
         if (typeof Tesseract === 'undefined') {
             showToast("⌛ Cargando motor OCR en tu navegador...");
             await new Promise((resolve, reject) => {
@@ -8707,10 +8707,22 @@ window.handleCensusUpload = async function(event) {
             });
         }
 
-        const { data: { text } } = await Tesseract.recognize(file, 'spa');
-        console.log("📄 Texto extraído por OCR local en navegador:", text);
+        // Image preprocessing for maximum OCR accuracy on tabular printed sheets
+        const preprocessedImg = await preprocessImageForOCR(file);
 
-        const extracted = parseDietoolsOCRText(text, bedsList);
+        const { data: { text } } = await Tesseract.recognize(preprocessedImg, 'spa');
+        console.log("📄 Texto OCR extraído:", text);
+
+        let extracted = parseDietoolsOCRText(text, bedsList);
+        
+        // Fallback: If OCR missed text or returned no patients, try raw image recognition
+        const hasExtractedPatients = extracted.some(p => p.nombre || p.num_ficha);
+        if (!hasExtractedPatients) {
+            console.warn("Retrying OCR with original image...");
+            const { data: { text: rawText } } = await Tesseract.recognize(file, 'spa');
+            extracted = parseDietoolsOCRText(rawText, bedsList);
+        }
+
         await showCensusReviewModal(extracted, bedsList, activeLoc);
 
     } catch (err) {
@@ -8721,68 +8733,117 @@ window.handleCensusUpload = async function(event) {
     }
 };
 
+async function preprocessImageForOCR(file) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            // Grayscale & Contrast thresholding
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const v = avg < 160 ? 0 : 255;
+                data[i] = v;
+                data[i + 1] = v;
+                data[i + 2] = v;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(file);
+        const reader = new FileReader();
+        reader.onload = (e) => img.src = e.target.result;
+        reader.readAsDataURL(file);
+    });
+}
+
 function parseDietoolsOCRText(ocrText, bedsList) {
+    console.log("--- DIETOOLS PARSER INPUT ---", ocrText);
     const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    const results = [];
+    const extractedPatients = [];
 
-    bedsList.forEach(bedName => {
-        const cleanBedName = bedName.replace(/[^a-zA-Z0-9]/gi, '').toUpperCase();
-        
-        const matchedIndex = lines.findIndex(l => {
-            const cleanLine = l.replace(/[^a-zA-Z0-9]/gi, '').toUpperCase();
-            return cleanLine.includes(cleanBedName) || (cleanBedName.length > 3 && cleanLine.includes(cleanBedName.slice(-4)));
-        });
+    // Dietools pattern: Bed - Ficha (e.g., 749CX_1 - 78936)
+    const bedFichaRegex = /([0-9]{3,4}\s*[A-Z]{0,3}\s*[_\-–\s]?\s*[0-9]{1,2})\s*[\-–—:\s]\s*([0-9]{4,8})/gi;
+    const matches = [];
 
-        if (matchedIndex !== -1) {
-            const block = lines.slice(matchedIndex, matchedIndex + 4).join(' ');
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const m = /([0-9]{3,4}\s*[A-Z]{0,3}\s*[_\-–\s]?\s*[0-9]{1,2})\s*[\-–—:\s]\s*([0-9]{4,8})/i.exec(line);
+        if (m) {
+            matches.push({ lineIndex: i, bedRaw: m[1], ficha: m[2] });
+        }
+    }
 
-            const fichaMatch = block.match(/\b\d{5,8}\b/);
-            const ficha = fichaMatch ? fichaMatch[0] : '';
+    if (matches.length > 0) {
+        matches.forEach((m, idx) => {
+            const startIdx = m.lineIndex;
+            const endIdx = (idx < matches.length - 1) ? matches[idx + 1].lineIndex : Math.min(lines.length, startIdx + 5);
+            const blockText = lines.slice(startIdx, endIdx).join(' ');
 
-            const edadMatch = block.match(/(?:EDAD[:\s]*)?(\d{1,3})\s*(?:AÑOS|AÑOS|A)?/i);
+            let rawBed = m.bedRaw.replace(/\s+/g, '').toUpperCase();
+            let matchedBed = bedsList.find(b => b.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === rawBed.replace(/[^a-zA-Z0-9]/g, '')) || rawBed;
+
+            const ficha = m.ficha;
+
+            const edadMatch = blockText.match(/EDAD[:\s]*([0-9]{1,3})/i) || blockText.match(/\b([0-9]{1,3})\s*AÑOS\b/i);
             const edad = edadMatch ? parseInt(edadMatch[1]) : 0;
 
-            const nameMatch = block.match(/([A-ZÑÁÉÍÓÚ]{3,}(?:\s+[A-ZÑÁÉÍÓÚ]{3,}){1,4})/);
+            const nameMatch = blockText.match(/([A-ZÑÁÉÍÓÚ]{3,}(?:\s+[A-ZÑÁÉÍÓÚ]{2,}){1,4})/);
             let name = nameMatch ? nameMatch[1].trim() : '';
-            name = name.replace(/DIETA|DIABETICO|HIPOGLUCIDICA|HPGL|ALERGIAS|EDAD|CAMA/gi, '').trim();
+            name = name.replace(/DIETA|DIABETICO|HIPOGLUCIDICA|HPGL|ALERGIAS|EDAD|CAMA|OBSERVACIONES|INGESTA/gi, '').trim();
 
             let regimen = '';
-            if (/HPGL|HIPOGLUCIDICA/i.test(block)) regimen = 'Dieta Hipoglucídica';
-            else if (/HIPERPROTEICA/i.test(block)) regimen = 'Dieta Hiperproteica';
-            else if (/HIPOSODICA/i.test(block)) regimen = 'Dieta Hiposódica';
-            else if (/LIVIANA/i.test(block)) regimen = 'Dieta Liviana';
-            else if (/BLANDA/i.test(block)) regimen = 'Dieta Blanda';
-            else if (/COMPLETA|NORMAL/i.test(block)) regimen = 'Dieta Completa';
+            if (/HPGL|HIPOGLUCIDICA/i.test(blockText)) regimen = 'Dieta Hipoglucídica';
+            else if (/HPPRT|HIPERPROTEICA/i.test(blockText)) regimen = 'Dieta Hiperproteica';
+            else if (/PAPLI|PAPILLA\s*LIVIANO/i.test(blockText)) regimen = 'Papilla Liviana';
+            else if (/HIPOSODICA/i.test(blockText)) regimen = 'Dieta Hiposódica';
+            else if (/LIVIANA/i.test(blockText)) regimen = 'Dieta Liviana';
+            else if (/BLANDA/i.test(blockText)) regimen = 'Dieta Blanda';
+            else if (/COMPLETA|NORMAL/i.test(blockText)) regimen = 'Dieta Completa';
 
-            const isDM = /DIABÉTICO|DIABETICO|HPGL|HIPOGLUCIDICA/i.test(block);
+            const isDM = /DIABÉTICO|DIABETICO|HPGL|HIPOGLUCIDICA/i.test(blockText);
 
-            let obs = '';
-            const obsMatch = block.match(/(?:ALERGIAS|OBS(?:ERVACIONES)?[:\s]*)([^.]+)/i);
-            if (obsMatch) obs = obsMatch[1].trim();
+            let obsArr = [];
+            const algMatch = blockText.match(/ALERGIAS[:\s]*([^.]+?)(?:OBS|DIETA|EDAD|$)/i);
+            if (algMatch) obsArr.push('ALERGIAS: ' + algMatch[1].trim());
 
-            results.push({
-                cama: bedName,
+            const obsMatch = blockText.match(/OBSERVACIONES\s*POR\s*INGESTA[:\s]*([^.]+?)(?:REV|EVENTO|$)/i);
+            if (obsMatch) obsArr.push(obsMatch[1].trim());
+
+            extractedPatients.push({
+                cama: matchedBed,
                 nombre: name,
                 num_ficha: ficha,
                 edad: edad,
                 regimen: regimen,
                 patologia_dm: isDM,
-                observaciones: obs
+                observaciones: obsArr.join(' | ')
             });
-        } else {
-            results.push({
-                cama: bedName,
-                nombre: '',
-                num_ficha: '',
-                edad: 0,
-                regimen: '',
-                patologia_dm: false,
-                observaciones: ''
-            });
-        }
+        });
+    }
+
+    const finalResult = bedsList.map(bName => {
+        const cleanB = bName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        const found = extractedPatients.find(p => p.cama.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === cleanB || p.cama === bName);
+        if (found) return found;
+        return {
+            cama: bName,
+            nombre: '',
+            num_ficha: '',
+            edad: 0,
+            regimen: '',
+            patologia_dm: false,
+            observaciones: ''
+        };
     });
 
-    return results;
+    return finalResult;
 }
 
 window.pendingCensusChanges = [];
