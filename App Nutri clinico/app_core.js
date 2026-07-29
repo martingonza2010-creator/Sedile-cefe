@@ -8747,9 +8747,8 @@ async function callGeminiMultimodalOCR(base64Data, mimeType, bedsList) {
     }
 
     const modelsToTry = [
-        'gemini-2.0-flash-exp',
         'gemini-1.5-flash',
-        'gemini-1.5-flash-latest'
+        'gemini-2.0-flash-exp'
     ];
 
     const prompt = `Analiza esta imagen o documento que contiene un censo clínico o reporte de dietas hospitalario (formato Dietools u otro).
@@ -8803,16 +8802,17 @@ Devuelve SOLAMENTE el JSON plano sin código markdown ni comentarios.`;
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                const msg = errorData.error?.message || res.statusText;
+                const msg = errorData.error?.message || res.statusText || 'Error de API';
                 
-                if (msg.toLowerCase().includes("api key") || msg.includes("API_KEY_INVALID") || (res.status === 400 && msg.includes("API key"))) {
-                    console.warn("Clave de API inválida detectada. Solicitando nueva clave...");
+                // If API Key is missing, invalid or expired, prompt user immediately and break loop
+                if (res.status === 400 || res.status === 403 || res.status === 401 || msg.toLowerCase().includes("api key") || msg.includes("API_KEY_INVALID")) {
+                    console.warn("Error de autenticación/API Key en Gemini:", msg);
                     localStorage.removeItem('user_gemini_api_key');
                     const freshKey = window.setGeminiApiKeyPrompt();
                     if (freshKey) {
                         return await callGeminiMultimodalOCR(base64Data, mimeType, bedsList);
                     } else {
-                        throw new Error("Se requiere una Clave de API de Gemini válida para usar Nutria IA. Obtenla gratis en https://aistudio.google.com/app/apikey");
+                        throw new Error("Se requiere una Clave de API de Gemini válida para usar Nutria IA. Consíguela gratis en https://aistudio.google.com/app/apikey");
                     }
                 }
                 throw new Error(`[${model}] ${msg}`);
