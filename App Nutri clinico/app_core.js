@@ -8751,7 +8751,7 @@ window.saveGeminiApiKeyFromModal = function() {
         return;
     }
     if (!val.startsWith('AIzaSy')) {
-        alert("⚠️ La API Key de Google Gemini debe comenzar con 'AIzaSy...'. Por favor verifica que la copiaste correctamente desde Google AI Studio.");
+        alert("⚠️ El código ingresado (" + val.substring(0, 8) + "...) es un Secreto de Proyecto/OAuth de Google, no la API Key de Gemini.\n\nEn tu pantalla de Google AI Studio, haz clic en el icono de Copiar (📋) al lado derecho de la clave '...CXFA' (o haz clic sobre '...CXFA') para obtener el código real que comienza obligatoriamente con 'AIzaSy...'.");
         return;
     }
     localStorage.setItem('user_gemini_api_key', val);
