@@ -7378,7 +7378,7 @@ document.querySelectorAll('.input-watch').forEach(imp => {
 });
 
 // --- NUTRI IA (🦦 V3.23) ---
-const GEMINI_API_KEY = (typeof window_GEMINI_API_KEY !== 'undefined' && window_GEMINI_API_KEY) ? window_GEMINI_API_KEY : 'AIzaSyCy3M818UQMLrocr75uaUUTE36MeJg97MA';
+const GEMINI_API_KEY = (typeof window_GEMINI_API_KEY !== 'undefined' && window_GEMINI_API_KEY) ? window_GEMINI_API_KEY : '';
 
 function initNutriIA() {
     const btnGenerate = document.getElementById('btnGenerateIA');
@@ -7432,12 +7432,8 @@ async function generateNutriIAAnalysis() {
         }
 
     } catch (err) {
-        console.error("ðŸ”´ Error Nutri IA Detallado:", err);
-        // Show more specific message if it's a known error type
-        let userMsg = "Error al conectar con la Nutri IA. Verifica tu conexión.";
-        if (err.message && err.message.includes("403")) userMsg = "Error 403: Acceso denegado a la IA (API Key inválida).";
-        if (err.message && err.message.includes("429")) userMsg = "Error 429: Se ha superado el límite de uso de la IA.";
-
+        console.error("🔴 Error Nutri IA Detallado:", err);
+        let userMsg = err.message || "Error al conectar con Nutria IA. Ingresa tu clave válida de Gemini.";
         alert(userMsg);
     } finally {
         btn.disabled = false;
@@ -7497,7 +7493,12 @@ Tono profesional y estructurado. Usa HTML (h3, p, ul, li).`;
 }
 
 async function callGeminiAPI(prompt) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    let apiKey = window.getGeminiApiKey();
+    if (!apiKey) {
+        window.openGeminiApiKeyModal();
+        throw new Error("Por favor ingresa tu API Key de Gemini en la pantalla emergente.");
+    }
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -7506,7 +7507,10 @@ async function callGeminiAPI(prompt) {
 
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(`API Error ${res.status}: ${errorData.error?.message || res.statusText}`);
+        const msg = errorData.error?.message || res.statusText || 'Error de API';
+        localStorage.removeItem('user_gemini_api_key');
+        window.openGeminiApiKeyModal();
+        throw new Error(`Error ${res.status}: ${msg}. Se ha abierto la ventana para ingresar tu clave válida de Gemini.`);
     }
 
     const data = await res.json();
@@ -8721,29 +8725,45 @@ window.handleCensusUpload = async function(event) {
 window.getGeminiApiKey = function() {
     const userKey = localStorage.getItem('user_gemini_api_key');
     if (userKey && userKey.trim() !== '') return userKey.trim();
-    if (typeof window_GEMINI_API_KEY !== 'undefined' && window_GEMINI_API_KEY) return window_GEMINI_API_KEY;
     return '';
 };
 
-window.setGeminiApiKeyPrompt = function() {
-    const currentKey = localStorage.getItem('user_gemini_api_key') || '';
-    const newKey = prompt("🔑 Clave de API de Nutria IA (Google Gemini):\n\nIngresa tu API Key de Gemini (es 100% gratuita y la obtienes en https://aistudio.google.com/app/apikey):", currentKey);
-    if (newKey !== null) {
-        localStorage.setItem('user_gemini_api_key', newKey.trim());
-        if (newKey.trim()) {
-            showToast("✅ Clave de Nutria IA guardada.");
-        }
+window.openGeminiApiKeyModal = function() {
+    const modal = document.getElementById('geminiApiKeyModal');
+    const input = document.getElementById('txtGeminiApiKeyInput');
+    if (input) {
+        input.value = localStorage.getItem('user_gemini_api_key') || '';
     }
-    return newKey ? newKey.trim() : '';
+    if (modal) modal.classList.add('active');
+};
+
+window.closeGeminiApiKeyModal = function() {
+    const modal = document.getElementById('geminiApiKeyModal');
+    if (modal) modal.classList.remove('active');
+};
+
+window.saveGeminiApiKeyFromModal = function() {
+    const input = document.getElementById('txtGeminiApiKeyInput');
+    const val = input ? input.value.trim() : '';
+    if (!val) {
+        alert("Por favor ingresa una clave de API de Gemini válida.");
+        return;
+    }
+    localStorage.setItem('user_gemini_api_key', val);
+    showToast("✅ Clave de Nutria IA guardada correctamente.");
+    window.closeGeminiApiKeyModal();
+};
+
+window.setGeminiApiKeyPrompt = function() {
+    window.openGeminiApiKeyModal();
+    return localStorage.getItem('user_gemini_api_key') || '';
 };
 
 async function callGeminiMultimodalOCR(base64Data, mimeType, bedsList) {
     let apiKey = window.getGeminiApiKey();
     if (!apiKey) {
-        apiKey = window.setGeminiApiKeyPrompt();
-        if (!apiKey) {
-            throw new Error("Se requiere una Clave de API de Gemini válida para usar Nutria IA. Consíguela gratis en https://aistudio.google.com/app/apikey");
-        }
+        window.openGeminiApiKeyModal();
+        throw new Error("Ingresa tu API Key de Gemini en la ventana emergente para procesar el censo.");
     }
 
     const model = 'gemini-1.5-flash';
@@ -8797,18 +8817,11 @@ Devuelve SOLAMENTE el JSON plano sin código markdown ni comentarios.`;
         const errorData = await res.json().catch(() => ({}));
         const msg = errorData.error?.message || res.statusText || 'Error de API';
         
-        // If API Key is missing, invalid or expired, prompt user immediately
-        if (res.status === 400 || res.status === 403 || res.status === 401 || msg.toLowerCase().includes("key") || msg.includes("API_KEY_INVALID")) {
-            console.warn("Error de clave de API en Nutria IA:", msg);
-            localStorage.removeItem('user_gemini_api_key');
-            const freshKey = window.setGeminiApiKeyPrompt();
-            if (freshKey) {
-                return await callGeminiMultimodalOCR(base64Data, mimeType, bedsList);
-            } else {
-                throw new Error("Se requiere una Clave de API de Gemini válida para procesar el censo. Obtenla gratis en https://aistudio.google.com/app/apikey");
-            }
-        }
-        throw new Error(`[Gemini IA] ${msg}`);
+        // Remove bad key and open modal immediately
+        console.warn("Error en respuesta de Gemini API:", res.status, msg);
+        localStorage.removeItem('user_gemini_api_key');
+        window.openGeminiApiKeyModal();
+        throw new Error(`La clave de API de Gemini no es válida o expiró (${msg}). Se ha abierto la ventana emergente para ingresar una clave válida de Google AI Studio.`);
     }
 
     const data = await res.json();
