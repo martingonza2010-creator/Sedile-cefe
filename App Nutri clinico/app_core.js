@@ -8747,9 +8747,9 @@ async function callGeminiMultimodalOCR(base64Data, mimeType, bedsList) {
     }
 
     const modelsToTry = [
-        'gemini-2.0-flash',
+        'gemini-2.0-flash-exp',
         'gemini-1.5-flash',
-        'gemini-1.5-pro'
+        'gemini-1.5-flash-latest'
     ];
 
     const prompt = `Analiza esta imagen o documento que contiene un censo clínico o reporte de dietas hospitalario (formato Dietools u otro).
@@ -8804,12 +8804,15 @@ Devuelve SOLAMENTE el JSON plano sin código markdown ni comentarios.`;
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 const msg = errorData.error?.message || res.statusText;
-                if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID") || res.status === 400 || res.status === 403) {
+                
+                if (msg.toLowerCase().includes("api key") || msg.includes("API_KEY_INVALID") || (res.status === 400 && msg.includes("API key"))) {
                     console.warn("Clave de API inválida detectada. Solicitando nueva clave...");
                     localStorage.removeItem('user_gemini_api_key');
                     const freshKey = window.setGeminiApiKeyPrompt();
                     if (freshKey) {
                         return await callGeminiMultimodalOCR(base64Data, mimeType, bedsList);
+                    } else {
+                        throw new Error("Se requiere una Clave de API de Gemini válida para usar Nutria IA. Obtenla gratis en https://aistudio.google.com/app/apikey");
                     }
                 }
                 throw new Error(`[${model}] ${msg}`);
