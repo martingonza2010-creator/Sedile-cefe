@@ -8718,30 +8718,71 @@ window.handleCensusUpload = async function(event) {
     reader.readAsDataURL(file);
 };
 
+window.getGeminiApiKey = function() {
+    const userKey = localStorage.getItem('user_gemini_api_key');
+    if (userKey && userKey.trim() !== '') return userKey.trim();
+    if (typeof window_GEMINI_API_KEY !== 'undefined' && window_GEMINI_API_KEY) return window_GEMINI_API_KEY;
+    return '';
+};
+
+window.setGeminiApiKeyPrompt = function() {
+    const currentKey = localStorage.getItem('user_gemini_api_key') || '';
+    const newKey = prompt("🔑 Clave de API de Nutria IA (Google Gemini):\n\nIngresa tu API Key de Gemini (es 100% gratuita y la obtienes en https://aistudio.google.com/app/apikey):", currentKey);
+    if (newKey !== null) {
+        localStorage.setItem('user_gemini_api_key', newKey.trim());
+        if (newKey.trim()) {
+            showToast("✅ Clave de Nutria IA guardada.");
+        }
+    }
+    return newKey ? newKey.trim() : '';
+};
+
 async function callGeminiMultimodalOCR(base64Data, mimeType, bedsList) {
+    let apiKey = window.getGeminiApiKey();
+    if (!apiKey) {
+        apiKey = window.setGeminiApiKeyPrompt();
+        if (!apiKey) {
+            throw new Error("Se requiere una Clave de API de Gemini para procesar la hoja de censo.");
+        }
+    }
+
     const modelsToTry = [
-        'gemini-1.5-flash',
         'gemini-2.0-flash',
+        'gemini-1.5-flash',
         'gemini-1.5-pro'
     ];
 
-    const prompt = `Analiza esta imagen o documento que contiene el censo de pacientes y camas de una sala de hospital.
-Las camas válidas registradas en este servicio son: ${bedsList.join(', ')}.
-Tu tarea es extraer los nombres de los pacientes que ocupan cada una de estas camas. Mapea la información de la imagen a las camas de esta lista.
-Devuelve el resultado únicamente en formato JSON (un arreglo de objetos), donde cada objeto tenga las propiedades "cama" y "nombre".
-Si una cama de la lista está vacía, no tiene paciente, o está libre, el valor de "nombre" debe ser "".
-No inventes nombres. Si el nombre no es legible, usa "".
-Ejemplo de formato de salida:
+    const prompt = `Analiza esta imagen o documento que contiene un censo clínico o reporte de dietas hospitalario (formato Dietools u otro).
+Las camas configuradas en este servicio son: ${bedsList.join(', ')}.
+
+Tu tarea es extraer los datos de cada paciente mapeándolos a su cama correspondiente.
+Para cada cama detectada en la imagen (por ejemplo 749CX_1, 749CX_2, o números de cama), extrae:
+- "cama": Nombre de la cama que coincida exactamente o se aproxime a la lista de camas (${bedsList.join(', ')}).
+- "nombre": Nombre completo del paciente en mayúsculas (ej: "AHUMADA PINTO, PAOLA JANET"). Si la cama está vacía o sin paciente, usa "".
+- "num_ficha": Número de ficha o HC (ej: "78936", "865663").
+- "edad": Edad del paciente en números si figura (ej: "56", "68").
+- "regimen": Descripción corta de la dieta o régimen (ej: "Dieta Hipoglucídica", "Dieta Hiperproteica").
+- "patologia_dm": true si especifica "(DIABÉTICO)" o "HIPOGLUCIDICA", false si no.
+- "observaciones": Alergias u observaciones por ingesta (ej: "ALERGIAS: ARROZ. NO ENVIAR VACUNO").
+
+Devuelve el resultado únicamente como un arreglo JSON de objetos:
 [
-  {"cama": "${bedsList[0] || '101'}", "nombre": "JUAN PEREZ SOTO"},
-  {"cama": "${bedsList[1] || '102'}", "nombre": ""}
+  {
+    "cama": "${bedsList[0] || '101'}",
+    "nombre": "AHUMADA PINTO, PAOLA JANET",
+    "num_ficha": "78936",
+    "edad": "56",
+    "regimen": "Dieta Hipoglucídica",
+    "patologia_dm": true,
+    "observaciones": "NO ENVIAR VACUNO NI POLLO"
+  }
 ]
-Devuelve SOLAMENTE el JSON plano en texto. No incluyas bloques de código markdown (\`\`\`json), ni explicaciones adicionales.`;
+Devuelve SOLAMENTE el JSON plano sin código markdown ni comentarios.`;
 
     let lastError = null;
     for (const model of modelsToTry) {
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -8762,7 +8803,16 @@ Devuelve SOLAMENTE el JSON plano en texto. No incluyas bloques de código markdo
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                throw new Error(`[${model}] ${errorData.error?.message || res.statusText}`);
+                const msg = errorData.error?.message || res.statusText;
+                if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID") || res.status === 400 || res.status === 403) {
+                    console.warn("Clave de API inválida detectada. Solicitando nueva clave...");
+                    localStorage.removeItem('user_gemini_api_key');
+                    const freshKey = window.setGeminiApiKeyPrompt();
+                    if (freshKey) {
+                        return await callGeminiMultimodalOCR(base64Data, mimeType, bedsList);
+                    }
+                }
+                throw new Error(`[${model}] ${msg}`);
             }
 
             const data = await res.json();
@@ -8818,7 +8868,6 @@ async function showCensusReviewModal(extracted, bedsList, activeLoc) {
         const currentName = currentPat ? currentPat.nombre.trim().toUpperCase() : '';
         
         if (currentName !== extName) {
-            // Detect type of change
             if (currentName && !extName) {
                 hasChanges = true;
                 window.pendingCensusChanges.push({ type: 'discharge', bed: bedName, patientId: currentPat.id, name: currentPat.nombre });
@@ -8829,16 +8878,34 @@ async function showCensusReviewModal(extracted, bedsList, activeLoc) {
                     </div>`;
             } else if (!currentName && extName) {
                 hasChanges = true;
-                window.pendingCensusChanges.push({ type: 'admission', bed: bedName, name: extName });
+                window.pendingCensusChanges.push({
+                    type: 'admission',
+                    bed: bedName,
+                    name: extName,
+                    num_ficha: extPat.num_ficha || '',
+                    edad: extPat.edad ? parseInt(extPat.edad) : 0,
+                    regimen: extPat.regimen || '',
+                    patologia_dm: !!extPat.patologia_dm,
+                    observaciones: extPat.observaciones || ''
+                });
                 changesListEl.innerHTML += `
                     <div style="display:flex; justify-content:space-between; align-items:center; background:#e8f8f5; border:1px solid #a3e4d7; border-radius:8px; padding:10px 12px; font-size:0.85rem; color:#16a085;">
-                        <div><strong style="color:#117a65;">🟢 Ingreso:</strong> Cama <b>${bedName}</b></div>
+                        <div><strong style="color:#117a65;">🟢 Ingreso:</strong> Cama <b>${bedName}</b> ${extPat.num_ficha ? '(Ficha: ' + extPat.num_ficha + ')' : ''}</div>
                         <div><b>${extName}</b></div>
                     </div>`;
             } else if (currentName && extName) {
                 hasChanges = true;
                 window.pendingCensusChanges.push({ type: 'discharge', bed: bedName, patientId: currentPat.id, name: currentPat.nombre });
-                window.pendingCensusChanges.push({ type: 'admission', bed: bedName, name: extName });
+                window.pendingCensusChanges.push({
+                    type: 'admission',
+                    bed: bedName,
+                    name: extName,
+                    num_ficha: extPat.num_ficha || '',
+                    edad: extPat.edad ? parseInt(extPat.edad) : 0,
+                    regimen: extPat.regimen || '',
+                    patologia_dm: !!extPat.patologia_dm,
+                    observaciones: extPat.observaciones || ''
+                });
                 changesListEl.innerHTML += `
                     <div style="display:flex; flex-direction:column; gap:6px; background:#fef9e7; border:1px solid #fdebd0; border-radius:8px; padding:10px 12px; font-size:0.85rem; color:#b7950b;">
                         <div style="display:flex; justify-content:space-between;">
@@ -8846,7 +8913,7 @@ async function showCensusReviewModal(extracted, bedsList, activeLoc) {
                             <div><b>${currentPat.nombre}</b></div>
                         </div>
                         <div style="display:flex; justify-content:space-between; border-top:1px dashed #fdebd0; padding-top:4px; margin-top:4px;">
-                            <div><strong style="color:#117a65;">🟢 Ingreso (relevo):</strong> Cama <b>${bedName}</b></div>
+                            <div><strong style="color:#117a65;">🟢 Ingreso (relevo):</strong> Cama <b>${bedName}</b> ${extPat.num_ficha ? '(Ficha: ' + extPat.num_ficha + ')' : ''}</div>
                             <div><b>${extName}</b></div>
                         </div>
                     </div>`;
@@ -8880,16 +8947,20 @@ window.applyCensusChanges = async function() {
         } else if (change.type === 'admission') {
             const newPatientData = {
                 nombre: change.name,
-                edad: 0,
+                edad: change.edad || 0,
                 peso_kg: 0,
                 estatura_m: 0,
                 sexo: 'm',
                 actividad: 1.2,
-                diagnostico: 'Ingresado por Censo IA',
+                diagnostico: change.regimen ? `Ingreso Dietools (${change.regimen})` : 'Ingresado por Censo Dietools IA',
                 cama: change.bed,
                 tmt: 0,
                 ia_report: null,
                 metadata: {
+                    num_ficha: change.num_ficha || '',
+                    regimen: change.regimen || '',
+                    patologia_dm: !!change.patologia_dm,
+                    observaciones_generales: change.observaciones || '',
                     location: {
                         floor: activeLoc.floor,
                         serviceId: activeLoc.serviceId,
@@ -8902,7 +8973,7 @@ window.applyCensusChanges = async function() {
         }
     }
     
-    showToast("🎉 ¡Censo actualizado con éxito!");
+    showToast("🎉 ¡Censo de Dietools sincronizado con éxito!");
     
     const modal = document.getElementById('censusReviewModal');
     if (modal) modal.classList.remove('active');
