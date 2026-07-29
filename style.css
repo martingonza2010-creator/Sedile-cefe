@@ -2257,3 +2257,228 @@ body {
         margin: 8mm;
     }
 }
+
+/* --- CASOS CLÍNICOS MONTHLY ACCORDION & COMPACT CARDS --- */
+.month-accordion {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    background: #ffffff;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.month-accordion-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background 0.2s ease;
+}
+
+.month-accordion-header:hover {
+    background: #e2e8f0;
+}
+
+.accordion-arrow {
+    font-size: 0.85rem;
+    color: #4f46e5;
+    transition: transform 0.2s ease;
+}
+
+.month-count-badge {
+    background: #4f46e5;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.month-accordion-content {
+    padding: 12px;
+}
+
+/* Compact Case Card */
+.case-card-compact {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #4f46e5;
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.case-card-compact:hover {
+    border-color: #cbd5e1;
+    border-left-color: #312e81;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+.case-info-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.case-patient-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.patient-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e1b4b;
+    cursor: pointer;
+}
+
+.patient-name:hover {
+    color: #4f46e5;
+    text-decoration: underline;
+}
+
+.patient-ficha {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.patient-demo {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.status-pill {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+}
+
+.status-pill.discharged {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+}
+
+.status-pill.active {
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
+}
+
+.case-meta-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.case-route-tag {
+    font-size: 0.7rem;
+    background: #f1f5f9;
+    color: #334155;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    border: 1px solid #cbd5e1;
+}
+
+.stay-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.stay-badge.total {
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.stay-badge.service {
+    background: rgba(59, 130, 246, 0.1);
+    color: #1d4ed8;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.case-clinical-snippet {
+    display: flex;
+    gap: 12px;
+    font-size: 0.72rem;
+    color: #475569;
+}
+
+.case-clinical-snippet .diag-text {
+    max-width: 280px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.case-clinical-snippet .diet-text {
+    font-weight: 600;
+    color: #0f766e;
+}
+
+.case-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-case-action {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-case-action.load {
+    background: #4f46e5;
+    color: white;
+}
+
+.btn-case-action.load:hover {
+    background: #4338ca;
+}
+
+.btn-case-action.restore {
+    background: #10b981;
+    color: white;
+}
+
+.btn-case-action.restore:hover {
+    background: #059669;
+}
+
+.btn-case-action.trash {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.btn-case-action.trash:hover {
+    background: #ef4444;
+    color: white;
+}

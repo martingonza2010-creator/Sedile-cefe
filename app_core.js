@@ -1291,6 +1291,38 @@ window.loadHistoryList = async (showPapelera = false) => {
     window.renderFilteredHistory();
 };
 
+window.toggleMonthAccordion = function(monthKey) {
+    const content = document.getElementById(`content-${monthKey}`);
+    const arrow = document.getElementById(`arrow-${monthKey}`);
+    if (content) {
+        const isHidden = content.style.display === 'none';
+        content.style.display = isHidden ? 'flex' : 'none';
+        if (arrow) arrow.innerText = isHidden ? '▼' : '►';
+    }
+};
+
+window.reactivateDischargedPatient = async function(id) {
+    if (!supabaseClient) return;
+    if (!confirm("¿Deseas reingresar a este paciente a la sala activa?")) return;
+
+    const { data: p } = await supabaseClient.from('pacientes').select('metadata').eq('id', id).single();
+    const updatedMeta = { ...(p?.metadata || {}), service_admitted_at: new Date().toISOString() };
+    delete updatedMeta.discharged_at;
+
+    const { error } = await supabaseClient
+        .from('pacientes')
+        .update({ estado_sala: 'activo', metadata: updatedMeta })
+        .eq('id', id);
+
+    if (!error) {
+        showToast("↩ Paciente reingresado a la sala activa.");
+        if (typeof window.loadHistoryList === 'function') await window.loadHistoryList(false);
+        await window.renderWardBedsGrid();
+    } else {
+        alert("Error al reingresar paciente: " + error.message);
+    }
+};
+
 window.renderFilteredHistory = () => {
     const list = document.getElementById('patientListContainer');
     if (!list) return;
@@ -1304,81 +1336,130 @@ window.renderFilteredHistory = () => {
     }
 
     if (filtered.length === 0) {
-        list.innerHTML = '<p style="text-align:center; opacity:0.6;">Ningún registro para el servicio seleccionado.</p>';
+        list.innerHTML = '<p style="text-align:center; opacity:0.6; padding:20px;">No se encontraron casos guardados para el filtro seleccionado.</p>';
         return;
     }
 
-    let html = '';
+    // Check if we are showing Trash items
+    const isShowingTrash = filtered.some(r => r.estado_sala === 'eliminado');
+    if (isShowingTrash) {
+        let trashHtml = '';
+        filtered.forEach(r => {
+            const dateObj = new Date(r.created_at);
+            const dateStr = dateObj.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            trashHtml += `
+                <div class="history-card trash" style="background:#fffaf8; border:1px solid #fed7aa; border-radius:12px; padding:12px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
+                        <strong style="color:#7c2d12; font-size:0.95rem;">${r.nombre} (Ficha: ${r.metadata?.num_ficha || '--'})</strong>
+                        <span style="font-size:0.75rem; color:#9a3412;">⚠️ Se eliminará definitivamente en <b>${r._daysLeft} días</b> | Creado: ${dateStr}</span>
+                    </div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <button class="btn-primary" style="padding: 4px 10px; font-size: 0.75rem; background:#10b981; border:none; color:white; border-radius:6px;" onclick="window.restorePatient('${r.id}')">↩ Restaurar</button>
+                        <button class="btn-micro" style="padding: 6px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.08); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 6px;" onclick="event.stopPropagation(); window.hardDeletePatient('${r.id}')" title="Eliminar definitivamente">🗑</button>
+                    </div>
+                </div>
+            `;
+        });
+        list.innerHTML = trashHtml;
+        return;
+    }
+
+    // Grouping by Month for CASOS
+    const groups = {};
     filtered.forEach(r => {
-        // Date and Time formatting
-        const dateObj = new Date(r.created_at);
-        const dateStr = dateObj.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + dateObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-        const serviceBadge = r.metadata?.location?.serviceName ? `<span style="font-size:0.75rem; background:rgba(124, 58, 237, 0.1); color:rgb(124, 58, 237); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">${r.metadata.location.serviceName}</span>` : '';
-        const camaBadge = `<span style="font-size:0.75rem; background:rgba(59, 130, 246, 0.1); color:rgb(59, 130, 246); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">Cama: ${r.cama || 'Sin asignar'}</span>`;
+        const dateRef = r.metadata?.discharged_at || r.created_at;
+        const d = new Date(dateRef);
+        const year = d.getFullYear();
+        const monthNum = d.getMonth(); // 0-indexed
+        const monthKey = `${year}-${String(monthNum + 1).padStart(2, '0')}`;
 
-        let dischargeBadge = '';
-        if (r.estado_sala === 'de_alta') {
-            const discDateStr = r.metadata?.discharged_at;
-            if (discDateStr) {
-                const discObj = new Date(discDateStr);
-                const discStr = discObj.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + discObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-                dischargeBadge = `<span style="font-size:0.75rem; background:rgba(16, 185, 129, 0.15); color:rgb(5, 150, 105); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">✔️ Alta: ${discStr}</span>`;
-            } else {
-                dischargeBadge = `<span style="font-size:0.75rem; background:rgba(16, 185, 129, 0.15); color:rgb(5, 150, 105); padding:3px 8px; border-radius:6px; font-weight:600; margin-left:8px;">✔️ Dado de alta</span>`;
-            }
-        }
+        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const monthLabel = `${monthNames[monthNum]} ${year}`;
 
-        const dateBadge = `<span style="font-size:0.7rem; background:rgba(100, 116, 139, 0.08); color:rgb(100, 116, 139); padding:3px 8px; border-radius:6px; font-weight:700;">📅 ${dateStr}</span>`;
-        const isTrash = r.estado_sala === 'eliminado';
-        if (isTrash) {
-            html += `
-                <div class="history-card trash" style="background:#fffaf8; border:1px solid #fed7aa; border-radius:12px; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; transition: all 0.2s ease;">
-                    <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
-                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <strong style="color:#7c2d12; font-size:1.05rem;">${r.nombre}</strong>
-                            ${serviceBadge}
-                            ${camaBadge}
-                            ${dischargeBadge}
-                        </div>
-                        <div style="font-size:0.78rem; color:#7c2d12; opacity:0.8; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                            <span>⚠️ Se eliminará en <b>${r._daysLeft} días</b></span>
-                            <span>•</span>
-                            <span>${dateBadge}</span>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:8px; align-items:center; margin-left:15px;">
-                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background:#10b981; border:none; color:white; border-radius:8px;" onclick="window.restorePatient('${r.id}')">↩ Restaurar</button>
-                        <button class="btn-micro" style="padding: 8px; font-size: 0.95rem; background: rgba(239, 68, 68, 0.08); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;" onclick="event.stopPropagation(); window.hardDeletePatient('${r.id}')" title="Eliminar definitivamente">🗑</button>
-                    </div>
-                </div>
-            `;
-        } else {
-            const ageWeightText = r.edad ? `⚖️ ${r.edad} años | ${r.peso_kg} kg | ${Math.round(r.tmt || 0)} kcal` : 'Ficha inicial';
-            html += `
-                <div class="history-card" style="background:linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%); border:1px solid #e2e8f0; border-radius:12px; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
-                    <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
-                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <strong style="color:#1e1b4b; font-size:1.05rem;">${r.nombre}</strong>
-                            ${serviceBadge}
-                            ${camaBadge}
-                            ${dischargeBadge}
-                        </div>
-                        <div style="font-size:0.78rem; color:#475569; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                            <span>${ageWeightText}</span>
-                            <span>•</span>
-                            <span>${dateBadge}</span>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:8px; align-items:center; margin-left:15px;">
-                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadPatient('${r.id}')">📂 Cargar</button>
-                        <button class="btn-micro" style="padding: 8px; font-size: 0.95rem; background: rgba(239, 68, 68, 0.08); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a papelera">🗑</button>
-                    </div>
-                </div>
-            `;
+        if (!groups[monthKey]) {
+            groups[monthKey] = {
+                label: monthLabel,
+                records: []
+            };
         }
+        groups[monthKey].records.push(r);
     });
 
-    list.innerHTML = html;
+    // Sort month keys descending (newest month first)
+    const sortedKeys = Object.keys(groups).sort().reverse();
+
+    let accordionHTML = '';
+    sortedKeys.forEach((key, index) => {
+        const group = groups[key];
+        const isFirstMonth = index === 0; // First month expanded by default
+
+        let cardsHtml = '';
+        group.records.forEach(r => {
+            // Stay calculation
+            const firstAdmit = r.metadata?.first_hospital_admitted_at || r.metadata?.fecha_ingreso_servicio || r.created_at;
+            const serviceAdmit = r.metadata?.service_admitted_at || r.metadata?.fecha_ingreso_servicio || r.created_at;
+            const dischargeTime = r.metadata?.discharged_at || new Date().toISOString();
+
+            const daysInHospital = Math.max(1, Math.ceil(Math.abs(new Date(dischargeTime) - new Date(firstAdmit)) / (1000 * 60 * 60 * 24)));
+            const daysInService = Math.max(1, Math.ceil(Math.abs(new Date(dischargeTime) - new Date(serviceAdmit)) / (1000 * 60 * 60 * 24)));
+
+            // Transfer route badge
+            let transferRouteHtml = '';
+            if (Array.isArray(r.metadata?.transfer_history) && r.metadata.transfer_history.length > 0) {
+                const routeNames = r.metadata.transfer_history.map(t => t.name || `Piso ${t.floor}`);
+                if (r.metadata?.location?.name) routeNames.push(r.metadata.location.name);
+                transferRouteHtml = `<span class="case-route-tag" title="Ruta de traslados recorridos">🗺️ ${routeNames.join(' ➔ ')}</span>`;
+            } else if (r.metadata?.location?.name) {
+                transferRouteHtml = `<span class="case-route-tag">📍 ${r.metadata.location.name}</span>`;
+            }
+
+            const isDischarged = r.estado_sala === 'de_alta';
+
+            cardsHtml += `
+                <div class="case-card-compact">
+                    <div class="case-info-main">
+                        <div class="case-patient-title">
+                            <strong class="patient-name" onclick="loadPatient('${r.id}')" title="Ver Ficha">${r.nombre}</strong>
+                            <span class="patient-ficha">Ficha: ${r.metadata?.num_ficha || '--'}</span>
+                            <span class="patient-demo">${r.edad ? r.edad + ' años' : ''} ${r.sexo ? '(' + r.sexo.toUpperCase() + ')' : ''}</span>
+                            ${isDischarged ? '<span class="status-pill discharged">✔️ Dado de Alta</span>' : '<span class="status-pill active">🏥 En Censo</span>'}
+                        </div>
+                        <div class="case-meta-bar">
+                            ${transferRouteHtml}
+                            <span class="stay-badge total" title="Días totales transcurridos hospitalizado">🏥 Total Hosp: <b>${daysInHospital} días</b></span>
+                            <span class="stay-badge service" title="Días transcurridos en esta sala/servicio">🛌 En Sala: <b>${daysInService} días</b></span>
+                        </div>
+                        <div class="case-clinical-snippet">
+                            <span class="diag-text" title="${r.diagnostico || ''}">📋 ${r.diagnostico ? (r.diagnostico.length > 60 ? r.diagnostico.slice(0, 60) + '...' : r.diagnostico) : 'Sin diagnóstico registrado'}</span>
+                            <span class="diet-text">🍲 ${r.metadata?.regimen || 'Régimen s/ind'}</span>
+                        </div>
+                    </div>
+                    <div class="case-actions">
+                        <button class="btn-case-action load" onclick="loadPatient('${r.id}')" title="Ver Ficha">📂 Ficha</button>
+                        ${isDischarged ? `<button class="btn-case-action restore" onclick="window.reactivateDischargedPatient('${r.id}')" title="Reingresar paciente a la sala activa">↩ Reingresar</button>` : ''}
+                        <button class="btn-case-action trash" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a Papelera">🗑️</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        accordionHTML += `
+            <div class="month-accordion" id="accordion-${key}">
+                <div class="month-accordion-header" onclick="window.toggleMonthAccordion('${key}')">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="accordion-arrow" id="arrow-${key}">${isFirstMonth ? '▼' : '►'}</span>
+                        <strong style="font-size:1.05rem; color:#312e81;">📅 ${group.label}</strong>
+                    </div>
+                    <span class="month-count-badge">${group.records.length} ${group.records.length === 1 ? 'Caso Clínico' : 'Casos Clínicos'}</span>
+                </div>
+                <div class="month-accordion-content" id="content-${key}" style="display: ${isFirstMonth ? 'flex' : 'none'}; flex-direction: column; gap: 8px; padding-top: 10px;">
+                    ${cardsHtml}
+                </div>
+            </div>
+        `;
+    });
+
+    list.innerHTML = accordionHTML;
 };
 
 // --- NEW V3.60: WARD KANBAN LOGIC ---
@@ -10073,11 +10154,18 @@ window.dischargePatientGrid = async function(id) {
     if (!confirm("¿Está seguro de dar de alta a este paciente?")) return;
     
     let currentMeta = {};
-    const { data: p } = await supabaseClient.from('pacientes').select('metadata').eq('id', id).maybeSingle();
+    const { data: p } = await supabaseClient.from('pacientes').select('metadata, created_at').eq('id', id).maybeSingle();
     if (p && p.metadata) {
         currentMeta = { ...p.metadata };
     }
-    currentMeta.discharged_at = new Date().toISOString();
+    const nowIso = new Date().toISOString();
+    currentMeta.discharged_at = nowIso;
+    if (!currentMeta.first_hospital_admitted_at) {
+        currentMeta.first_hospital_admitted_at = currentMeta.fecha_ingreso_servicio || p?.created_at || nowIso;
+    }
+    if (!currentMeta.service_admitted_at) {
+        currentMeta.service_admitted_at = currentMeta.fecha_ingreso_servicio || p?.created_at || nowIso;
+    }
     
     const { error } = await supabaseClient.from('pacientes').update({ 
         estado_sala: 'de_alta',
@@ -10276,13 +10364,30 @@ window.confirmTransferPatientAction = async function() {
     // 1. Fetch current patient metadata to extend it
     const { data: p } = await supabaseClient
         .from('pacientes')
-        .select('metadata')
+        .select('metadata, created_at')
         .eq('id', currentTransferringPatientId)
         .single();
 
+    const nowIso = new Date().toISOString();
+    const firstAdmittedAt = p?.metadata?.first_hospital_admitted_at || p?.metadata?.fecha_ingreso_servicio || p?.created_at || nowIso;
+    const oldLocation = p?.metadata?.location;
+    const transferHistory = Array.isArray(p?.metadata?.transfer_history) ? [...p.metadata.transfer_history] : [];
+
+    if (oldLocation && oldLocation.name) {
+        transferHistory.push({
+            floor: oldLocation.floor,
+            serviceId: oldLocation.serviceId,
+            name: oldLocation.name,
+            transferred_at: nowIso
+        });
+    }
+
     const updatedMetadata = {
         ...(p?.metadata || {}),
-        location: newLocation
+        location: newLocation,
+        first_hospital_admitted_at: firstAdmittedAt,
+        service_admitted_at: nowIso,
+        transfer_history: transferHistory
     };
 
     // 2. Perform DB update
