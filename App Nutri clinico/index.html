@@ -10,7 +10,7 @@
         rel="stylesheet">
     <script src="libs/supabase.js"></script>
     <script src="libs/chart.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.98">
+    <link rel="stylesheet" href="style.css?v=4.99">
     <link rel="manifest" href="manifest.json">
     <style>
         #rthComparisonModal {
@@ -2397,8 +2397,6 @@
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <button id="btnPrintHandoff" class="btn-micro" style="background:#27ae60; color:white;">🖨️ Imprimir Entrega</button>
-                    <button id="btnUploadCensus" class="btn-micro" style="background:#7c3aed; color:white;" onclick="document.getElementById('fileCensusInput').click()">📷 Subir Censo</button>
-                    <button id="btnSetApiKey" class="btn-micro" style="background:#059669; color:white;" onclick="window.openGeminiApiKeyModal()" title="Configurar Clave API de Nutria IA (Gemini)">🔑 Clave IA</button>
                     <button id="btnWardHistory" class="btn-micro" style="background:#4f46e5; color:white;" onclick="window.openWardHistory()">📁 Historial de Sala</button>
                     <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;" onclick="window.renderWardBedsGrid()">🔄 Actualizar</button>
                     <button id="btnPrintSheetTable" class="btn-micro" style="background:#0284c7; color:white; display:none;" onclick="window.printCensusSheetTable()">🖨️ Imprimir Planilla</button>
@@ -2406,7 +2404,6 @@
                         <option value="grid" selected>🗂️ Vista Tarjetas</option>
                         <option value="table">📊 Vista Planilla (Tabla)</option>
                     </select>
-                    <input type="file" id="fileCensusInput" accept="image/*,application/pdf" style="display:none;" onchange="window.handleCensusUpload(event)">
                 </div>
             </div>
 
@@ -2462,37 +2459,7 @@
             </div>
         </div>
 
-        <!-- MODAL DE CONFIGURACIÓN API KEY NUTRI IA -->
-        <div class="protocol-modal" id="geminiApiKeyModal">
-            <div class="modal-content" style="max-width:480px; padding:25px; border-radius:16px; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
-                <div class="modal-header" style="border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:15px;">
-                    <h3 style="margin:0; font-size:1.15rem; color:#1e1b4b; display:flex; align-items:center; gap:8px;">
-                        🔑 Configuración de Nutria IA (Gemini API)
-                    </h3>
-                    <button class="btn-close" onclick="window.closeGeminiApiKeyModal()">&times;</button>
-                </div>
-                <div style="font-size:0.85rem; color:#475569; line-height:1.5; margin-bottom:15px;">
-                    <p style="margin:0 0 10px 0;">Para habilitar la lectura de censos de Dietools e informes con IA, ingresa tu <b>API Key de Google Gemini</b> (100% gratuita).</p>
-                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px; color:#166534; font-size:0.8rem; margin-bottom:12px;">
-                        💡 <b>¿Cómo obtenerla gratis en 30 segundos?</b><br>
-                        1. Haz clic en el botón de abajo.<br>
-                        2. Inicia sesión con tu cuenta de Google y presiona <b>"Create API Key"</b>.<br>
-                        3. Copia tu clave (comienza con <code>AIzaSy...</code>) y pégala aquí.
-                    </div>
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-micro" style="background:#059669; color:white; display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-weight:700; padding:8px 14px; border-radius:8px;">
-                        👉 Obtener API Key Gratis en Google AI Studio
-                    </a>
-                </div>
-                <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:0.8rem; font-weight:700; color:#334155; margin-bottom:6px;">Tu Clave de API Gemini:</label>
-                    <input type="text" id="txtGeminiApiKeyInput" placeholder="AIzaSy..." style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-family:monospace; font-size:0.85rem; outline:none;">
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button class="btn-micro" style="background:#94a3b8; color:white; padding:8px 16px;" onclick="window.closeGeminiApiKeyModal()">Cancelar</button>
-                    <button class="btn-micro" style="background:#4f46e5; color:white; padding:8px 18px; font-weight:700;" onclick="window.saveGeminiApiKeyFromModal()">💾 Guardar Clave</button>
-                </div>
-            </div>
-        </div>
+
 
         <!-- MODAL DE PROTOCOLOS (EXISTENTE) -->
         <div class="protocol-modal" id="protocolModal">
