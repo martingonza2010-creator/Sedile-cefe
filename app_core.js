@@ -9500,7 +9500,16 @@ function getDefaultBeds(floor, serviceId) {
             if (cleanId === 'ala_a') { startRoom = 701; endRoom = 714; }
             else if (cleanId === 'ala_b') { startRoom = 718; endRoom = 726; }
             else if (cleanId === 'ala_c') { startRoom = 728; endRoom = 740; }
-            else if (cleanId === 'ala_d') { startRoom = 742; endRoom = 754; }
+            else if (cleanId === 'ala_d' || cleanId.includes('cardiologia')) {
+                return [
+                    '749CX_1', '749CX_2',
+                    '750CX_1', '750CX_2',
+                    '751CX_1', '751CX_2',
+                    '752CX_1',
+                    '753CX_1', '753CX_2',
+                    '754CX_1', '754CX_2'
+                ];
+            }
         }
         
         const list = [];
@@ -9595,7 +9604,12 @@ window.renderWardBedsGrid = async function() {
                 .maybeSingle();
                 
             if (configRecord && configRecord.beds) {
-                bedsList = configRecord.beds;
+                if (activeLoc.floor === 7 && (activeLoc.serviceId === 'ala_d' || activeLoc.serviceId.includes('cardiologia')) && configRecord.beds.some(b => b.startsWith('742'))) {
+                    bedsList = getDefaultBeds(7, 'ala_d');
+                    await supabaseClient.from('config_camas').update({ beds: bedsList, updated_at: new Date() }).eq('id', configRecord.id);
+                } else {
+                    bedsList = configRecord.beds;
+                }
             }
         }
         
