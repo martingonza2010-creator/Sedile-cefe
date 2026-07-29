@@ -8742,15 +8742,11 @@ async function callGeminiMultimodalOCR(base64Data, mimeType, bedsList) {
     if (!apiKey) {
         apiKey = window.setGeminiApiKeyPrompt();
         if (!apiKey) {
-            throw new Error("Se requiere una Clave de API de Gemini para procesar la hoja de censo.");
+            throw new Error("Se requiere una Clave de API de Gemini válida para usar Nutria IA. Consíguela gratis en https://aistudio.google.com/app/apikey");
         }
     }
 
-    const modelsToTry = [
-        'gemini-1.5-flash',
-        'gemini-2.0-flash-exp'
-    ];
-
+    const model = 'gemini-1.5-flash';
     const prompt = `Analiza esta imagen o documento que contiene un censo clínico o reporte de dietas hospitalario (formato Dietools u otro).
 Las camas configuradas en este servicio son: ${bedsList.join(', ')}.
 
@@ -8778,61 +8774,52 @@ Devuelve el resultado únicamente como un arreglo JSON de objetos:
 ]
 Devuelve SOLAMENTE el JSON plano sin código markdown ni comentarios.`;
 
-    let lastError = null;
-    for (const model of modelsToTry) {
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { text: prompt },
-                            {
-                                inlineData: {
-                                    mimeType: mimeType,
-                                    data: base64Data
-                                }
-                            }
-                        ]
-                    }]
-                })
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                const msg = errorData.error?.message || res.statusText || 'Error de API';
-                
-                // If API Key is missing, invalid or expired, prompt user immediately and break loop
-                if (res.status === 400 || res.status === 403 || res.status === 401 || msg.toLowerCase().includes("api key") || msg.includes("API_KEY_INVALID")) {
-                    console.warn("Error de autenticación/API Key en Gemini:", msg);
-                    localStorage.removeItem('user_gemini_api_key');
-                    const freshKey = window.setGeminiApiKeyPrompt();
-                    if (freshKey) {
-                        return await callGeminiMultimodalOCR(base64Data, mimeType, bedsList);
-                    } else {
-                        throw new Error("Se requiere una Clave de API de Gemini válida para usar Nutria IA. Consíguela gratis en https://aistudio.google.com/app/apikey");
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{
+                parts: [
+                    { text: prompt },
+                    {
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: base64Data
+                        }
                     }
-                }
-                throw new Error(`[${model}] ${msg}`);
-            }
+                ]
+            }]
+        })
+    });
 
-            const data = await res.json();
-            let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-            text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-            const firstBracket = text.indexOf('[');
-            const lastBracket = text.lastIndexOf(']');
-            if (firstBracket !== -1 && lastBracket !== -1) {
-                text = text.substring(firstBracket, lastBracket + 1);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const msg = errorData.error?.message || res.statusText || 'Error de API';
+        
+        // If API Key is missing, invalid or expired, prompt user immediately
+        if (res.status === 400 || res.status === 403 || res.status === 401 || msg.toLowerCase().includes("key") || msg.includes("API_KEY_INVALID")) {
+            console.warn("Error de clave de API en Nutria IA:", msg);
+            localStorage.removeItem('user_gemini_api_key');
+            const freshKey = window.setGeminiApiKeyPrompt();
+            if (freshKey) {
+                return await callGeminiMultimodalOCR(base64Data, mimeType, bedsList);
+            } else {
+                throw new Error("Se requiere una Clave de API de Gemini válida para procesar el censo. Obtenla gratis en https://aistudio.google.com/app/apikey");
             }
-            return text;
-        } catch (err) {
-            console.warn(`Intento fallido con modelo ${model}:`, err.message);
-            lastError = err;
         }
+        throw new Error(`[Gemini IA] ${msg}`);
     }
-    throw lastError || new Error("No se pudo conectar con Nutria IA. Verifica tu conexión a internet.");
+
+    const data = await res.json();
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const firstBracket = text.indexOf('[');
+    const lastBracket = text.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket !== -1) {
+        text = text.substring(firstBracket, lastBracket + 1);
+    }
+    return text;
 }
 
 window.pendingCensusChanges = [];
