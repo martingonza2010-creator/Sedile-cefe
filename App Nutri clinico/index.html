@@ -2398,7 +2398,8 @@
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <button id="btnPrintHandoff" class="btn-micro" style="background:#27ae60; color:white;">🖨️ Imprimir Entrega</button>
-                    <button id="btnUploadCensus" class="btn-micro" style="background:#7c3aed; color:white; font-weight:700;" onclick="document.getElementById('fileCensusInput').click()">📷 Escanear Censo Dietools</button>
+                    <button id="btnUploadCensus" class="btn-micro" style="background:#7c3aed; color:white; font-weight:700;" onclick="document.getElementById('fileCensusInput').click()">📷 Escanear Censo</button>
+                    <button id="btnPasteCensus" class="btn-micro" style="background:#059669; color:white; font-weight:700;" onclick="window.openPasteCensusModal()">📋 Pegar Censo Dietools</button>
                     <button id="btnWardHistory" class="btn-micro" style="background:#4f46e5; color:white;" onclick="window.openWardHistory()">📁 Historial de Sala</button>
                     <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;" onclick="window.renderWardBedsGrid()">🔄 Actualizar</button>
                     <button id="btnPrintSheetTable" class="btn-micro" style="background:#0284c7; color:white; display:none;" onclick="window.printCensusSheetTable()">🖨️ Imprimir Planilla</button>
@@ -2802,6 +2803,26 @@
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
                     <button class="btn-primary" style="background:#64748b;" id="btnCensusCancel">Cancelar</button>
                     <button class="btn-primary" style="background:#7c3aed;" id="btnCensusConfirm">Confirmar y Aplicar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL PEGAR CENSO DIETOOLS -->
+        <div class="protocol-modal" id="pasteCensusModal">
+            <div class="modal-content" style="max-width:550px; padding:25px; border-radius:16px; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+                <div class="modal-header" style="border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:15px;">
+                    <h3 style="margin:0; font-size:1.15rem; color:#1e1b4b; display:flex; align-items:center; gap:8px;">
+                        📋 Pegar Texto del Censo Dietools
+                    </h3>
+                    <button class="btn-close" onclick="window.closePasteCensusModal()">&times;</button>
+                </div>
+                <div style="font-size:0.85rem; color:#475569; line-height:1.5; margin-bottom:15px;">
+                    <p style="margin:0 0 10px 0;">Pega aquí el texto copiado de la planilla de Dietools. El sistema extraerá de inmediato las camas, nombres, fichas, dietas y alergias:</p>
+                    <textarea id="txtPasteCensusInput" placeholder="Ejemplo:&#10;749CX_1 - 78936 AHUMADA PINTO, PAOLA JANET - EDAD: 56 HPGL - DIETA HIPOGLUCIDICA (DIABÉTICO)..." style="width:100%; height:180px; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-family:monospace; font-size:0.8rem; outline:none; resize:vertical;"></textarea>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn-micro" style="background:#94a3b8; color:white; padding:8px 16px;" onclick="window.closePasteCensusModal()">Cancelar</button>
+                    <button class="btn-micro" style="background:#059669; color:white; padding:8px 18px; font-weight:700;" onclick="window.processPastedCensusText()">🚀 Sincronizar Censo</button>
                 </div>
             </div>
         </div>

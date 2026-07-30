@@ -8848,6 +8848,55 @@ function parseDietoolsOCRText(ocrText, bedsList) {
 
 window.pendingCensusChanges = [];
 
+window.openPasteCensusModal = function() {
+    const modal = document.getElementById('pasteCensusModal');
+    if (modal) modal.classList.add('active');
+};
+
+window.closePasteCensusModal = function() {
+    const modal = document.getElementById('pasteCensusModal');
+    if (modal) modal.classList.remove('active');
+};
+
+window.processPastedCensusText = async function() {
+    const txtInput = document.getElementById('txtPasteCensusInput');
+    const rawText = txtInput ? txtInput.value.trim() : '';
+    if (!rawText) {
+        alert("Por favor pega el texto de la planilla de Dietools en el recuadro.");
+        return;
+    }
+
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (!activeLocStr) {
+        alert("Por favor selecciona un piso y servicio primero en la vista de sala.");
+        return;
+    }
+
+    const activeLoc = JSON.parse(activeLocStr);
+    const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+
+    let bedsList = getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
+    if (supabaseClient) {
+        const { data: configRecord } = await supabaseClient
+            .from('config_camas')
+            .select('*')
+            .eq('location_key', locationKey)
+            .maybeSingle();
+        if (configRecord && configRecord.beds && configRecord.beds.length > 0) {
+            bedsList = configRecord.beds;
+        }
+    }
+
+    const extracted = parseDietoolsOCRText(rawText, bedsList);
+    window.closePasteCensusModal();
+    await showCensusReviewModal(extracted, bedsList, activeLoc);
+};
+
+window.closeCensusReviewModal = function() {
+    const modal = document.getElementById('censusReviewModal');
+    if (modal) modal.classList.remove('active');
+};
+
 async function showCensusReviewModal(extracted, bedsList, activeLoc) {
     let activePatients = [];
     if (supabaseClient) {
@@ -8936,7 +8985,17 @@ async function showCensusReviewModal(extracted, bedsList, activeLoc) {
     });
     
     if (!hasChanges) {
-        changesListEl.innerHTML = '<p style="text-align:center; opacity:0.6; padding: 20px 0;">El censo de la captura coincide exactamente con los pacientes registrados. No se requieren cambios.</p>';
+        const anyExtracted = extracted.some(e => e.nombre && e.nombre.trim() !== '');
+        if (!anyExtracted && matchedPatients.length === 0) {
+            changesListEl.innerHTML = `
+                <div style="background:#fff3cd; border:1px solid #ffeeba; border-radius:8px; padding:15px; color:#856404; font-size:0.85rem; text-align:center;">
+                    <p style="margin:0 0 8px 0; font-weight:700;">⚠️ No se leyeron nombres en la imagen.</p>
+                    <p style="margin:0 0 12px 0; font-size:0.8rem;">La captura puede estar con reflejos. Puedes pegar el texto copiado de Dietools o reintentar:</p>
+                    <button class="btn-micro" style="background:#059669; color:white; font-weight:700; padding:8px 16px; border-radius:6px; cursor:pointer;" onclick="window.closeCensusReviewModal(); window.openPasteCensusModal();">📋 Pegar Texto Dietools</button>
+                </div>`;
+        } else {
+            changesListEl.innerHTML = '<p style="text-align:center; opacity:0.6; padding: 20px 0;">El censo de la captura coincide exactamente con los pacientes registrados. No se requieren cambios.</p>';
+        }
     }
     
     const modal = document.getElementById('censusReviewModal');
