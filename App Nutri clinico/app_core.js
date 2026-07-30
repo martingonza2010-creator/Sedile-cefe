@@ -2245,7 +2245,8 @@ window.loadPatient = async (id) => {
         if (document.getElementById('nombre')) document.getElementById('nombre').value = data.nombre || '';
         if (document.getElementById('edad')) document.getElementById('edad').value = data.edad || 0;
         if (document.getElementById('peso')) document.getElementById('peso').value = data.peso_kg || 0;
-        if (document.getElementById('estatura')) document.getElementById('estatura').value = data.estatura_m || 0;
+        const { meters: hM } = window.parseSmartHeight(data.estatura_m || data.talla_cm);
+        if (document.getElementById('estatura')) document.getElementById('estatura').value = hM > 0 ? hM.toString().replace('.', ',') : '';
         if (document.getElementById('sexo')) document.getElementById('sexo').value = data.sexo || 'm';
         if (document.getElementById('actividad')) document.getElementById('actividad').value = data.actividad || '1.2';
         if (document.getElementById('diagnostico')) document.getElementById('diagnostico').value = data.diagnostico || '';
@@ -9399,6 +9400,26 @@ window.printCensusSheetTable = function() {
     }, 250);
 };
 
+window.parseSmartHeight = function(val) {
+    if (val === null || val === undefined || val === '') return { meters: 0, cm: 0 };
+    let num = parseFloat(String(val).replace(',', '.'));
+    if (isNaN(num) || num <= 0) return { meters: 0, cm: 0 };
+
+    let meters = num;
+    let cm = num;
+
+    if (num > 3) {
+        // Entered in CM (e.g. 166 -> 1.66 m, 166 cm)
+        meters = num / 100;
+        cm = num;
+    } else {
+        // Entered in Meters (e.g. 1.66 -> 1.66 m, 166 cm)
+        meters = num;
+        cm = num * 100;
+    }
+    return { meters: parseFloat(meters.toFixed(4)), cm: Math.round(cm) };
+};
+
 window.quickUpdatePatientField = async function(id, field, value) {
     let updateObj = {};
     let updatedMetadata = {};
@@ -9415,15 +9436,13 @@ window.quickUpdatePatientField = async function(id, field, value) {
             else if (field === 'sexo') locPat.sexo = value;
             else if (field === 'peso_kg') {
                 locPat.peso_kg = value ? parseFloat(value) : 0;
-                if (locPat.talla_cm || locPat.estatura_m) {
-                    const hM = locPat.estatura_m || (locPat.talla_cm ? locPat.talla_cm / 100 : 0);
-                    if (hM > 0 && locPat.peso_kg > 0) locPat.metadata.imc = parseFloat((locPat.peso_kg / (hM * hM)).toFixed(1));
-                }
-            } else if (field === 'talla_cm') {
-                const tCm = value ? parseFloat(value) : 0;
-                locPat.talla_cm = tCm;
-                locPat.estatura_m = tCm / 100;
-                if (locPat.peso_kg && locPat.estatura_m > 0) locPat.metadata.imc = parseFloat((locPat.peso_kg / (locPat.estatura_m * locPat.estatura_m)).toFixed(1));
+                const { meters } = window.parseSmartHeight(locPat.estatura_m || locPat.talla_cm);
+                if (meters > 0 && locPat.peso_kg > 0) locPat.metadata.imc = parseFloat((locPat.peso_kg / (meters * meters)).toFixed(1));
+            } else if (field === 'talla_cm' || field === 'estatura_m') {
+                const { meters, cm } = window.parseSmartHeight(value);
+                locPat.talla_cm = cm;
+                locPat.estatura_m = meters;
+                if (locPat.peso_kg && meters > 0) locPat.metadata.imc = parseFloat((locPat.peso_kg / (meters * meters)).toFixed(1));
             } else if (field === 'num_ficha') locPat.metadata.num_ficha = value;
             else if (field === 'patologia_dm') locPat.metadata.patologia_dm = !!value;
             else if (field === 'patologia_hta') locPat.metadata.patologia_hta = !!value;
@@ -9450,14 +9469,14 @@ window.quickUpdatePatientField = async function(id, field, value) {
             else if (field === 'peso_kg') {
                 const pKg = value ? parseFloat(value) : null;
                 updateObj.peso_kg = pKg;
-                const hM = p.estatura_m || (p.talla_cm ? p.talla_cm / 100 : 0);
-                if (hM > 0 && pKg > 0) updatedMetadata.imc = parseFloat((pKg / (hM * hM)).toFixed(1));
+                const { meters } = window.parseSmartHeight(p.estatura_m || p.talla_cm);
+                if (meters > 0 && pKg > 0) updatedMetadata.imc = parseFloat((pKg / (meters * meters)).toFixed(1));
                 updateObj.metadata = updatedMetadata;
-            } else if (field === 'talla_cm') {
-                const tCm = value ? parseFloat(value) : null;
-                updateObj.talla_cm = tCm;
-                updateObj.estatura_m = tCm ? tCm / 100 : null;
-                if (p.peso_kg && updateObj.estatura_m > 0) updatedMetadata.imc = parseFloat((p.peso_kg / (updateObj.estatura_m * updateObj.estatura_m)).toFixed(1));
+            } else if (field === 'talla_cm' || field === 'estatura_m') {
+                const { meters, cm } = window.parseSmartHeight(value);
+                updateObj.talla_cm = cm || null;
+                updateObj.estatura_m = meters || null;
+                if (p.peso_kg && meters > 0) updatedMetadata.imc = parseFloat((p.peso_kg / (meters * meters)).toFixed(1));
                 updateObj.metadata = updatedMetadata;
             } else if (field === 'num_ficha') {
                 updatedMetadata.num_ficha = value;
@@ -10041,8 +10060,9 @@ window.renderWardBedsGrid = async function() {
                         // Age format
                         const ageStr = patient.edad || '--';
                         
-                        // Height in meters
-                        const heightInMeters = patient.estatura_m || (patient.talla_cm ? patient.talla_cm / 100 : 0);
+                        // Height in meters & cm
+                        const { meters: heightInMeters, cm: heightInCm } = window.parseSmartHeight(patient.estatura_m || patient.talla_cm);
+                        const tallaDisplay = heightInMeters > 0 ? heightInMeters.toFixed(2).replace('.', ',') : '';
 
                         // BMI & status
                         const imcNum = patient.peso_kg > 0 && heightInMeters > 0 ? (patient.peso_kg / (heightInMeters * heightInMeters)) : 0;
@@ -10139,9 +10159,8 @@ window.renderWardBedsGrid = async function() {
                                 <td style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
                                 <td style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
                                 <td style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
-                                <td style="padding: 2px 4px; vertical-align: middle;"><textarea placeholder="Observaciones..." style="width:100%; height:34px; min-height:30px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; font-size:0.68rem; font-family:inherit; color:#334155; padding:3px 5px; outline:none; resize:vertical; line-height:1.2; box-shadow:inset 0 1px 2px rgba(0,0,0,0.03);" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" onkeydown="if(event.altKey && event.key === 'Enter'){ event.preventDefault(); const s=this.selectionStart; this.value = this.value.substring(0, s) + '\n' + this.value.substring(this.selectionEnd); this.selectionStart = this.selectionEnd = s + 1; this.dispatchEvent(new Event('change')); }" title="Observaciones (Usar Alt + Enter para salto de línea)">${patient.metadata?.observaciones_generales || customObs || ''}</textarea></td>
                                 <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
-                                <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || (patient.estatura_m ? Math.round(patient.estatura_m * 100) : '')}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla cm (Editar)"></td>
+                                <td style="padding: 2px; text-align: center;"><input type="text" value="${tallaDisplay}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:600; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla (m o cm)"></td>
                                 <td id="imcCell_${patient.id}" style="padding: 6px 10px; text-align: center; ${statusBgStyle}">${imcStr}</td>
                                 <td id="estNutCell_${patient.id}" style="padding: 6px 10px; text-align: center; ${statusBgStyle}">${abbrevStatus}</td>
                                 <td style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
