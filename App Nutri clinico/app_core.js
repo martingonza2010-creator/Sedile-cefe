@@ -2175,11 +2175,11 @@ function initEvolutionLogic() {
                 const { error } = await supabaseClient.from('pacientes').insert([data]);
                 if (error) throw error;
 
-                showToast("ðŸ“ˆ Punto de evolución registrado");
+                showToast("📈 Punto de evolución registrado");
                 updatePatientEvolutionChart(nombre);
             } catch (err) {
                 console.error("Error logging evolution:", err);
-                showToast("âŒ Error al registrar punto");
+                showToast("❌ Error al registrar punto");
             } finally {
                 btnLog.disabled = false;
                 btnLog.innerText = "Actualizar Gráfico con Peso";
@@ -2190,11 +2190,22 @@ function initEvolutionLogic() {
 
 
 window.loadPatient = async (id) => {
-    if (typeof resetPatientForm === 'function') {
-        await resetPatientForm(true);
+    let data = null;
+    try {
+        const localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        data = localCache.find(p => p.id === id || p.cama === id || p.nombre === id);
+    } catch(e) {}
+
+    if (!data && supabaseClient) {
+        const { data: dbData } = await supabaseClient.from('pacientes').select('*').eq('id', id).single();
+        if (dbData) data = dbData;
     }
-    const { data } = await supabaseClient.from('pacientes').select('*').eq('id', id).single();
+
     if (data) {
+        if (typeof resetPatientForm === 'function') {
+            await resetPatientForm(true);
+        }
+
         AppState.patient.id = data.id;
         AppState.patient.ia_report = data.ia_report || null;
 
@@ -2227,12 +2238,14 @@ window.loadPatient = async (id) => {
                 });
             }
         }
-        renderEvolutionChart(AppState.patient.weight_history);
+        if (typeof renderEvolutionChart === 'function') {
+            renderEvolutionChart(AppState.patient.weight_history);
+        }
 
-        document.getElementById('nombre').value = data.nombre || '';
-        document.getElementById('edad').value = data.edad || 0;
-        document.getElementById('peso').value = data.peso_kg || 0;
-        document.getElementById('estatura').value = data.estatura_m || 0;
+        if (document.getElementById('nombre')) document.getElementById('nombre').value = data.nombre || '';
+        if (document.getElementById('edad')) document.getElementById('edad').value = data.edad || 0;
+        if (document.getElementById('peso')) document.getElementById('peso').value = data.peso_kg || 0;
+        if (document.getElementById('estatura')) document.getElementById('estatura').value = data.estatura_m || 0;
         if (document.getElementById('sexo')) document.getElementById('sexo').value = data.sexo || 'm';
         if (document.getElementById('actividad')) document.getElementById('actividad').value = data.actividad || '1.2';
         if (document.getElementById('diagnostico')) document.getElementById('diagnostico').value = data.diagnostico || '';
