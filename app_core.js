@@ -9492,8 +9492,117 @@ window.quickUpdatePatientField = async function(id, field, value) {
         }
     }
 
-    showToast("✅ Campo actualizado en planilla.");
-    await window.renderWardBedsGrid();
+    // 3. Update DOM cells directly for IMC and EST NUT without re-rendering the whole table
+    try {
+        let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        const locPat = localCache.find(p => p.id === id || p.cama === id);
+        if (locPat) {
+            const hM = locPat.estatura_m || (locPat.talla_cm ? locPat.talla_cm / 100 : 0);
+            const pKg = locPat.peso_kg || 0;
+            const imcNum = (pKg > 0 && hM > 0) ? (pKg / (hM * hM)) : 0;
+            const imcStr = imcNum > 0 ? imcNum.toFixed(1).replace('.', ',') : '--';
+
+            let abbrevStatus = '--';
+            let statusBgStyle = 'background:#dcfce7; color:#166534; font-weight:700;';
+
+            if (imcNum > 0) {
+                const isElderly = (locPat.edad || 0) >= 65;
+                if (isElderly) {
+                    if (imcNum < 23) {
+                        abbrevStatus = 'BP';
+                        statusBgStyle = 'background:#fee2e2; color:#991b1b; font-weight:800;';
+                    } else if (imcNum < 28) {
+                        abbrevStatus = 'N';
+                        statusBgStyle = 'background:#dcfce7; color:#166534; font-weight:700;';
+                    } else if (imcNum < 32) {
+                        abbrevStatus = 'SP';
+                        statusBgStyle = 'background:#fef3c7; color:#92400e; font-weight:700;';
+                    } else {
+                        abbrevStatus = 'OB';
+                        statusBgStyle = 'background:#ffedd5; color:#c2410c; font-weight:700;';
+                    }
+                } else {
+                    if (imcNum < 18.5) {
+                        abbrevStatus = 'BP';
+                        statusBgStyle = 'background:#fee2e2; color:#991b1b; font-weight:800;';
+                    } else if (imcNum < 25) {
+                        abbrevStatus = 'N';
+                        statusBgStyle = 'background:#dcfce7; color:#166534; font-weight:700;';
+                    } else if (imcNum < 30) {
+                        abbrevStatus = 'SP';
+                        statusBgStyle = 'background:#fef3c7; color:#92400e; font-weight:700;';
+                    } else {
+                        abbrevStatus = 'OB';
+                        statusBgStyle = 'background:#ffedd5; color:#c2410c; font-weight:700;';
+                    }
+                }
+            }
+
+            const imcCell = document.getElementById('imcCell_' + id);
+            const estNutCell = document.getElementById('estNutCell_' + id);
+            if (imcCell) {
+                imcCell.innerText = imcStr;
+                imcCell.style.cssText = `padding: 6px 10px; text-align: center; ${statusBgStyle}`;
+            }
+            if (estNutCell) {
+                estNutCell.innerText = abbrevStatus;
+                estNutCell.style.cssText = `padding: 6px 10px; text-align: center; ${statusBgStyle}`;
+            }
+        }
+    } catch(e) {}
+};
+
+window.initTableColumnResizing = function() {
+    const table = document.querySelector('.clinical-census-table');
+    if (!table) return;
+
+    let savedWidths = {};
+    try {
+        savedWidths = JSON.parse(localStorage.getItem('ward_table_col_widths') || '{}');
+    } catch(e) {}
+
+    const headers = table.querySelectorAll('th');
+    headers.forEach((th, idx) => {
+        const colKey = `col_${idx}`;
+        if (savedWidths[colKey]) {
+            th.style.width = savedWidths[colKey] + 'px';
+            const innerDiv = th.querySelector('.resizable-th');
+            if (innerDiv) innerDiv.style.width = savedWidths[colKey] + 'px';
+        }
+
+        if (!th.querySelector('.th-resizer')) {
+            const resizer = document.createElement('div');
+            resizer.className = 'th-resizer';
+            resizer.style.cssText = 'position:absolute; right:0; top:0; bottom:0; width:8px; cursor:col-resize; user-select:none; z-index:2;';
+            th.style.position = 'relative';
+            th.appendChild(resizer);
+
+            let startX, startWidth;
+            resizer.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                startX = e.pageX;
+                startWidth = th.offsetWidth;
+
+                const onMouseMove = (moveEvt) => {
+                    const newWidth = Math.max(30, startWidth + (moveEvt.pageX - startX));
+                    th.style.width = newWidth + 'px';
+                    const inner = th.querySelector('.resizable-th');
+                    if (inner) inner.style.width = newWidth + 'px';
+                    savedWidths[colKey] = newWidth;
+                };
+
+                const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    localStorage.setItem('ward_table_col_widths', JSON.stringify(savedWidths));
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        }
+    });
 };
 
 function getDefaultBeds(floor, serviceId) {
@@ -9933,25 +10042,45 @@ window.renderWardBedsGrid = async function() {
                         const ageStr = patient.edad || '--';
                         
                         // Height in meters
-                        const tallaStr = patient.estatura_m ? (patient.estatura_m).toFixed(2).replace('.', ',') : '--';
+                        const heightInMeters = patient.estatura_m || (patient.talla_cm ? patient.talla_cm / 100 : 0);
 
                         // BMI & status
-                        const imcNum = patient.peso_kg > 0 && patient.estatura_m > 0 ? (patient.peso_kg / (patient.estatura_m * patient.estatura_m)) : 0;
+                        const imcNum = patient.peso_kg > 0 && heightInMeters > 0 ? (patient.peso_kg / (heightInMeters * heightInMeters)) : 0;
                         const imcStr = imcNum > 0 ? imcNum.toFixed(1).replace('.', ',') : '--';
-                        
+
                         let abbrevStatus = '--';
+                        let statusBgStyle = 'background:#dcfce7; color:#166534; font-weight:700;';
+
                         if (imcNum > 0) {
-                            const isElderly = patient.edad >= 65;
+                            const isElderly = (patient.edad || 0) >= 65;
                             if (isElderly) {
-                                if (imcNum < 23) abbrevStatus = 'BP';
-                                else if (imcNum < 28) abbrevStatus = 'N';
-                                else if (imcNum < 32) abbrevStatus = 'SP';
-                                else abbrevStatus = 'OB';
+                                if (imcNum < 23) {
+                                    abbrevStatus = 'BP';
+                                    statusBgStyle = 'background:#fee2e2; color:#991b1b; font-weight:800;';
+                                } else if (imcNum < 28) {
+                                    abbrevStatus = 'N';
+                                    statusBgStyle = 'background:#dcfce7; color:#166534; font-weight:700;';
+                                } else if (imcNum < 32) {
+                                    abbrevStatus = 'SP';
+                                    statusBgStyle = 'background:#fef3c7; color:#92400e; font-weight:700;';
+                                } else {
+                                    abbrevStatus = 'OB';
+                                    statusBgStyle = 'background:#ffedd5; color:#c2410c; font-weight:700;';
+                                }
                             } else {
-                                if (imcNum < 18.5) abbrevStatus = 'BP';
-                                else if (imcNum < 25) abbrevStatus = 'N';
-                                else if (imcNum < 30) abbrevStatus = 'SP';
-                                else abbrevStatus = 'OB';
+                                if (imcNum < 18.5) {
+                                    abbrevStatus = 'BP';
+                                    statusBgStyle = 'background:#fee2e2; color:#991b1b; font-weight:800;';
+                                } else if (imcNum < 25) {
+                                    abbrevStatus = 'N';
+                                    statusBgStyle = 'background:#dcfce7; color:#166534; font-weight:700;';
+                                } else if (imcNum < 30) {
+                                    abbrevStatus = 'SP';
+                                    statusBgStyle = 'background:#fef3c7; color:#92400e; font-weight:700;';
+                                } else {
+                                    abbrevStatus = 'OB';
+                                    statusBgStyle = 'background:#ffedd5; color:#c2410c; font-weight:700;';
+                                }
                             }
                         }
 
@@ -10013,8 +10142,8 @@ window.renderWardBedsGrid = async function() {
                                 <td style="padding: 2px 4px; vertical-align: middle;"><textarea placeholder="Observaciones..." style="width:100%; height:34px; min-height:30px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; font-size:0.68rem; font-family:inherit; color:#334155; padding:3px 5px; outline:none; resize:vertical; line-height:1.2; box-shadow:inset 0 1px 2px rgba(0,0,0,0.03);" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" onkeydown="if(event.altKey && event.key === 'Enter'){ event.preventDefault(); const s=this.selectionStart; this.value = this.value.substring(0, s) + '\n' + this.value.substring(this.selectionEnd); this.selectionStart = this.selectionEnd = s + 1; this.dispatchEvent(new Event('change')); }" title="Observaciones (Usar Alt + Enter para salto de línea)">${patient.metadata?.observaciones_generales || customObs || ''}</textarea></td>
                                 <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
                                 <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || (patient.estatura_m ? Math.round(patient.estatura_m * 100) : '')}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla cm (Editar)"></td>
-                                <td style="padding: 6px 10px; text-align: center; background:#dcfce7; font-weight:700; color:#166534;">${imcStr}</td>
-                                <td style="padding: 6px 10px; text-align: center; background:#dcfce7; font-weight:700; color:#166534;">${abbrevStatus}</td>
+                                <td id="imcCell_${patient.id}" style="padding: 6px 10px; text-align: center; ${statusBgStyle}">${imcStr}</td>
+                                <td id="estNutCell_${patient.id}" style="padding: 6px 10px; text-align: center; ${statusBgStyle}">${abbrevStatus}</td>
                                 <td style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
                                 <td style="padding: 2px; text-align: center;">
                                     <select onchange="window.quickUpdatePatientField('${patient.id}', 'riesgo_lpp', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}; outline:none; cursor:pointer;" title="Riesgo LPP (Editar)">
@@ -10194,6 +10323,9 @@ window.renderWardBedsGrid = async function() {
             `;
 
             grid.innerHTML = tableHTML;
+            if (typeof window.initTableColumnResizing === 'function') {
+                setTimeout(window.initTableColumnResizing, 50);
+            }
             return;
         }
 
