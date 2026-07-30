@@ -2262,6 +2262,27 @@ window.loadPatient = async (id) => {
             document.getElementById('observaciones_generales').value = (data.metadata && data.metadata.observaciones_generales) || '';
         }
 
+        // Auto select Ingesta Oral diet from Dietools regimen metadata
+        if (data.metadata && data.metadata.regimen) {
+            const regText = data.metadata.regimen.toLowerCase();
+            const oralSelect = document.getElementById('oralDietType');
+            if (oralSelect) {
+                if (regText.includes('hipoglucidica') || regText.includes('hpgl')) oralSelect.value = 'hipoglucidica';
+                else if (regText.includes('hiperproteica') || regText.includes('hpprt')) oralSelect.value = 'hyperproteico';
+                else if (regText.includes('papilla') && regText.includes('livian')) oralSelect.value = 'papilla_liviana';
+                else if (regText.includes('papilla')) oralSelect.value = 'papilla_diabetico';
+                else if (regText.includes('hiposodica')) oralSelect.value = 'hiposodico';
+                else if (regText.includes('liviana')) oralSelect.value = 'liviano';
+                else if (regText.includes('blanda')) oralSelect.value = 'blando_sin_residuos';
+                else if (regText.includes('hipercalorica')) oralSelect.value = 'hypercalorico';
+                else if (regText.includes('hipocalorica')) oralSelect.value = 'hipocalorico';
+                else if (regText.includes('hipoproteica')) oralSelect.value = 'hipoproteico';
+                else oralSelect.value = 'custom';
+
+                oralSelect.dispatchEvent(new Event('change'));
+            }
+        }
+
         // Restore stress factor before running calculations
         if (data.metadata && data.metadata.simulator && data.metadata.simulator.estres) {
             if (document.getElementById('estres')) {
@@ -9017,7 +9038,7 @@ window.applyCensusChanges = async function() {
     showToast("💾 Guardando cambios en Supabase...");
     
     const activeLocStr = localStorage.getItem('activeLocation');
-    const activeLoc = JSON.parse(activeLocStr);
+    const activeLoc = activeLocStr ? JSON.parse(activeLocStr) : { floor: 7, serviceId: 'ala_d', serviceName: 'Ala D' };
     
     for (const change of window.pendingCensusChanges) {
         if (change.type === 'discharge') {
@@ -9030,7 +9051,7 @@ window.applyCensusChanges = async function() {
                 estatura_m: 0,
                 sexo: 'm',
                 actividad: 1.2,
-                diagnostico: change.regimen ? `Ingreso Dietools (${change.regimen})` : 'Ingresado por Censo Dietools IA',
+                diagnostico: change.regimen ? `Ingreso Dietools (${change.regimen})` : 'Ingresado por Censo Dietools',
                 cama: change.bed,
                 tmt: 0,
                 ia_report: null,
@@ -9044,10 +9065,18 @@ window.applyCensusChanges = async function() {
                         serviceId: activeLoc.serviceId,
                         serviceName: activeLoc.serviceName
                     }
-                },
-                user_id: AppState.user.id
+                }
             };
-            await supabaseClient.from('pacientes').insert([newPatientData]);
+            if (AppState.user && AppState.user.id) {
+                newPatientData.user_id = AppState.user.id;
+            }
+
+            const { data: insData, error: insErr } = await supabaseClient.from('pacientes').insert([newPatientData]).select();
+            if (insErr) {
+                console.error("⚠️ Error insertando paciente en Supabase:", insErr, newPatientData);
+            } else {
+                console.log("✅ Paciente insertado con éxito:", insData);
+            }
         }
     }
     
@@ -10136,7 +10165,8 @@ window.renderWardBedsGrid = async function() {
             bedsGridDiv.style.marginTop = '0';
             
             bedsInRoom.forEach(bedName => {
-                const patient = matchedPatients.find(p => p.cama === bedName);
+                const cleanB = bedName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                const patient = matchedPatients.find(p => p.cama === bedName || (p.cama && p.cama.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === cleanB));
                 const card = document.createElement('div');
                 
                 if (patient) {
@@ -10146,6 +10176,10 @@ window.renderWardBedsGrid = async function() {
                     const tmtKcal = patient.tmt || '--';
                     const weight = patient.peso_kg || '--';
                     const dx = patient.diagnostico || 'Sin diagnóstico';
+                    const numFicha = patient.metadata?.num_ficha || '';
+                    const regimen = patient.metadata?.regimen || '';
+                    const isDM = patient.metadata?.patologia_dm;
+                    const obsGen = patient.metadata?.observaciones_generales || '';
                     const formula = patient.metadata?.simulator?.formula || 'Ninguna';
                     
                     card.innerHTML = `
@@ -10153,17 +10187,16 @@ window.renderWardBedsGrid = async function() {
                             <span class="bed-badge occupied">🛏️ ${bedName}</span>
                             ${isCritico ? '<span class="status-alert-tag critical">🚨 CRÍTICO</span>' : '<span class="status-alert-tag active">🟢 ACTIVO</span>'}
                         </div>
-                        <div class="bed-patient-info" onclick="loadPatient('${patient.id}')" style="cursor:pointer;" title="Haga clic para editar ficha">
-                            <div class="patient-name">${patient.nombre}</div>
-                            <div class="patient-dx">${dx}</div>
-                            <div class="patient-metrics-row">
+                        <div class="bed-patient-info" onclick="loadPatient('${patient.id}')" style="cursor:pointer;" title="Haga clic para editar ficha de ${patient.nombre}">
+                            <div class="patient-name" style="font-weight:800; color:#312e81; font-size:0.85rem;">${patient.nombre}</div>
+                            ${numFicha ? `<div style="font-size:0.7rem; color:#475569; font-weight:700;">📄 Ficha: <b>${numFicha}</b></div>` : ''}
+                            <div class="patient-dx" style="font-size:0.72rem; color:#475569; margin:2px 0;">${dx} ${isDM ? '<span style="background:#fee2e2; color:#b91c1c; font-size:0.65rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-left:4px;">🩸 DM</span>' : ''}</div>
+                            <div class="patient-metrics-row" style="margin:4px 0;">
                                 <span class="metric-item" title="Edad">🎂 ${patient.edad}a</span>
                                 <span class="metric-item" title="Peso">⚖️ ${weight}kg</span>
                             </div>
-                            <div class="patient-regime-row">
-                                <div class="regime-formula" title="Fórmula">🍼 ${formula}</div>
-                                <div class="regime-req" title="Requerimiento">⚡ ${tmtKcal} kcal</div>
-                            </div>
+                            ${regimen ? `<div style="font-size:0.75rem; color:#0f766e; font-weight:700; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:3px 6px; margin:4px 0;">🍲 ${regimen}</div>` : ''}
+                            ${obsGen ? `<div style="font-size:0.68rem; color:#b45309; font-weight:600; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:3px 6px; margin-top:3px;">⚠️ ${obsGen}</div>` : ''}
                         </div>
                         <div class="bed-actions-row">
                             <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
