@@ -8766,84 +8766,89 @@ async function preprocessImageForOCR(file) {
 function parseDietoolsOCRText(ocrText, bedsList) {
     console.log("--- DIETOOLS PARSER INPUT ---", ocrText);
     const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    const extractedPatients = [];
+    const bedMatches = [];
 
-    // Dietools pattern: Bed - Ficha (e.g., 749CX_1 - 78936)
-    const bedFichaRegex = /([0-9]{3,4}\s*[A-Z]{0,3}\s*[_\-–\s]?\s*[0-9]{1,2})\s*[\-–—:\s]\s*([0-9]{4,8})/gi;
-    const matches = [];
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const m = /([0-9]{3,4}\s*[A-Z]{0,3}\s*[_\-–\s]?\s*[0-9]{1,2})\s*[\-–—:\s]\s*([0-9]{4,8})/i.exec(line);
-        if (m) {
-            matches.push({ lineIndex: i, bedRaw: m[1], ficha: m[2] });
-        }
-    }
-
-    if (matches.length > 0) {
-        matches.forEach((m, idx) => {
-            const startIdx = m.lineIndex;
-            const endIdx = (idx < matches.length - 1) ? matches[idx + 1].lineIndex : Math.min(lines.length, startIdx + 5);
-            const blockText = lines.slice(startIdx, endIdx).join(' ');
-
-            let rawBed = m.bedRaw.replace(/\s+/g, '').toUpperCase();
-            let matchedBed = bedsList.find(b => b.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === rawBed.replace(/[^a-zA-Z0-9]/g, '')) || rawBed;
-
-            const ficha = m.ficha;
-
-            const edadMatch = blockText.match(/EDAD[:\s]*([0-9]{1,3})/i) || blockText.match(/\b([0-9]{1,3})\s*AÑOS\b/i);
-            const edad = edadMatch ? parseInt(edadMatch[1]) : 0;
-
-            const nameMatch = blockText.match(/([A-ZÑÁÉÍÓÚ]{3,}(?:\s+[A-ZÑÁÉÍÓÚ]{2,}){1,4})/);
-            let name = nameMatch ? nameMatch[1].trim() : '';
-            name = name.replace(/DIETA|DIABETICO|HIPOGLUCIDICA|HPGL|ALERGIAS|EDAD|CAMA|OBSERVACIONES|INGESTA/gi, '').trim();
-
-            let regimen = '';
-            if (/HPGL|HIPOGLUCIDICA/i.test(blockText)) regimen = 'Dieta Hipoglucídica';
-            else if (/HPPRT|HIPERPROTEICA/i.test(blockText)) regimen = 'Dieta Hiperproteica';
-            else if (/PAPLI|PAPILLA\s*LIVIANO/i.test(blockText)) regimen = 'Papilla Liviana';
-            else if (/HIPOSODICA/i.test(blockText)) regimen = 'Dieta Hiposódica';
-            else if (/LIVIANA/i.test(blockText)) regimen = 'Dieta Liviana';
-            else if (/BLANDA/i.test(blockText)) regimen = 'Dieta Blanda';
-            else if (/COMPLETA|NORMAL/i.test(blockText)) regimen = 'Dieta Completa';
-
-            const isDM = /DIABÉTICO|DIABETICO|HPGL|HIPOGLUCIDICA/i.test(blockText);
-
-            let obsArr = [];
-            const algMatch = blockText.match(/ALERGIAS[:\s]*([^.]+?)(?:OBS|DIETA|EDAD|$)/i);
-            if (algMatch) obsArr.push('ALERGIAS: ' + algMatch[1].trim());
-
-            const obsMatch = blockText.match(/OBSERVACIONES\s*POR\s*INGESTA[:\s]*([^.]+?)(?:REV|EVENTO|$)/i);
-            if (obsMatch) obsArr.push(obsMatch[1].trim());
-
-            extractedPatients.push({
-                cama: matchedBed,
-                nombre: name,
-                num_ficha: ficha,
-                edad: edad,
-                regimen: regimen,
-                patologia_dm: isDM,
-                observaciones: obsArr.join(' | ')
-            });
+    bedsList.forEach(bedName => {
+        const cleanBed = bedName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        lines.forEach((line, idx) => {
+            const cleanLine = line.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            if (cleanLine.startsWith(cleanBed) || (cleanBed.length > 3 && cleanLine.includes(cleanBed))) {
+                bedMatches.push({ bedName, lineIdx: idx });
+            }
         });
-    }
-
-    const finalResult = bedsList.map(bName => {
-        const cleanB = bName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-        const found = extractedPatients.find(p => p.cama.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === cleanB || p.cama === bName);
-        if (found) return found;
-        return {
-            cama: bName,
-            nombre: '',
-            num_ficha: '',
-            edad: 0,
-            regimen: '',
-            patologia_dm: false,
-            observaciones: ''
-        };
     });
 
-    return finalResult;
+    bedMatches.sort((a, b) => a.lineIdx - b.lineIdx);
+
+    return bedsList.map(bedName => {
+        const idxInMatches = bedMatches.findIndex(m => m.bedName === bedName);
+        if (idxInMatches === -1) {
+            return { cama: bedName, nombre: '', num_ficha: '', edad: 0, regimen: '', patologia_dm: false, observaciones: '' };
+        }
+
+        const startIdx = bedMatches[idxInMatches].lineIdx;
+        const endIdx = (idxInMatches < bedMatches.length - 1) ? bedMatches[idxInMatches + 1].lineIdx : lines.length;
+        const blockLines = lines.slice(startIdx, endIdx);
+        const blockText = blockLines.join(' ');
+
+        // Extract Ficha (5 to 8 digits)
+        const fichaM = blockText.match(/\b(\d{5,8})\b/);
+        const ficha = fichaM ? fichaM[1] : '';
+
+        // Extract Edad
+        const edadM = blockText.match(/EDAD[:\s]*(\d{1,3})/i);
+        const edad = edadM ? parseInt(edadM[1]) : 0;
+
+        // Extract Name: Collect uppercase text lines, filtering out keywords
+        let nameCandidate = '';
+        blockLines.forEach(l => {
+            if (/^(7\d{2}[A-Z\d_.]*|\d{5,8}|EDAD:\s*\d+|\(DIABETICO\)|\(DIABÉTICO\)|\(DIABETICO\)"|[NS]\s+[NS])$/i.test(l)) return;
+            const m = l.match(/([A-ZÑÁÉÍÓÚ]{3,}(?:[\s,]+[A-ZÑÁÉÍÓÚ]{2,}){1,5})/i);
+            if (m) {
+                let candidate = m[1].trim();
+                candidate = candidate.replace(/\b(HPGL|HPPRT|PAPLI|DIETA|HIPOGLUCIDICA|HIPERPROTEICA|PAPILLA|LIVIANO|BLANDA|HIPOSODICA|DIABETICO|DIABÉTICO|OBSERVACIONES|INGESTA|INGEESTA|INOESTA|INCESTA|ALERGIAS|EDAD|CAMA|OBS1)\b/gi, '').trim();
+                candidate = candidate.replace(/[\.\-=\d"]/g, '').trim();
+                if (candidate && candidate.length >= 4 && !nameCandidate.includes(candidate)) {
+                    nameCandidate += (nameCandidate ? ' ' : '') + candidate;
+                }
+            }
+        });
+
+        let name = nameCandidate.replace(/\s+/g, ' ').trim();
+
+        // Extract Regimen
+        let regimen = '';
+        if (/HPGL|HIPOGLUCIDICA/i.test(blockText)) regimen = 'Dieta Hipoglucídica';
+        else if (/HPPRT|HIPERPROTEICA/i.test(blockText)) regimen = 'Dieta Hiperproteica';
+        else if (/PAPLI|PAPILLA/i.test(blockText)) regimen = 'Papilla Liviana';
+        else if (/HIPOSODICA/i.test(blockText)) regimen = 'Dieta Hiposódica';
+        else if (/LIVIANA/i.test(blockText)) regimen = 'Dieta Liviana';
+        else if (/BLANDA/i.test(blockText)) regimen = 'Dieta Blanda';
+        else if (/COMPLETA|NORMAL/i.test(blockText)) regimen = 'Dieta Completa';
+
+        // Extract DM
+        const isDM = /DIABÉTICO|DIABETICO|HPGL|HIPOGLUCIDICA/i.test(blockText);
+
+        // Extract Observaciones & Alergias
+        let obsArr = [];
+        const algM = blockText.match(/ALERGIAS[:\s]*([^.]+?)(?:OBS|DIETA|EDAD|7\d{2}|$)/i);
+        if (algM) obsArr.push('ALERGIAS: ' + algM[1].trim());
+
+        const obsM = blockText.match(/OBSERVACIONES\s*POR\s*ING[EOC]?STA[:\s]*([^.]+?)(?:REV|EVENTO|7\d{2}|$)/i);
+        if (obsM) obsArr.push(obsM[1].trim());
+
+        if (blockText.includes('NO LECHE')) obsArr.push('NO LECHE');
+
+        return {
+            cama: bedName,
+            nombre: name,
+            num_ficha: ficha,
+            edad: edad,
+            regimen: regimen,
+            patologia_dm: isDM,
+            observaciones: obsArr.join(' | ')
+        };
+    });
 }
 
 window.pendingCensusChanges = [];
