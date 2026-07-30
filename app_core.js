@@ -2203,7 +2203,7 @@ window.loadPatient = async (id) => {
 
     if (data) {
         if (typeof resetPatientForm === 'function') {
-            await resetPatientForm(true);
+            await resetPatientForm(true, true);
         }
 
         AppState.patient.id = data.id;
@@ -5129,7 +5129,7 @@ function clearAllInputsForMode(mode) {
     runSimulation();
 }
 
-async function resetPatientForm(skipConfirm = false) {
+async function resetPatientForm(skipConfirm = false, silent = false) {
     const nombreVal = document.getElementById('nombre')?.value || '';
     if (!skipConfirm) {
         if (!confirm("¿Deseas limpiar todos los campos para un nuevo paciente?")) return;
@@ -5213,7 +5213,9 @@ async function resetPatientForm(skipConfirm = false) {
 
     updateFormulaSelect();
     runSimulation();
-    showToast("âœ¨ Formulario reseteado para nuevo paciente");
+    if (!silent) {
+        showToast("✨ Formulario reseteado para nuevo paciente");
+    }
 }
 
 function calcHydration() {
@@ -9075,7 +9077,7 @@ window.applyCensusChanges = async function() {
                 estatura_m: 0,
                 sexo: 'm',
                 actividad: 1.2,
-                diagnostico: change.regimen ? `Ingreso Dietools (${change.regimen})` : 'Ingresado por Censo Dietools',
+                diagnostico: '',
                 cama: change.bed,
                 estado_sala: 'activo',
                 tmt: 0,
@@ -9943,13 +9945,17 @@ window.renderWardBedsGrid = async function() {
                         // Admission date
                         const fIngr = patient.metadata?.fecha_ingreso_servicio || '--';
 
-                        // Format evaluation date for Name column
+                        // Format evaluation date for Name column (ONLY if actually evaluated)
                         let dateStr = '';
-                        if (patient.created_at) {
-                            const d = new Date(patient.created_at);
-                            const day = String(d.getDate()).padStart(2, '0');
-                            const month = String(d.getMonth() + 1).padStart(2, '0');
-                            dateStr = `${day}-${month}`;
+                        const hasEvaluation = patient.evaluado || patient.metadata?.evaluado || patient.metadata?.fecha_evaluacion || (patient.metadata?.assessment && Object.keys(patient.metadata.assessment).length > 0) || (patient.peso_kg > 0);
+                        if (hasEvaluation) {
+                            const evalDate = patient.metadata?.fecha_evaluacion || patient.created_at;
+                            if (evalDate) {
+                                const d = new Date(evalDate);
+                                const day = String(d.getDate()).padStart(2, '0');
+                                const month = String(d.getMonth() + 1).padStart(2, '0');
+                                dateStr = `${day}-${month}`;
+                            }
                         }
 
                         tableHTML += `
