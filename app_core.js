@@ -9035,16 +9035,27 @@ window.applyCensusChanges = async function() {
         return;
     }
     
-    showToast("💾 Guardando cambios en Supabase...");
+    showToast("💾 Guardando censo en el sistema...");
     
     const activeLocStr = localStorage.getItem('activeLocation');
     const activeLoc = activeLocStr ? JSON.parse(activeLocStr) : { floor: 7, serviceId: 'ala_d', serviceName: 'Ala D' };
     
+    let localPatients = [];
+    try {
+        localPatients = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+    } catch(e) {
+        localPatients = [];
+    }
+
     for (const change of window.pendingCensusChanges) {
         if (change.type === 'discharge') {
-            await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', change.patientId);
+            if (supabaseClient && change.patientId) {
+                await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', change.patientId);
+            }
+            localPatients = localPatients.filter(p => p.id !== change.patientId && p.cama !== change.bed);
         } else if (change.type === 'admission') {
             const newPatientData = {
+                id: 'pat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 nombre: change.name,
                 edad: change.edad || 0,
                 peso_kg: 0,
@@ -9053,8 +9064,10 @@ window.applyCensusChanges = async function() {
                 actividad: 1.2,
                 diagnostico: change.regimen ? `Ingreso Dietools (${change.regimen})` : 'Ingresado por Censo Dietools',
                 cama: change.bed,
+                estado_sala: 'activo',
                 tmt: 0,
                 ia_report: null,
+                created_at: new Date().toISOString(),
                 metadata: {
                     num_ficha: change.num_ficha || '',
                     regimen: change.regimen || '',
@@ -9067,20 +9080,31 @@ window.applyCensusChanges = async function() {
                     }
                 }
             };
+            
             if (AppState.user && AppState.user.id) {
                 newPatientData.user_id = AppState.user.id;
             }
 
-            const { data: insData, error: insErr } = await supabaseClient.from('pacientes').insert([newPatientData]).select();
-            if (insErr) {
-                console.error("⚠️ Error insertando paciente en Supabase:", insErr, newPatientData);
-            } else {
-                console.log("✅ Paciente insertado con éxito:", insData);
+            if (supabaseClient) {
+                const dbPayload = { ...newPatientData };
+                delete dbPayload.id; // Let Supabase auto-assign UUID if inserting
+                const { data: insData, error: insErr } = await supabaseClient.from('pacientes').insert([dbPayload]).select();
+                if (insErr) {
+                    console.error("⚠️ Error insertando en Supabase, guardando localmente:", insErr);
+                } else if (insData && insData[0]) {
+                    newPatientData.id = insData[0].id;
+                }
             }
+
+            // Always add/update in local storage cache
+            localPatients = localPatients.filter(p => p.cama !== change.bed);
+            localPatients.push(newPatientData);
         }
     }
     
-    showToast("🎉 ¡Censo de Dietools sincronizado con éxito!");
+    localStorage.setItem('local_ward_patients', JSON.stringify(localPatients));
+    
+    showToast("🎉 ¡Censo de Dietools asignado a las camas con éxito!");
     
     const modal = document.getElementById('censusReviewModal');
     if (modal) modal.classList.remove('active');
@@ -9719,13 +9743,27 @@ window.renderWardBedsGrid = async function() {
                 activePatients = patients.filter(p => p.estado_sala !== 'de_alta' && p.estado_sala !== 'eliminado');
             }
         }
+
+        // Merge local storage cache patients if any
+        try {
+            const localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+            localCache.forEach(lp => {
+                const exists = activePatients.some(ap => ap.cama === lp.cama || ap.id === lp.id);
+                if (!exists && lp.estado_sala !== 'de_alta') {
+                    activePatients.push(lp);
+                }
+            });
+        } catch(e) {}
         
         // Filter patients matched to this service
         const matchedPatients = activePatients.filter(p => {
+            const cleanPBed = p.cama ? p.cama.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() : '';
+            const isBedInService = bedsList.some(b => b.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === cleanPBed || b === p.cama);
+
             if (p.metadata && p.metadata.location && p.metadata.location.serviceId) {
-                return p.metadata.location.serviceId === activeLoc.serviceId;
+                return p.metadata.location.serviceId === activeLoc.serviceId || isBedInService;
             }
-            return bedsList.includes(p.cama);
+            return isBedInService;
         });
         
         // 3. Group beds by room
