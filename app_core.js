@@ -9400,62 +9400,100 @@ window.printCensusSheetTable = function() {
 };
 
 window.quickUpdatePatientField = async function(id, field, value) {
-    if (!supabaseClient) return;
-
-    // Fetch existing patient metadata
-    const { data: p, error: fetchErr } = await supabaseClient
-        .from('pacientes')
-        .select('cama, metadata, peso_kg, talla_cm, nombre, diagnostico')
-        .eq('id', id)
-        .single();
-
-    if (fetchErr || !p) return;
-
     let updateObj = {};
-    let updatedMetadata = { ...(p.metadata || {}) };
+    let updatedMetadata = {};
 
-    if (field === 'nombre') {
-        updateObj.nombre = value;
-    } else if (field === 'diagnostico') {
-        updateObj.diagnostico = value;
-    } else if (field === 'peso_kg') {
-        updateObj.peso_kg = value ? parseFloat(value) : null;
-    } else if (field === 'talla_cm') {
-        updateObj.talla_cm = value ? parseFloat(value) : null;
-    } else if (field === 'num_ficha') {
-        updatedMetadata.num_ficha = value;
-        updateObj.metadata = updatedMetadata;
-    } else if (field === 'patologia_dm') {
-        updatedMetadata.patologia_dm = !!value;
-        updateObj.metadata = updatedMetadata;
-    } else if (field === 'patologia_hta') {
-        updatedMetadata.patologia_hta = !!value;
-        updateObj.metadata = updatedMetadata;
-    } else if (field === 'patologia_erc') {
-        updatedMetadata.patologia_erc = !!value;
-        updateObj.metadata = updatedMetadata;
-    } else if (field === 'regimen') {
-        updatedMetadata.regimen = value;
-        updateObj.metadata = updatedMetadata;
-    } else if (field === 'obs_generales') {
-        updatedMetadata.obs_generales = value;
-        updateObj.metadata = updatedMetadata;
-    } else if (field === 'riesgo_lpp') {
-        updatedMetadata.riesgo_lpp = value;
-        updateObj.metadata = updatedMetadata;
+    // 1. Update local storage cache first
+    try {
+        let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        const locPat = localCache.find(p => p.id === id || p.cama === id);
+        if (locPat) {
+            locPat.metadata = locPat.metadata || {};
+            if (field === 'nombre') locPat.nombre = value;
+            else if (field === 'diagnostico') locPat.diagnostico = value;
+            else if (field === 'edad') locPat.edad = value ? parseInt(value) : 0;
+            else if (field === 'sexo') locPat.sexo = value;
+            else if (field === 'peso_kg') {
+                locPat.peso_kg = value ? parseFloat(value) : 0;
+                if (locPat.talla_cm || locPat.estatura_m) {
+                    const hM = locPat.estatura_m || (locPat.talla_cm ? locPat.talla_cm / 100 : 0);
+                    if (hM > 0 && locPat.peso_kg > 0) locPat.metadata.imc = parseFloat((locPat.peso_kg / (hM * hM)).toFixed(1));
+                }
+            } else if (field === 'talla_cm') {
+                const tCm = value ? parseFloat(value) : 0;
+                locPat.talla_cm = tCm;
+                locPat.estatura_m = tCm / 100;
+                if (locPat.peso_kg && locPat.estatura_m > 0) locPat.metadata.imc = parseFloat((locPat.peso_kg / (locPat.estatura_m * locPat.estatura_m)).toFixed(1));
+            } else if (field === 'num_ficha') locPat.metadata.num_ficha = value;
+            else if (field === 'patologia_dm') locPat.metadata.patologia_dm = !!value;
+            else if (field === 'patologia_hta') locPat.metadata.patologia_hta = !!value;
+            else if (field === 'patologia_erc') locPat.metadata.patologia_erc = !!value;
+            else if (field === 'regimen') locPat.metadata.regimen = value;
+            else if (field === 'obs_generales' || field === 'observaciones_generales') locPat.metadata.observaciones_generales = value;
+            else if (field === 'riesgo_lpp') locPat.metadata.riesgo_lpp = value;
+            else if (field === 'eval_tipo') locPat.metadata.eval_tipo = value;
+            else if (field === 'fecha_ingreso_servicio') locPat.metadata.fecha_ingreso_servicio = value;
+
+            localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
+        }
+    } catch(e) {}
+
+    // 2. Update Supabase
+    if (supabaseClient) {
+        const { data: p } = await supabaseClient.from('pacientes').select('metadata, peso_kg, estatura_m, talla_cm').eq('id', id).single();
+        if (p) {
+            updatedMetadata = { ...(p.metadata || {}) };
+            if (field === 'nombre') updateObj.nombre = value;
+            else if (field === 'diagnostico') updateObj.diagnostico = value;
+            else if (field === 'edad') updateObj.edad = value ? parseInt(value) : 0;
+            else if (field === 'sexo') updateObj.sexo = value;
+            else if (field === 'peso_kg') {
+                const pKg = value ? parseFloat(value) : null;
+                updateObj.peso_kg = pKg;
+                const hM = p.estatura_m || (p.talla_cm ? p.talla_cm / 100 : 0);
+                if (hM > 0 && pKg > 0) updatedMetadata.imc = parseFloat((pKg / (hM * hM)).toFixed(1));
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'talla_cm') {
+                const tCm = value ? parseFloat(value) : null;
+                updateObj.talla_cm = tCm;
+                updateObj.estatura_m = tCm ? tCm / 100 : null;
+                if (p.peso_kg && updateObj.estatura_m > 0) updatedMetadata.imc = parseFloat((p.peso_kg / (updateObj.estatura_m * updateObj.estatura_m)).toFixed(1));
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'num_ficha') {
+                updatedMetadata.num_ficha = value;
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'patologia_dm') {
+                updatedMetadata.patologia_dm = !!value;
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'patologia_hta') {
+                updatedMetadata.patologia_hta = !!value;
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'patologia_erc') {
+                updatedMetadata.patologia_erc = !!value;
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'regimen') {
+                updatedMetadata.regimen = value;
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'obs_generales' || field === 'observaciones_generales') {
+                updatedMetadata.observaciones_generales = value;
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'riesgo_lpp') {
+                updatedMetadata.riesgo_lpp = value;
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'eval_tipo') {
+                updatedMetadata.eval_tipo = value;
+                updateObj.metadata = updatedMetadata;
+            } else if (field === 'fecha_ingreso_servicio') {
+                updatedMetadata.fecha_ingreso_servicio = value;
+                updateObj.metadata = updatedMetadata;
+            }
+
+            await supabaseClient.from('pacientes').update(updateObj).eq('id', id);
+        }
     }
 
-    const { error: updErr } = await supabaseClient
-        .from('pacientes')
-        .update(updateObj)
-        .eq('id', id);
-
-    if (!updErr) {
-        showToast(`✅ Cama ${p.cama || 'Cupo'}: Datos actualizados.`);
-        await window.renderWardBedsGrid();
-    } else {
-        alert("Error al actualizar dato: " + updErr.message);
-    }
+    showToast("✅ Campo actualizado en planilla.");
+    await window.renderWardBedsGrid();
 };
 
 function getDefaultBeds(floor, serviceId) {
@@ -9966,13 +10004,13 @@ window.renderWardBedsGrid = async function() {
                                     <input type="text" value="${patient.nombre || ''}" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#312e81; font-weight:700; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'nombre', this.value)" title="Nombre (Editar)">
                                     ${dateStr ? `<span style="font-size:0.6rem; color:#7c3aed; font-weight:bold; display:block; cursor:pointer;" onclick="loadPatient('${patient.id}')">EVA ${dateStr}</span>` : ''}
                                 </td>
-                                <td style="padding: 6px 10px; text-align: center;">${ageStr}</td>
+                                <td style="padding: 2px; text-align: center;"><input type="number" min="0" max="120" value="${patient.edad || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#1e293b; font-weight:600; text-align:center; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'edad', this.value)" title="Edad (Editar)"></td>
                                 <td style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
                                 <td style="padding: 2px; text-align: center; background:#f8fafc; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
                                 <td style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
                                 <td style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
                                 <td style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
-                                <td style="padding: 2px 4px;"><input type="text" value="${customObs || ''}" placeholder="Observaciones..." style="width:100%; border:none; background:transparent; font-size:0.65rem; color:#64748b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" title="Observaciones (Editar)"></td>
+                                <td style="padding: 2px 4px; vertical-align: middle;"><textarea placeholder="Observaciones..." style="width:100%; height:34px; min-height:30px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; font-size:0.68rem; font-family:inherit; color:#334155; padding:3px 5px; outline:none; resize:vertical; line-height:1.2; box-shadow:inset 0 1px 2px rgba(0,0,0,0.03);" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" onkeydown="if(event.altKey && event.key === 'Enter'){ event.preventDefault(); const s=this.selectionStart; this.value = this.value.substring(0, s) + '\n' + this.value.substring(this.selectionEnd); this.selectionStart = this.selectionEnd = s + 1; this.dispatchEvent(new Event('change')); }" title="Observaciones (Usar Alt + Enter para salto de línea)">${patient.metadata?.observaciones_generales || customObs || ''}</textarea></td>
                                 <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
                                 <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || (patient.estatura_m ? Math.round(patient.estatura_m * 100) : '')}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla cm (Editar)"></td>
                                 <td style="padding: 6px 10px; text-align: center; background:#dcfce7; font-weight:700; color:#166534;">${imcStr}</td>
@@ -9986,9 +10024,9 @@ window.renderWardBedsGrid = async function() {
                                         <option value="Alto" ${patient.metadata?.riesgo_lpp === 'Alto' ? 'selected' : ''}>Alto</option>
                                     </select>
                                 </td>
-                                <td style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
-                                <td style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
-                                <td style="padding: 6px 10px; text-align: center;">${fIngr}</td>
+                                <td style="padding: 2px; text-align: center;"><select onchange="window.quickUpdatePatientField('${patient.id}', 'eval_tipo', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:#312e81; outline:none; cursor:pointer;" title="Tipo Evaluación (Editar)"><option value="VGO" ${patient.metadata?.eval_tipo === 'VGO' || !patient.metadata?.eval_tipo ? 'selected' : ''}>VGO</option><option value="VI" ${patient.metadata?.eval_tipo === 'VI' ? 'selected' : ''}>VI</option><option value="S/E" ${patient.metadata?.eval_tipo === 'S/E' ? 'selected' : ''}>S/E</option><option value="RE-EVAL" ${patient.metadata?.eval_tipo === 'RE-EVAL' ? 'selected' : ''}>RE-EVAL</option></select></td>
+                                <td style="padding: 2px; text-align: center;"><select onchange="window.quickUpdatePatientField('${patient.id}', 'sexo', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none; cursor:pointer;" title="Sexo (Editar)"><option value="m" ${patient.sexo === 'm' || !patient.sexo ? 'selected' : ''}>M</option><option value="f" ${patient.sexo === 'f' ? 'selected' : ''}>F</option></select></td>
+                                <td style="padding: 2px; text-align: center;"><input type="text" value="${patient.metadata?.fecha_ingreso_servicio || ''}" placeholder="DD/MM" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#334155; font-weight:600; text-align:center; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'fecha_ingreso_servicio', this.value)" title="Fecha Ingreso (Editar)"></td>
                                 <td style="padding: 6px 10px; text-align: center;">
                                     <div style="display:flex; gap:4px; justify-content:center;">
                                         <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">📝</button>
