@@ -1292,45 +1292,87 @@ body::before {
     padding-bottom: 20px;
 }
 
-/* --- PRINT MEDIA QUERIES (HANDOFF REPORT) V3.60 --- */
+/* --- PRINT MEDIA QUERIES FOR SHEET TABLE & CLINICAL CENSUS --- */
+@page {
+    size: landscape;
+    margin: 5mm;
+}
+
 @media print {
     body * {
-        visibility: hidden;
+        visibility: hidden !important;
     }
 
-    #printHandoffArea,
-    #printHandoffArea * {
-        visibility: visible;
+    /* Print Ward Table Census */
+    body.printing-sheet-table .ward-beds-container,
+    body.printing-sheet-table .ward-beds-container *,
+    body.printing-sheet-table .clinical-census-table,
+    body.printing-sheet-table .clinical-census-table * {
+        visibility: visible !important;
     }
 
-    #printHandoffArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 20px;
+    body.printing-sheet-table .ward-beds-container {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    .print-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        font-family: 'Poppins', sans-serif;
+    /* Hide ACCIONES column (last column) and controls */
+    .clinical-census-table th:last-child,
+    .clinical-census-table td:last-child,
+    .btn-micro,
+    .btn-register-patient,
+    .circle-action-btn,
+    .th-resizer,
+    #wardViewModeSelect,
+    .main-header,
+    .app-tabs,
+    .protocol-fab,
+    .admin-bed-controls,
+    .location-overlay,
+    .protocol-modal {
+        display: none !important;
+        visibility: hidden !important;
     }
 
-    .print-table th,
-    .print-table td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-        font-size: 0.85rem;
+    .clinical-census-table {
+        width: 100% !important;
+        min-width: 100% !important;
+        font-size: 7.5pt !important;
+        border-collapse: collapse !important;
+        border: 1px solid #475569 !important;
+        margin: 0 !important;
     }
 
-    .print-table th {
-        background-color: #f2f2f2 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+    .clinical-census-table th,
+    .clinical-census-table td {
+        border: 1px solid #94a3b8 !important;
+        padding: 2px 4px !important;
+        color: #000 !important;
+    }
+
+    .clinical-census-table th {
+        background: #f1f5f9 !important;
+        font-weight: 800 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .clinical-census-table input,
+    .clinical-census-table textarea,
+    .clinical-census-table select {
+        border: none !important;
+        background: transparent !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        color: #000 !important;
+        box-shadow: none !important;
+        resize: none !important;
+        font-size: 7.5pt !important;
+        padding: 0 !important;
     }
 }
 

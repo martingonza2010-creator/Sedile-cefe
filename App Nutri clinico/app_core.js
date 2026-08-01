@@ -9097,18 +9097,35 @@ window.applyCensusChanges = async function() {
                 }
             };
             
-            if (AppState.user && AppState.user.id) {
-                newPatientData.user_id = AppState.user.id;
-            }
+            let currentUserId = AppState?.user?.id;
+            if (currentUserId) newPatientData.user_id = currentUserId;
 
             if (supabaseClient) {
-                const dbPayload = { ...newPatientData };
-                delete dbPayload.id; // Let Supabase auto-assign UUID if inserting
-                const { data: insData, error: insErr } = await supabaseClient.from('pacientes').insert([dbPayload]).select();
-                if (insErr) {
-                    console.error("⚠️ Error insertando en Supabase, guardando localmente:", insErr);
-                } else if (insData && insData[0]) {
-                    newPatientData.id = insData[0].id;
+                try {
+                    // Check if bed already has a patient record in Supabase
+                    const { data: existingBedPat } = await supabaseClient
+                        .from('pacientes')
+                        .select('id')
+                        .eq('cama', change.bed)
+                        .neq('estado_sala', 'de_alta')
+                        .maybeSingle();
+
+                    const dbPayload = { ...newPatientData };
+                    delete dbPayload.id;
+
+                    if (existingBedPat && existingBedPat.id) {
+                        newPatientData.id = existingBedPat.id;
+                        await supabaseClient.from('pacientes').update(dbPayload).eq('id', existingBedPat.id);
+                    } else {
+                        const { data: insData, error: insErr } = await supabaseClient.from('pacientes').insert([dbPayload]).select();
+                        if (insErr) {
+                            console.error("⚠️ Error insertando en Supabase:", insErr);
+                        } else if (insData && insData[0]) {
+                            newPatientData.id = insData[0].id;
+                        }
+                    }
+                } catch(e) {
+                    console.error("Error saving census patient to Supabase:", e);
                 }
             }
 
@@ -9395,9 +9412,13 @@ window.printCensusSheetTable = function() {
         select.value = 'table';
         window.toggleWardViewMode();
     }
+    document.body.classList.add('printing-sheet-table');
     setTimeout(() => {
         window.print();
-    }, 250);
+        setTimeout(() => {
+            document.body.classList.remove('printing-sheet-table');
+        }, 500);
+    }, 300);
 };
 
 window.parseSmartHeight = function(val) {
@@ -9929,12 +9950,25 @@ window.renderWardBedsGrid = async function() {
         try {
             const localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
             localCache.forEach(lp => {
-                const exists = activePatients.some(ap => ap.cama === lp.cama || ap.id === lp.id);
-                if (!exists && lp.estado_sala !== 'de_alta') {
+                if (!lp || lp.estado_sala === 'de_alta') return;
+                
+                const idx = activePatients.findIndex(ap => (ap.id === lp.id) || (ap.cama && lp.cama && ap.cama.trim().toUpperCase() === lp.cama.trim().toUpperCase()));
+                if (idx >= 0) {
+                    activePatients[idx] = {
+                        ...activePatients[idx],
+                        ...lp,
+                        metadata: {
+                            ...(activePatients[idx].metadata || {}),
+                            ...(lp.metadata || {})
+                        }
+                    };
+                } else {
                     activePatients.push(lp);
                 }
             });
-        } catch(e) {}
+        } catch(e) {
+            console.error("Error merging local ward patients:", e);
+        }
         
         // Filter patients matched to this service
         const matchedPatients = activePatients.filter(p => {

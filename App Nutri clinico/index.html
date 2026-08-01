@@ -2397,11 +2397,10 @@
                     <p style="margin:5px 0 0 0; font-size:0.82rem; color:#64748b;" id="activeWardSubLabel">Cargando ubicación...</p>
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <button id="btnPrintHandoff" class="btn-micro" style="background:#27ae60; color:white;">🖨️ Imprimir Entrega</button>
                     <button id="btnPasteCensus" class="btn-micro" style="background:#059669; color:white; font-weight:700;" onclick="window.openPasteCensusModal()">📋 Pegar Censo Dietools</button>
                     <button id="btnWardHistory" class="btn-micro" style="background:#4f46e5; color:white;" onclick="window.openWardHistory()">📁 Historial de Sala</button>
                     <button id="btnRefreshWard" class="btn-micro" style="background:var(--primary); color:white;" onclick="window.renderWardBedsGrid()">🔄 Actualizar</button>
-                    <button id="btnPrintSheetTable" class="btn-micro" style="background:#0284c7; color:white; display:none;" onclick="window.printCensusSheetTable()">🖨️ Imprimir Planilla</button>
+                    <button id="btnPrintSheetTable" class="btn-micro" style="background:#0284c7; color:white; font-weight:700;" onclick="window.printCensusSheetTable()">🖨️ Imprimir Planilla</button>
                     <select id="wardViewModeSelect" onchange="window.toggleWardViewMode()" style="padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1; font-size:0.75rem; font-weight:600; background:white; outline:none; cursor:pointer; color:#312e81;">
                         <option value="grid" selected>🗂️ Vista Tarjetas</option>
                         <option value="table">📊 Vista Planilla (Tabla)</option>
