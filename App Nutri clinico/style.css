@@ -1297,10 +1297,18 @@ body::before {
 /* --- PRINT MEDIA QUERIES FOR SHEET TABLE & CLINICAL CENSUS --- */
 @page {
     size: landscape;
-    margin: 5mm;
+    margin: 4mm;
 }
 
 @media print {
+    html, body {
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+    }
+
     body * {
         visibility: hidden !important;
     }
@@ -1322,7 +1330,16 @@ body::before {
         padding: 0 !important;
     }
 
-    /* Hide ACCIONES column (last column) and controls */
+    /* Remove scroll container restrictions during print */
+    div[style*="overflow-x: auto"] {
+        overflow: visible !important;
+        width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    /* Hide ACCIONES column (last column) and UI controls */
     .clinical-census-table th:last-child,
     .clinical-census-table td:last-child,
     .btn-micro,
@@ -1343,21 +1360,36 @@ body::before {
     .clinical-census-table {
         width: 100% !important;
         min-width: 100% !important;
-        font-size: 7.5pt !important;
+        max-width: 100% !important;
+        table-layout: auto !important;
+        font-size: 6.5pt !important;
         border-collapse: collapse !important;
-        border: 1px solid #475569 !important;
+        border: 1px solid #334155 !important;
         margin: 0 !important;
     }
 
     .clinical-census-table th,
     .clinical-census-table td {
-        border: 1px solid #94a3b8 !important;
-        padding: 2px 4px !important;
+        border: 1px solid #64748b !important;
+        padding: 1px 2px !important;
+        font-size: 6.5pt !important;
+        word-break: break-word !important;
+        white-space: normal !important;
         color: #000 !important;
+        background: transparent !important;
+    }
+
+    .clinical-census-table .resizable-th,
+    .clinical-census-table .resizable-tr {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        white-space: normal !important;
     }
 
     .clinical-census-table th {
-        background: #f1f5f9 !important;
+        background: #e2e8f0 !important;
+        color: #000 !important;
         font-weight: 800 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -1373,8 +1405,9 @@ body::before {
         color: #000 !important;
         box-shadow: none !important;
         resize: none !important;
-        font-size: 7.5pt !important;
+        font-size: 6.5pt !important;
         padding: 0 !important;
+        line-height: 1.1 !important;
     }
 }
 
