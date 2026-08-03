@@ -8829,17 +8829,40 @@ function parseDietoolsOCRText(ocrText, bedsList) {
     let currentBedKey = null;
 
     rawLines.forEach(line => {
-        // Match Dietools main entry line: "501_01 - 759430 SUAREZ ANTELO, KATIA - EDAD: 45 ..."
-        const mainMatch = line.match(/^([A-Z0-9]+[_\-\s]\d{1,2})\s*-\s*(\d{4,8})\s+([^-\n]+?)(?:\s*-\s*EDAD:\s*(\d{1,3}))?(.*)$/i);
+        // 1. Check if line starts with a bed code and ficha: "501_01 - 759430 ..." or "501-1 - 759430 ..."
+        const bedFichaMatch = line.match(/^([A-Z0-9]+[_\-\s]\d{1,2})\s*-\s*(\d{4,8})/i);
 
-        if (mainMatch) {
-            const rawBed = mainMatch[1];
-            const ficha = mainMatch[2];
-            let name = mainMatch[3].trim();
-            const edad = mainMatch[4] ? parseInt(mainMatch[4]) : 0;
-
+        if (bedFichaMatch) {
+            const rawBed = bedFichaMatch[1];
+            const ficha = bedFichaMatch[2];
             const normBedKey = normalizeBedCode(rawBed);
             currentBedKey = normBedKey;
+
+            const restOfLine = line.substring(bedFichaMatch[0].length);
+
+            // Extract Name and Edad
+            let name = '';
+            let edad = 0;
+
+            const edadMatch = restOfLine.match(/(?:-\s*)?EDAD:\s*(\d{1,3})/i);
+            if (edadMatch) {
+                edad = parseInt(edadMatch[1]);
+                const namePart = restOfLine.substring(0, edadMatch.index).trim();
+                name = namePart.replace(/^[\t\s\-\:]+/, '').replace(/[\t\s\-\:]+$/, '').trim();
+            } else {
+                const nameMatch = restOfLine.match(/([A-ZÑÁÉÍÓÚ\s,]{4,})/i);
+                if (nameMatch) {
+                    name = nameMatch[1].replace(/\b(HPGL|HPPRT|REGCE|DIETA|LIVIANA|HIPOGLUCIDICA|HIPOSODICA)\b/gi, '').trim();
+                }
+            }
+
+            // Clean name from status codes or trailing tabs
+            name = name.replace(/\s*-\s*[NS]\s+[NS]$/i, '').replace(/[\t\r\n]/g, '').trim();
+
+            if (name.length <= 2) {
+                const wordsM = restOfLine.match(/([A-ZÑÁÉÍÓÚ]{3,}(?:\s+[A-ZÑÁÉÍÓÚ]{2,}){1,4})/i);
+                if (wordsM) name = wordsM[1].trim();
+            }
 
             // Extract regimen
             let regimen = '';
@@ -8858,7 +8881,7 @@ function parseDietoolsOCRText(ocrText, bedsList) {
             else if (/COM|COMUN|NORMAL/i.test(line)) regimen = 'Dieta Común';
 
             const isDM = /DIABÉTICO|DIABETICO|HPGL|HIPOGLUCIDICA|CHANDI|ISOGL/i.test(line);
-            
+
             let obsList = [];
             if (line.includes('NO LECHE')) obsList.push('NO LECHE');
 
@@ -10054,8 +10077,8 @@ window.renderWardBedsGrid = async function() {
                                 <th style="color: #1e293b; font-weight: 800; width: 260px; padding: 0;"><div class="resizable-th" style="width: 260px;">OBSERVACIONES GENERALES</div></th>
                                 <th style="color: #1e293b; font-weight: 800; width: 70px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 70px;">PESO</div></th>
                                 <th style="color: #1e293b; font-weight: 800; width: 60px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 60px;">TALLA</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 55px; text-align: center; background: #dcfce7; color: #14532d; padding: 0;"><div class="resizable-th" style="width: 55px;">IMC</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 75px; text-align: center; background: #dcfce7; color: #14532d; padding: 0;"><div class="resizable-th" style="width: 75px;">EST NUT</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 55px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 55px;">IMC</div></th>
+                                <th style="color: #1e293b; font-weight: 800; width: 75px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 75px;">EST NUT</div></th>
                                 <th style="color: #1e293b; font-weight: 800; width: 50px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 50px;">SCRG</div></th>
                                 <th style="color: #1e293b; font-weight: 800; width: 80px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 80px;">RIESGO LPP</div></th>
                                 <th style="color: #1e293b; font-weight: 800; width: 65px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 65px;">EVAL</div></th>
@@ -10217,7 +10240,7 @@ window.renderWardBedsGrid = async function() {
                                 <td style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
                                 <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
                                 <td style="padding: 2px; text-align: center;"><input type="text" value="${tallaDisplay}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:600; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla (m o cm)"></td>
-                                <td id="imcCell_${patient.id}" style="padding: 6px 10px; text-align: center; ${statusBgStyle}">${imcStr}</td>
+                                <td id="imcCell_${patient.id}" style="padding: 6px 10px; text-align: center; font-weight: 700; color: #1e293b; background: #ffffff;">${imcStr}</td>
                                 <td id="estNutCell_${patient.id}" style="padding: 6px 10px; text-align: center; ${statusBgStyle}">${abbrevStatus}</td>
                                 <td style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
                                 <td style="padding: 2px; text-align: center;">
