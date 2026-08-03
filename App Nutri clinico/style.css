@@ -152,9 +152,10 @@ body {
 
 /* APP LAYOUT */
 .app-container {
-    max-width: 1400px;
-    margin: 40px auto;
-    padding: 0 20px;
+    max-width: 100%;
+    width: 100%;
+    margin: 15px auto;
+    padding: 0 15px;
     animation: fadeIn 0.5s ease-out;
 }
 
@@ -335,7 +336,7 @@ header.main-header {
     border: 1px solid rgba(255, 255, 255, 0.3);
     flex-wrap: wrap;
     width: 100%;
-    max-width: 1400px;
+    max-width: 100%;
     margin-left: auto;
     margin-right: auto;
 }
@@ -1040,7 +1041,8 @@ body::before {
     opacity: 0;
     transition: opacity 0.3s;
     display: none;
-    max-width: 1400px;
+    max-width: 100%;
+    width: 100%;
     margin: 0 auto;
 }
 
