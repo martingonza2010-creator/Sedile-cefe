@@ -469,7 +469,7 @@
                             </div>
                             <div class="mini-input">
                                 <label>Talla (m o cm)</label>
-                                <input type="number" step="0.01" id="estatura" placeholder="0">
+                                <input type="text" id="estatura" placeholder="m o cm" onchange="if(AppState.patient && (AppState.patient.id || AppState.patient.cama)) window.quickUpdatePatientField(AppState.patient.id || AppState.patient.cama, 'talla_cm', this.value); if(typeof calculateNutritionalAssessment === 'function') calculateNutritionalAssessment();">
                             </div>
                             <div class="mini-input" id="colCintura">
                                 <label>Cintura (cm)</label>

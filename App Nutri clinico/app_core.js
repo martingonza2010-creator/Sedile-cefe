@@ -8820,6 +8820,20 @@ function normalizeBedCode(str) {
     return s.replace(/[^A-Z0-9-]/g, '');
 }
 
+window.formatPatientNameFirst = function(nameStr) {
+    if (!nameStr) return '';
+    let clean = nameStr.trim();
+    if (clean.includes(',')) {
+        const parts = clean.split(',');
+        const apellidos = parts[0].trim();
+        const nombres = parts[1].trim();
+        if (nombres && apellidos) {
+            return `${nombres} ${apellidos}`;
+        }
+    }
+    return clean;
+};
+
 function parseDietoolsOCRText(ocrText, bedsList) {
     console.log("--- DIETOOLS PARSER INPUT ---", ocrText);
     const fixedText = fixDietoolsEncoding(ocrText);
@@ -8858,6 +8872,7 @@ function parseDietoolsOCRText(ocrText, bedsList) {
 
             // Clean name from status codes or trailing tabs
             name = name.replace(/\s*-\s*[NS]\s+[NS]$/i, '').replace(/[\t\r\n]/g, '').trim();
+            name = window.formatPatientNameFirst(name);
 
             if (name.length <= 2) {
                 const wordsM = restOfLine.match(/([A-ZÑÁÉÍÓÚ]{3,}(?:\s+[A-ZÑÁÉÍÓÚ]{2,}){1,4})/i);
@@ -9090,14 +9105,16 @@ async function showCensusReviewModal(extracted, bedsList, activeLoc) {
 }
 
 window.applyCensusChanges = async function() {
-    if (window.pendingCensusChanges.length === 0) {
+    if (!window.pendingCensusChanges || window.pendingCensusChanges.length === 0) {
         const modal = document.getElementById('censusReviewModal');
         if (modal) modal.classList.remove('active');
         return;
     }
     
-    showToast("💾 Guardando censo en el sistema...");
-    
+    // 1. Close modal instantly!
+    const modal = document.getElementById('censusReviewModal');
+    if (modal) modal.classList.remove('active');
+
     const activeLocStr = localStorage.getItem('activeLocation');
     const activeLoc = activeLocStr ? JSON.parse(activeLocStr) : { floor: 7, serviceId: 'ala_d', serviceName: 'Ala D' };
     
@@ -9108,16 +9125,19 @@ window.applyCensusChanges = async function() {
         localPatients = [];
     }
 
-    for (const change of window.pendingCensusChanges) {
+    let currentUserId = AppState?.user?.id;
+    const pending = [...window.pendingCensusChanges];
+    window.pendingCensusChanges = [];
+
+    // 2. Update local storage cache INSTANTLY
+    pending.forEach(change => {
         if (change.type === 'discharge') {
-            if (supabaseClient && change.patientId) {
-                await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', change.patientId);
-            }
             localPatients = localPatients.filter(p => p.id !== change.patientId && p.cama !== change.bed);
         } else if (change.type === 'admission') {
+            const formattedName = window.formatPatientNameFirst ? window.formatPatientNameFirst(change.name) : change.name;
             const newPatientData = {
                 id: 'pat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                nombre: change.name,
+                nombre: formattedName,
                 edad: change.edad || 0,
                 peso_kg: 0,
                 estatura_m: 0,
@@ -9129,6 +9149,7 @@ window.applyCensusChanges = async function() {
                 tmt: 0,
                 ia_report: null,
                 created_at: new Date().toISOString(),
+                user_id: currentUserId || null,
                 metadata: {
                     num_ficha: change.num_ficha || '',
                     regimen: change.regimen || '',
@@ -9141,53 +9162,66 @@ window.applyCensusChanges = async function() {
                     }
                 }
             };
-            
-            let currentUserId = AppState?.user?.id;
-            if (currentUserId) newPatientData.user_id = currentUserId;
-
-            if (supabaseClient) {
-                try {
-                    // Check if bed already has a patient record in Supabase
-                    const { data: existingBedPat } = await supabaseClient
-                        .from('pacientes')
-                        .select('id')
-                        .eq('cama', change.bed)
-                        .neq('estado_sala', 'de_alta')
-                        .maybeSingle();
-
-                    const dbPayload = { ...newPatientData };
-                    delete dbPayload.id;
-
-                    if (existingBedPat && existingBedPat.id) {
-                        newPatientData.id = existingBedPat.id;
-                        await supabaseClient.from('pacientes').update(dbPayload).eq('id', existingBedPat.id);
-                    } else {
-                        const { data: insData, error: insErr } = await supabaseClient.from('pacientes').insert([dbPayload]).select();
-                        if (insErr) {
-                            console.error("⚠️ Error insertando en Supabase:", insErr);
-                        } else if (insData && insData[0]) {
-                            newPatientData.id = insData[0].id;
-                        }
-                    }
-                } catch(e) {
-                    console.error("Error saving census patient to Supabase:", e);
-                }
-            }
-
-            // Always add/update in local storage cache
             localPatients = localPatients.filter(p => p.cama !== change.bed);
             localPatients.push(newPatientData);
         }
-    }
-    
+    });
+
     localStorage.setItem('local_ward_patients', JSON.stringify(localPatients));
     
-    showToast("🎉 ¡Censo de Dietools asignado a las camas con éxito!");
-    
-    const modal = document.getElementById('censusReviewModal');
-    if (modal) modal.classList.remove('active');
-    
+    // 3. Render table INSTANTLY!
     await window.renderWardBedsGrid();
+    showToast("🎉 ¡Censo asignado a las camas en tiempo récord!");
+
+    // 4. Background non-blocking sync to Supabase
+    if (supabaseClient) {
+        (async () => {
+            for (const change of pending) {
+                try {
+                    if (change.type === 'discharge') {
+                        if (change.patientId) {
+                            await supabaseClient.from('pacientes').update({ estado_sala: 'de_alta' }).eq('id', change.patientId);
+                        }
+                    } else if (change.type === 'admission') {
+                        const formattedName = window.formatPatientNameFirst ? window.formatPatientNameFirst(change.name) : change.name;
+                        const { data: existingBedPat } = await supabaseClient
+                            .from('pacientes')
+                            .select('id')
+                            .eq('cama', change.bed)
+                            .neq('estado_sala', 'de_alta')
+                            .maybeSingle();
+
+                        const dbPayload = {
+                            nombre: formattedName,
+                            edad: change.edad || 0,
+                            cama: change.bed,
+                            estado_sala: 'activo',
+                            user_id: currentUserId || null,
+                            metadata: {
+                                num_ficha: change.num_ficha || '',
+                                regimen: change.regimen || '',
+                                patologia_dm: !!change.patologia_dm,
+                                observaciones_generales: change.observaciones || '',
+                                location: {
+                                    floor: activeLoc.floor,
+                                    serviceId: activeLoc.serviceId,
+                                    serviceName: activeLoc.serviceName
+                                }
+                            }
+                        };
+
+                        if (existingBedPat && existingBedPat.id) {
+                            await supabaseClient.from('pacientes').update(dbPayload).eq('id', existingBedPat.id);
+                        } else {
+                            await supabaseClient.from('pacientes').insert([dbPayload]);
+                        }
+                    }
+                } catch(err) {
+                    console.error("Background sync error for bed:", change.bed, err);
+                }
+            }
+        })();
+    }
 };
 
 window.initCensusModal = () => {
