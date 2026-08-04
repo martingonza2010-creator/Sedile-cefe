@@ -7667,6 +7667,54 @@ export default function App() {
                       <li>Cuando al paciente le queden 2 tomas o menos en stock, la tarjeta mostrará automáticamente la alerta destacada <span className="text-amber-600 font-bold">⚠️ RECARGA REQUERIDA (≤ 2 tomas)</span>.</li>
                     </ul>
                   </div>
+
+                  {/* Sección Especial: Cambios y mejoras realizadas 04/08 */}
+                  <div className="mt-4 pt-4 border-t-2 border-purple-200 bg-purple-50/80 p-4 rounded-2xl space-y-2.5">
+                    <h4 className="font-black text-xs uppercase tracking-tight text-purple-950 flex items-center gap-2">
+                      <span>🚀</span>
+                      <span>Cambios y mejoras realizadas 04/08</span>
+                    </h4>
+                    <p className="text-[11px] text-purple-900 font-semibold leading-relaxed">
+                      Resumen de optimizaciones clínicas y correcciones de cálculo aplicadas al módulo de PEG Pediatría:
+                    </p>
+                    
+                    <div className="space-y-2 text-[10px] text-slate-700">
+                      <div className="bg-white p-2.5 rounded-xl border border-purple-100 shadow-sm space-y-1">
+                        <strong className="text-purple-900 text-[11px] block">1. Corrección de Tomas en Régimen Cero y Dosis 0g:</strong>
+                        <p className="leading-relaxed text-slate-600">
+                          Se corrigió la acumulación de tomas pasadas. Anteriormente, si un paciente permanecía en Régimen Cero o volumen 0g, el reloj contaba erróneamente los horarios pasados como "tomas administradas" virtuales (mostrando ej: 17 tomas con 0g consumidos). Ahora, si la dosis es de 0g o está pausado, las tomas administradas se mantienen estrictamente en <strong>0 tomas (Sin consumo)</strong>.
+                        </p>
+                      </div>
+
+                      <div className="bg-white p-2.5 rounded-xl border border-purple-100 shadow-sm space-y-1">
+                        <strong className="text-purple-900 text-[11px] block">2. Nueva Modalidad SOS (A Pedido):</strong>
+                        <p className="leading-relaxed text-slate-600">
+                          Se incorporó el botón y la etiqueta <strong>🆘 SOS (A Pedido)</strong>. Para pacientes cuyo suplemento PEG se administra solo si el servicio lo solicita (PRN), al activar esta opción se detiene el descuento automático por horario, manteniendo el stock remanente intacto sin descontar tomas por reloj.
+                        </p>
+                      </div>
+
+                      <div className="bg-white p-2.5 rounded-xl border border-purple-100 shadow-sm space-y-1">
+                        <strong className="text-purple-900 text-[11px] block">3. Corrección en Reingreso / Reactivación de Altas:</strong>
+                        <p className="leading-relaxed text-slate-600">
+                          Al hacer clic en <strong>Reactivar</strong> a un paciente desde el Historial de Altas, la app ahora solicita la cantidad exacta de sobres a entregar para la nueva estadía y actualiza la hora de inicio al momento actual, evitando que se le descuenten de inmediato tomas pasadas del día.
+                        </p>
+                      </div>
+
+                      <div className="bg-white p-2.5 rounded-xl border border-purple-100 shadow-sm space-y-1">
+                        <strong className="text-purple-900 text-[11px] block">4. Protección de Recargas Rápida (➕ PEG):</strong>
+                        <p className="leading-relaxed text-slate-600">
+                          Al añadir sobres nuevos con <strong>➕ PEG</strong> a un paciente que estuvo sin stock (0 sobres), el sistema resetea el tiempo de inicio al horario en que se entrega la recarga, evitando que el consumo acumulado de los días sin stock devore los sobres nuevos.
+                        </p>
+                      </div>
+
+                      <div className="bg-white p-2.5 rounded-xl border border-purple-100 shadow-sm space-y-1">
+                        <strong className="text-purple-900 text-[11px] block">5. Formateo de Decimales en Gramos:</strong>
+                        <p className="leading-relaxed text-slate-600">
+                          Se aplicó redondeo a 1 decimal en la presentación del stock remanente en gramos, eliminando decimales extensos por imprecisión de coma flotante (ej: cambiando <code>102.79999999999998g</code> por un limpio <code>102.8g</code>).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="bg-purple-50 p-3 rounded-xl border border-purple-100 text-[10px] leading-relaxed text-purple-700 shrink-0 font-medium space-y-1.5">
