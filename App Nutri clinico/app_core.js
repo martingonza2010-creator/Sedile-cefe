@@ -1436,7 +1436,7 @@ window.renderFilteredHistory = () => {
                     </div>
                     <div class="case-actions">
                         <button class="btn-case-action load" onclick="loadPatient('${r.id}')" title="Ver Ficha">📂 Ficha</button>
-                        ${isDischarged ? `<button class="btn-case-action restore" onclick="window.reactivateDischargedPatient('${r.id}')" title="Reingresar paciente a la sala activa">↩ Reingresar</button>` : ''}
+                        <button class="btn-case-action restore" onclick="event.stopPropagation(); window.reactivateDischargedPatient('${r.id}')" title="Reingresar paciente a la sala activa">↩ Reingresar</button>
                         <button class="btn-case-action trash" onclick="event.stopPropagation(); window.deletePatient('${r.id}')" title="Mover a Papelera">🗑️</button>
                     </div>
                 </div>
@@ -11039,22 +11039,47 @@ window.togglePatientStateGrid = async function(id, newState) {
 };
 
 window.readmitPatientGrid = async function(id) {
+    return window.reactivateDischargedPatient(id);
+};
+
+window.reactivateDischargedPatient = async function(id) {
     if (!confirm("¿Desea re-ingresar a este paciente al servicio activo?")) return;
-    
+
+    showToast("⏳ Re-ingresando paciente...");
+
     const dbId = await resolvePatientDbId(id);
+    let patientName = '';
+
     if (dbId && typeof supabaseClient !== 'undefined' && supabaseClient) {
-        const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'activo' }).eq('id', dbId);
-        if (error) console.warn("Supabase readmit error:", error.message);
+        const { data: p } = await supabaseClient.from('pacientes').select('nombre').eq('id', dbId).maybeSingle();
+        if (p) patientName = p.nombre || '';
+
+        const { error } = await supabaseClient
+            .from('pacientes')
+            .update({ 
+                estado_sala: 'activo',
+                cama: '' 
+            })
+            .eq('id', dbId);
+
+        if (error) console.warn("Supabase reactivate error:", error.message);
     }
+
     try {
         let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
-        const p = localCache.find(x => x && (x.id === id || x.id === dbId));
-        if (p) {
-            p.estado_sala = 'activo';
-            localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
+        const idx = localCache.findIndex(x => x && (x.id === id || x.id === dbId));
+        if (idx >= 0) {
+            localCache[idx].estado_sala = 'activo';
+            localCache[idx].cama = '';
         }
+        localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
     } catch(e) {}
-    showToast("↩️ Paciente re-ingresado al servicio.");
+
+    showToast(`↩️ ¡${patientName || 'Paciente'} re-ingresado a la sala activa!`);
+
+    if (typeof window.loadHistoryList === 'function') {
+        await window.loadHistoryList(false);
+    }
     await window.renderWardBedsGrid();
 };
 
