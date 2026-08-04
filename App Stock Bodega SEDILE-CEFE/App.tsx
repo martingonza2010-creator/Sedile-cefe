@@ -8100,7 +8100,7 @@ export default function App() {
                                 <div className="text-left xl:text-right shrink-0">
                                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Stock Restante</span>
                                   <span className="text-xs font-black text-slate-800">
-                                    {remainingSobres.toFixed(1)} sobres <span className="text-slate-400 font-semibold font-mono">({remainingGrams}g)</span>
+                                    {remainingSobres.toFixed(1)} sobres <span className="text-slate-400 font-semibold font-mono">({Number(remainingGrams.toFixed(1))}g)</span>
                                   </span>
                                 </div>
 
