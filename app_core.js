@@ -10765,15 +10765,6 @@ window.renderWardBedsGrid = async function() {
                             </tr>
                         `;
                     });
-                                    <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">📝</button>
-                                    <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')" style="padding:2px 4px; font-size:0.7rem;">${isCritico ? '↩️' : '🚨'}</button>
-                                    <button class="circle-action-btn" title="Asignar Cama" onclick="window.transferPatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">🚑</button>
-                                    <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">✔️</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
                 }
             }
 
