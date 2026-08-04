@@ -10175,6 +10175,59 @@ window.onAgeInputChanged = function() {
             window.toggleHydMethod();
         }
     }
+    if (typeof window.updateModulesCalculatorVisibility === 'function') {
+        window.updateModulesCalculatorVisibility();
+    }
+};
+
+window.updateModulesCalculatorVisibility = function() {
+    const modulesSection = document.getElementById('modulesCardSection') || document.getElementById('modulesAccordion')?.closest('section');
+    if (!modulesSection) return;
+
+    let isPedsOrNeo = false;
+
+    // 1. Check active location floor / serviceId
+    const activeLocStr = localStorage.getItem('activeLocation');
+    if (activeLocStr) {
+        try {
+            const activeLoc = JSON.parse(activeLocStr);
+            const serviceId = (activeLoc.serviceId || '').toLowerCase();
+            const floor = parseInt(activeLoc.floor);
+
+            if (floor === 3 || 
+                serviceId.includes('ped') || 
+                serviceId.includes('neo') || 
+                serviceId.includes('uci_ped') || 
+                serviceId.includes('timped') || 
+                serviceId.includes('onco') || 
+                serviceId.includes('rn_') || 
+                serviceId.includes('lactante') || 
+                serviceId.includes('infancia') || 
+                serviceId.includes('infantil')) {
+                isPedsOrNeo = true;
+            }
+        } catch(e) {}
+    }
+
+    // 2. Check loaded patient age
+    const ageInput = document.getElementById('edad');
+    if (ageInput && ageInput.value !== '') {
+        const ageVal = parseFloat(ageInput.value);
+        if (!isNaN(ageVal)) {
+            if (ageVal < 18) {
+                isPedsOrNeo = true;
+            }
+        }
+    }
+
+    // 3. Check pediatric Z-score or neonate panel visibility
+    const rowPediatric = document.getElementById('rowPediatric');
+    const rowNeonate = document.getElementById('rowNeonate');
+    if ((rowPediatric && rowPediatric.style.display !== 'none') || (rowNeonate && rowNeonate.style.display !== 'none')) {
+        isPedsOrNeo = true;
+    }
+
+    modulesSection.style.display = isPedsOrNeo ? 'block' : 'none';
 };
 
 window.toggleColumnVisibilityMenu = function(evt) {
@@ -10381,6 +10434,9 @@ window.renderWardBedsGrid = async function() {
         let floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
 
         window.applyColumnVisibilityStyles();
+        if (typeof window.updateModulesCalculatorVisibility === 'function') {
+            window.updateModulesCalculatorVisibility();
+        }
 
         // Render top transit alert banner
         let transitAlertContainer = document.getElementById('wardTransitAlertContainer');
