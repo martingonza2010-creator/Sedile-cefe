@@ -10459,7 +10459,6 @@ window.renderWardBedsGrid = async function() {
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <button id="btnToggleTableCols" onclick="window.toggleColumnVisibilityMenu(event)" style="background:#475569; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Personalizar columnas visibles en la vista de tabla">👁️ Columnas</button>
-                            <button onclick="window.print()" style="background:#0284c7; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Imprimir o exportar censo a PDF en 1 página (Carta/Oficio)">🖨️ Imprimir 1 Pág</button>
                             <button onclick="window.dischargeAllFloatingPatients()" style="background:#881337; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes fuera de servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
                         </div>
                     </div>
@@ -10469,7 +10468,6 @@ window.renderWardBedsGrid = async function() {
                 transitAlertContainer.innerHTML = `
                     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px; margin-bottom:8px;">
                         <button id="btnToggleTableCols" onclick="window.toggleColumnVisibilityMenu(event)" style="background:#475569; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Personalizar columnas visibles en la vista de tabla">👁️ Columnas Visibles</button>
-                        <button onclick="window.print()" style="background:#0284c7; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Imprimir o exportar censo a PDF en 1 página (Carta/Oficio)">🖨️ Imprimir 1 Pág</button>
                     </div>
                 `;
             }
