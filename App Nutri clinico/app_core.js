@@ -10033,6 +10033,11 @@ window.toggleRoomCollapse = function(roomKey, elementId) {
     }
     
     localStorage.setItem(storageKey, JSON.stringify(collapsed));
+
+    const viewMode = localStorage.getItem('wardViewMode') || 'grid';
+    if (viewMode === 'table') {
+        window.renderWardBedsGrid();
+    }
 };
 
 window.scrollToFloatingPatients = function() {
@@ -10043,20 +10048,20 @@ window.scrollToFloatingPatients = function() {
     
     let collapsed = [];
     try {
-        collapsed = JSON.parse(localStorage.getItem(storageKey) || '["Pacientes sin Cama"]');
+        collapsed = JSON.parse(localStorage.getItem(storageKey) || '["PACIENTES QUE YA NO ESTÁN EN EL SERVICIO"]');
     } catch(e) {
-        collapsed = ['Pacientes sin Cama'];
+        collapsed = ['PACIENTES QUE YA NO ESTÁN EN EL SERVICIO'];
     }
 
     const elementId = `room-group-floating`;
     const element = document.getElementById(elementId);
 
-    if (collapsed.includes('Pacientes sin Cama')) {
-        const idx = collapsed.indexOf('Pacientes sin Cama');
+    ['PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', 'Pacientes sin Cama'].forEach(k => {
+        const idx = collapsed.indexOf(k);
         if (idx >= 0) collapsed.splice(idx, 1);
-        localStorage.setItem(storageKey, JSON.stringify(collapsed));
-        if (element) element.classList.remove('collapsed');
-    }
+    });
+    localStorage.setItem(storageKey, JSON.stringify(collapsed));
+    if (element) element.classList.remove('collapsed');
 
     if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -10120,37 +10125,35 @@ window.dischargeAllFloatingPatients = async function(skipConfirm = false) {
 
     const floating = matchedPatients.filter(p => !bedsList.includes(p.cama));
     if (floating.length === 0) {
-        if (!skipConfirm) showToast("ℹ️ No hay pacientes sin cama para dar de alta.");
+        if (!skipConfirm) showToast("ℹ️ No hay pacientes fuera de servicio para dar de alta.");
         return;
     }
 
-    if (!skipConfirm && !confirm(`¿Dar de alta a los ${floating.length} paciente(s) sin cama de este servicio?\n(Quedarán en el historial pero ya no figurarán en la sala).`)) {
+    if (!skipConfirm && !confirm(`¿Dar de alta masiva a los ${floating.length} paciente(s) que ya no están en este servicio?\n(Quedarán guardados en el historial del censo).`)) {
         return;
     }
 
-    const nowIso = new Date().toISOString();
-    let localCache = [];
+    showToast("⏳ Dando de alta masiva...");
+
+    const dbIdsToDischarge = floating.map(p => p.id).filter(id => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+
+    // BULK UPDATE IN SUPABASE (Ultra fast)
+    if (dbIdsToDischarge.length > 0 && typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const { error } = await supabaseClient
+            .from('pacientes')
+            .update({ estado_sala: 'de_alta' })
+            .in('id', dbIdsToDischarge);
+            
+        if (error) console.warn("Bulk discharge error:", error.message);
+    }
+
     try {
-        localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        localCache = localCache.filter(item => item && !floating.some(f => f.id === item.id || f.cama === item.cama));
+        localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
     } catch(e) {}
 
-    let countDischarged = 0;
-    for (const p of floating) {
-        const dbId = await resolvePatientDbId(p.id);
-        if (dbId && typeof supabaseClient !== 'undefined' && supabaseClient) {
-            let meta = p.metadata || {};
-            meta.discharged_at = nowIso;
-            await supabaseClient.from('pacientes').update({
-                estado_sala: 'de_alta',
-                metadata: meta
-            }).eq('id', dbId);
-        }
-        localCache = localCache.filter(item => item && item.id !== p.id && item.id !== dbId);
-        countDischarged++;
-    }
-
-    localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
-    showToast(`🧹 ¡Se dieron de alta ${countDischarged} pacientes sin cama!`);
+    showToast(`🧹 ¡Se dieron de alta ${floating.length} pacientes en 1 segundo!`);
     await window.renderWardBedsGrid();
 };
 
@@ -10418,13 +10421,13 @@ window.renderWardBedsGrid = async function() {
         try {
             const rawStored = localStorage.getItem(storageKey);
             if (rawStored === null) {
-                collapsedRooms = ['Pacientes sin Cama'];
+                collapsedRooms = ['PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', 'Pacientes sin Cama'];
                 localStorage.setItem(storageKey, JSON.stringify(collapsedRooms));
             } else {
                 collapsedRooms = JSON.parse(rawStored);
             }
         } catch(e) {
-            collapsedRooms = ['Pacientes sin Cama'];
+            collapsedRooms = ['PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', 'Pacientes sin Cama'];
         }
 
         const viewMode = localStorage.getItem('wardViewMode') || 'grid';
@@ -10451,12 +10454,12 @@ window.renderWardBedsGrid = async function() {
                 transitAlertContainer.innerHTML = `
                     <div style="display:flex; align-items:center; justify-content:space-between; background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:10px 14px; margin-top:12px; margin-bottom:12px; font-size:0.8rem; color:#be123c; flex-wrap:wrap; gap:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
                         <div style="display:flex; align-items:center; gap:8px; font-weight:700;">
-                            <span>⚠️ Se detectaron ${floatingPatients.length} paciente(s) sin cama asignada (en tránsito).</span>
-                            <button class="btn-micro" onclick="window.scrollToFloatingPatients()" style="background:#be123c; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Ver y desplegar pacientes en tránsito">👇 Ver Pacientes</button>
+                            <span>⚠️ Se detectaron ${floatingPatients.length} paciente(s) que ya no están en cama (fuera de servicio).</span>
+                            <button class="btn-micro" onclick="window.scrollToFloatingPatients()" style="background:#be123c; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Ver pacientes fuera de servicio">👇 Ver Pacientes</button>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <button id="btnToggleTableCols" onclick="window.toggleColumnVisibilityMenu(event)" style="background:#475569; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Personalizar columnas visibles en la vista de tabla">👁️ Columnas</button>
-                            <button onclick="window.dischargeAllFloatingPatients()" style="background:#881337; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes sin cama de este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
+                            <button onclick="window.dischargeAllFloatingPatients()" style="background:#881337; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes fuera de servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
                         </div>
                     </div>
                 `;
@@ -10520,6 +10523,8 @@ window.renderWardBedsGrid = async function() {
                     if (patient) {
                         const isCritico = patient.estado_sala === 'critico' || patient.requiere_atencion;
                         const rowStyle = isCritico ? 'background: #fff5f5; border-bottom: 1px solid #fecaca;' : 'border-bottom: 1px solid #e2e8f0;';
+                        
+                        const numFicha = patient.metadata?.num_ficha || '';
                         
                         // Parse history entries for Observaciones Generales
                         const allHistoryForName = activePatients.filter(ap => ap.nombre === patient.nombre && ap.user_id === AppState.user.id);
@@ -10617,7 +10622,7 @@ window.renderWardBedsGrid = async function() {
                         const sexLetter = patient.sexo === 'm' ? 'M' : (patient.sexo === 'f' ? 'F' : '--');
 
                         // Admission date
-                        const fIngr = patient.metadata?.fecha_ingreso_servicio || '--';
+                        const firstAdmittedStr = patient.metadata?.fecha_ingreso_servicio || '--';
 
                         // Format evaluation date for Name column (ONLY if actually evaluated)
                         let dateStr = '';
@@ -10633,24 +10638,24 @@ window.renderWardBedsGrid = async function() {
                         }
 
                         tableHTML += `
-                            <tr style="${rowStyle} height: 42px;">
-                                <td class="col-cama" style="color: #475569; padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
-                                <td class="col-ficha" style="padding: 2px 4px;"><input type="text" value="${patient.metadata?.num_ficha || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-family:monospace; font-size:0.75rem; color:#334155; font-weight:600; outline:none; text-align:center;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Ficha/RUT (Editar)"></td>
+                            <tr style="${rowStyle}">
+                                <td class="col-cama" style="padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
+                                <td class="col-ficha" style="padding: 0;"><div class="resizable-tr"><input type="text" value="${numFicha}" placeholder="Ficha / RUT" style="width:100%; border:none; background:transparent; font-size:0.72rem; font-weight:bold; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Número de Ficha / RUT (Editar)"></div></td>
                                 <td class="col-nombre" style="padding: 2px 6px; line-height: 1.2;">
                                     <input type="text" value="${patient.nombre || ''}" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#312e81; font-weight:700; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'nombre', this.value)" title="Nombre (Editar)">
                                     ${dateStr ? `<span style="font-size:0.6rem; color:#7c3aed; font-weight:bold; display:block; cursor:pointer;" onclick="loadPatient('${patient.id}')">EVA ${dateStr}</span>` : ''}
                                 </td>
-                                <td class="col-edad" style="padding: 2px; text-align: center;"><input type="number" min="0" max="120" value="${patient.edad || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#1e293b; font-weight:600; text-align:center; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'edad', this.value)" title="Edad (Editar)"></td>
+                                <td class="col-edad" style="padding: 6px 10px; text-align: center;">${ageStr}</td>
                                 <td class="col-dx" style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
-                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#f8fafc; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
-                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
-                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
+                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
+                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
+                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
                                 <td class="col-dieta" style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
-                                <td class="col-obs" style="padding: 2px 4px; vertical-align: middle;"><textarea placeholder="Observaciones..." style="width:100%; height:34px; min-height:30px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; font-size:0.68rem; font-family:inherit; color:#334155; padding:3px 5px; outline:none; resize:vertical; line-height:1.2; box-shadow:inset 0 1px 2px rgba(0,0,0,0.03);" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" onkeydown="if(event.altKey && event.key === 'Enter'){ event.preventDefault(); const s=this.selectionStart; this.value = this.value.substring(0, s) + '\n' + this.value.substring(this.selectionEnd); this.selectionStart = this.selectionEnd = s + 1; this.dispatchEvent(new Event('change')); }" title="Observaciones (Usar Alt + Enter para salto de línea)">${patient.metadata?.observaciones_generales || customObs || ''}</textarea></td>
+                                <td class="col-obs" style="padding: 2px 4px;"><input type="text" value="${customObs || ''}" placeholder="Observaciones..." style="width:100%; border:none; background:transparent; font-size:0.65rem; color:#64748b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" title="Observaciones (Editar)"></td>
                                 <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
-                                <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="text" value="${tallaDisplay}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:600; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla (m o cm)"></td>
-                                <td class="col-imc" id="imcCell_${patient.id}" style="padding: 6px 10px; text-align: center; font-weight: 700; color: #1e293b; background: #ffffff;">${imcStr}</td>
-                                <td class="col-imc" id="estNutCell_${patient.id}" style="padding: 6px 10px; text-align: center; ${statusBgStyle}">${abbrevStatus}</td>
+                                <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || (patient.estatura_m ? Math.round(patient.estatura_m * 100) : '')}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla cm (Editar)"></td>
+                                <td class="col-imc" style="padding: 6px 10px; text-align: center; font-weight:700; color:#1e3a8a;">${imcStr}</td>
+                                <td class="col-imc" style="padding: 6px 10px; text-align: center; font-weight:700; color:#1e3a8a;">${abbrevStatus}</td>
                                 <td class="col-nrs" style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
                                 <td class="col-lpp" style="padding: 2px; text-align: center;">
                                     <select onchange="window.quickUpdatePatientField('${patient.id}', 'riesgo_lpp', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}; outline:none; cursor:pointer;" title="Riesgo LPP (Editar)">
@@ -10660,31 +10665,24 @@ window.renderWardBedsGrid = async function() {
                                         <option value="Alto" ${patient.metadata?.riesgo_lpp === 'Alto' ? 'selected' : ''}>Alto</option>
                                     </select>
                                 </td>
-                                <td class="col-eval" style="padding: 2px; text-align: center;"><select onchange="window.quickUpdatePatientField('${patient.id}', 'eval_tipo', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:#312e81; outline:none; cursor:pointer;" title="Tipo Evaluación (Editar)"><option value="VGO" ${patient.metadata?.eval_tipo === 'VGO' || !patient.metadata?.eval_tipo ? 'selected' : ''}>VGO</option><option value="VI" ${patient.metadata?.eval_tipo === 'VI' ? 'selected' : ''}>VI</option><option value="S/E" ${patient.metadata?.eval_tipo === 'S/E' ? 'selected' : ''}>S/E</option><option value="RE-EVAL" ${patient.metadata?.eval_tipo === 'RE-EVAL' ? 'selected' : ''}>RE-EVAL</option></select></td>
-                                <td class="col-edad" style="padding: 2px; text-align: center;"><select onchange="window.quickUpdatePatientField('${patient.id}', 'sexo', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none; cursor:pointer;" title="Sexo (Editar)"><option value="m" ${patient.sexo === 'm' || !patient.sexo ? 'selected' : ''}>M</option><option value="f" ${patient.sexo === 'f' ? 'selected' : ''}>F</option></select></td>
-                                <td class="col-eval" style="padding: 2px; text-align: center;"><input type="text" value="${patient.metadata?.fecha_ingreso_servicio || ''}" placeholder="DD/MM" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#334155; font-weight:600; text-align:center; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'fecha_ingreso_servicio', this.value)" title="Fecha Ingreso (Editar)"></td>
+                                <td class="col-eval" style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
+                                <td class="col-edad" style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
+                                <td class="col-eval" style="padding: 6px 10px; text-align: center;">${firstAdmittedStr}</td>
                                 <td style="padding: 6px 10px; text-align: center;">
-                                    <div style="display:flex; gap:4px; justify-content:center;">
-                                        <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">📝</button>
-                                        <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')" style="padding:2px 4px; font-size:0.7rem;">${isCritico ? '↩️' : '🚨'}</button>
-                                        <button class="circle-action-btn" title="Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">🚑</button>
-                                        <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">✔️</button>
-                                    </div>
+                                    <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.75rem;">📝</button>
+                                    <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.75rem;">✔️</button>
                                 </td>
                             </tr>
                         `;
                     } else {
                         tableHTML += `
                             <tr style="border-bottom: 1px solid #e2e8f0; height: 42px; background: #fafafa;">
-                                <td class="col-cama" style="color: #94a3b8; padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
-                                <td colspan="18" style="padding: 6px 10px; text-align: left; color: #94a3b8;">
-                                    <span style="font-size:0.7rem; font-weight:700; background:#e2e8f0; color:#475569; padding:2px 6px; border-radius:4px; margin-right: 15px;">DISPONIBLE</span>
-                                    <button class="btn-register-patient" onclick="window.registerPatientInBed('${bedName}')" style="padding: 2px 8px; font-size: 0.65rem;">
+                                <td colspan="20" style="padding: 6px 10px; text-align: left; color: #94a3b8;">
+                                    <span style="font-size:0.7rem; font-weight:700; background:#e2e8f0; color:#475569; padding:2px 6px; border-radius:4px; margin-right: 15px;">${bedName}</span>
+                                    <span style="font-size:0.7rem;">DISPONIBLE</span>
+                                    <button class="btn-register-patient" onclick="window.registerPatientInBed('${bedName}')" style="padding: 2px 8px; font-size: 0.65rem; margin-left:10px;">
                                         ➕ Registrar Paciente
                                     </button>
-                                </td>
-                                <td style="padding: 6px 10px; text-align: center;">
-                                    ${isAdmin ? `<button class="circle-action-btn" title="Eliminar Cama" onclick="window.removeBedFromService('${bedName}')" style="padding:2px 4px; font-size:0.7rem;">🗑️</button>` : ''}
                                 </td>
                             </tr>
                         `;
@@ -10694,143 +10692,84 @@ window.renderWardBedsGrid = async function() {
 
             // Floating patients at the bottom of the table
             if (floatingPatients.length > 0) {
-                const isFloatingCollapsedTable = collapsedRooms.includes('Pacientes sin Cama');
+                const isFloatingCollapsedTable = collapsedRooms.includes('PACIENTES QUE YA NO ESTÁN EN EL SERVICIO') || collapsedRooms.includes('Pacientes sin Cama');
                 tableHTML += `
-                    <tr style="background: #fdf2f8; font-weight: 800; color: #db2777; border-top: 2px solid #fbcfe8; height: 36px; cursor: pointer;" onclick="window.toggleRoomCollapse('Pacientes sin Cama', 'room-group-floating-table')">
+                    <tr style="background: #fdf2f8; font-weight: 800; color: #db2777; border-top: 2px solid #fbcfe8; height: 36px; cursor: pointer;" onclick="window.toggleRoomCollapse('PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', 'room-group-floating-table')">
                         <td colspan="20" style="padding: 6px 10px; font-size: 0.8rem; border-bottom: 1px solid #fbcfe8; text-transform: uppercase;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <div>
-                                    <span class="room-toggle-icon" style="display:inline-block; transition: transform 0.2s ease; ${isFloatingCollapsedTable ? 'transform: rotate(-90deg);' : ''}">▼</span> ⚠️ Pacientes sin Cama (Cupos / Tránsito) (${floatingPatients.length})
+                                    <span class="room-toggle-icon" style="display:inline-block; transition: transform 0.2s ease; ${isFloatingCollapsedTable ? 'transform: rotate(-90deg);' : ''}">▼</span> ⚠️ PACIENTES QUE YA NO ESTÁN EN EL SERVICIO (${floatingPatients.length})
                                 </div>
-                                <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes sin cama en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
+                                <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta masiva a todos los pacientes que ya no están en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
                             </div>
                         </td>
                     </tr>
                 `;
 
                 if (!isFloatingCollapsedTable) {
+                    floatingPatients.forEach(patient => {
+                        const numFicha = patient.metadata?.num_ficha || '';
+                        const ageStr = patient.edad || '--';
+                        const imcNum = patient.peso_kg > 0 && patient.estatura_m > 0 ? (patient.peso_kg / (patient.estatura_m * patient.estatura_m)) : 0;
+                        const imcStr = imcNum > 0 ? imcNum.toFixed(1).replace('.', ',') : '--';
+                        let abbrevStatus = '--';
+                        if (imcNum > 0) {
+                            const isElderly = patient.edad >= 65;
+                            if (isElderly) {
+                                if (imcNum < 23) abbrevStatus = 'BP'; else if (imcNum < 28) abbrevStatus = 'N'; else if (imcNum < 32) abbrevStatus = 'SP'; else abbrevStatus = 'OB';
+                            } else {
+                                if (imcNum < 18.5) abbrevStatus = 'BP'; else if (imcNum < 25) abbrevStatus = 'N'; else if (imcNum < 30) abbrevStatus = 'SP'; else abbrevStatus = 'OB';
+                            }
+                        }
+                        const dietText = (patient.metadata?.regimen || 'Normal');
+                        const nrsVal = patient.metadata?.nrs_score || patient.tmt || '--';
+                        const evalType = patient.metadata?.patient_type === 'pediatric' ? 'Peds' : (patient.metadata?.patient_type === 'neonate' ? 'Neo' : 'VGO');
+                        const sexLetter = patient.sexo === 'm' ? 'M' : (patient.sexo === 'f' ? 'F' : '--');
+                        const fIngr = patient.metadata?.fecha_ingreso_servicio || '--';
+                        const dateStr = patient.created_at ? `${String(new Date(patient.created_at).getDate()).padStart(2, '0')}-${String(new Date(patient.created_at).getMonth() + 1).padStart(2, '0')}` : '';
 
-                floatingPatients.forEach(patient => {
-                    const isCritico = patient.estado_sala === 'critico' || patient.requiere_atencion;
-                    const rowStyle = 'background: #fff5f8; border-bottom: 1px solid #fbcfe8;';
-
-                    const allHistoryForName = activePatients.filter(ap => ap.nombre === patient.nombre && ap.user_id === AppState.user.id);
-                    allHistoryForName.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                    
-                    const obsEntries = [];
-                    allHistoryForName.forEach(h => {
-                        const d = new Date(h.created_at);
-                        const dateLabel = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-                        let parts = [];
-                        const examsList = h.metadata?.assessment?.exams || [];
-                        if (examsList.length > 0) {
-                            const examsStr = examsList.map(e => `${e.type} ${e.res}`).join(' - ');
-                            parts.push(examsStr);
-                        }
-                        if (h.metadata?.antecedentes_morbidos && parts.length === 0) {
-                            parts.push(h.metadata.antecedentes_morbidos);
-                        }
-                        if (parts.length > 0) {
-                            obsEntries.push(`${dateLabel}: ${parts.join(' - ')}`);
-                        }
+                        tableHTML += `
+                            <tr style="background: #fff5f8; border-bottom: 1px solid #fbcfe8; height: 42px;">
+                                <td class="col-cama" style="padding: 0;"><div class="resizable-tr" style="color: #db2777;">📋 Sin Cama</div></td>
+                                <td class="col-ficha" style="padding: 0;"><div class="resizable-tr"><input type="text" value="${numFicha}" placeholder="Ficha / RUT" style="width:100%; border:none; background:transparent; font-size:0.72rem; font-weight:bold; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Número de Ficha / RUT (Editar)"></div></td>
+                                <td class="col-nombre" style="padding: 2px 6px; line-height: 1.2;">
+                                    <input type="text" value="${patient.nombre || ''}" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#312e81; font-weight:700; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'nombre', this.value)" title="Nombre (Editar)">
+                                    ${dateStr ? `<span style="font-size:0.6rem; color:#7c3aed; font-weight:bold; display:block; cursor:pointer;" onclick="loadPatient('${patient.id}')">EVA ${dateStr}</span>` : ''}
+                                </td>
+                                <td class="col-edad" style="padding: 6px 10px; text-align: center;">${ageStr}</td>
+                                <td class="col-dx" style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
+                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
+                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
+                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
+                                <td class="col-dieta" style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
+                                <td class="col-obs" style="padding: 2px 4px;"><input type="text" value="${patient.metadata?.observaciones_generales || ''}" placeholder="Observaciones..." style="width:100%; border:none; background:transparent; font-size:0.65rem; color:#64748b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" title="Observaciones (Editar)"></td>
+                                <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value, true)" title="Peso (Editar)"></td>
+                                <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value, true)" title="Talla cm (Editar)"></td>
+                                <td class="col-imc" style="padding: 6px 10px; text-align: center; font-weight:700; color:#9d174d;">${imcStr}</td>
+                                <td class="col-imc" style="padding: 6px 10px; text-align: center; font-weight:700; color:#9d174d;">${abbrevStatus}</td>
+                                <td class="col-nrs" style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
+                                <td class="col-lpp" style="padding: 2px; text-align: center;">
+                                    <select onchange="window.quickUpdatePatientField('${patient.id}', 'riesgo_lpp', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}; outline:none; cursor:pointer;" title="Riesgo LPP (Editar)">
+                                        <option value="Sin evaluar" ${!patient.metadata?.riesgo_lpp || patient.metadata?.riesgo_lpp === 'Sin evaluar' ? 'selected' : ''}>--</option>
+                                        <option value="Bajo" ${patient.metadata?.riesgo_lpp === 'Bajo' ? 'selected' : ''}>Bajo</option>
+                                        <option value="Medio" ${patient.metadata?.riesgo_lpp === 'Medio' ? 'selected' : ''}>Medio</option>
+                                        <option value="Alto" ${patient.metadata?.riesgo_lpp === 'Alto' ? 'selected' : ''}>Alto</option>
+                                    </select>
+                                </td>
+                                <td class="col-eval" style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
+                                <td class="col-edad" style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
+                                <td class="col-eval" style="padding: 6px 10px; text-align: center;">${fIngr}</td>
+                                <td style="padding: 6px 10px; text-align: center;">
+                                    <div style="display:flex; gap:4px; justify-content:center;">
+                                        <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">📝</button>
+                                        <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">✔️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
                     });
-                    const customObs = patient.metadata?.observaciones_generales || '';
-                    let obsGeneralesText = obsEntries.slice(0, 3).join(' | ') || 'Sin registros';
-                    if (customObs) {
-                        obsGeneralesText = `<b>${customObs}</b>` + (obsGeneralesText !== 'Sin registros' ? ` | ${obsGeneralesText}` : '');
-                    }
-
-                    const ageStr = patient.edad || '--';
-                    const tallaStr = patient.estatura_m ? (patient.estatura_m).toFixed(2).replace('.', ',') : '--';
-                    const imcNum = patient.peso_kg > 0 && patient.estatura_m > 0 ? (patient.peso_kg / (patient.estatura_m * patient.estatura_m)) : 0;
-                    const imcStr = imcNum > 0 ? imcNum.toFixed(1).replace('.', ',') : '--';
-                    
-                    let abbrevStatus = '--';
-                    if (imcNum > 0) {
-                        const isElderly = patient.edad >= 65;
-                        if (isElderly) {
-                            if (imcNum < 23) abbrevStatus = 'BP';
-                            else if (imcNum < 28) abbrevStatus = 'N';
-                            else if (imcNum < 32) abbrevStatus = 'SP';
-                            else abbrevStatus = 'OB';
-                        } else {
-                            if (imcNum < 18.5) abbrevStatus = 'BP';
-                            else if (imcNum < 25) abbrevStatus = 'N';
-                            else if (imcNum < 30) abbrevStatus = 'SP';
-                            else abbrevStatus = 'OB';
-                        }
-                    }
-
-                    const dmCheck = patient.metadata?.patologia_dm ? 'X' : '';
-                    const htaCheck = patient.metadata?.patologia_hta ? 'X' : '';
-                    const ercCheck = patient.metadata?.patologia_erc ? 'X' : '';
-
-                    // Dietoterapia text (Régimen FIRST)
-                    const regimenVal = patient.metadata?.regimen || '';
-                    let dietDetail = '';
-                    const formula = patient.metadata?.simulator?.formula || '';
-                    if (formula) {
-                        dietDetail = formula;
-                    } else if (patient.metadata?.simulator?.oral?.kcal) {
-                        dietDetail = `Oral (${patient.metadata.simulator.oral.kcal} kcal)`;
-                    }
-                    let dietText = regimenVal ? (dietDetail ? `${regimenVal} | ${dietDetail}` : regimenVal) : (dietDetail || 'Normal');
-
-                    const nrsVal = patient.metadata?.nrs_score || patient.tmt || '--';
-                    const evalType = patient.metadata?.patient_type === 'pediatric' ? 'Peds' : (patient.metadata?.patient_type === 'neonate' ? 'Neo' : 'VGO');
-                    const sexLetter = patient.sexo === 'm' ? 'M' : (patient.sexo === 'f' ? 'F' : '--');
-                    const fIngr = patient.metadata?.fecha_ingreso_servicio || '--';
-
-                    let dateStr = '';
-                    if (patient.created_at) {
-                        const d = new Date(patient.created_at);
-                        dateStr = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                    }
-
-                    tableHTML += `
-                        <tr style="${rowStyle} height: 42px;">
-                            <td class="col-cama" style="color: #db2777; padding: 0;"><div class="resizable-tr">📋 Sin Cama</div></td>
-                            <td class="col-ficha" style="padding: 2px 4px;"><input type="text" value="${patient.metadata?.num_ficha || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-family:monospace; font-size:0.75rem; color:#334155; font-weight:600; outline:none; text-align:center;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Ficha/RUT (Editar)"></td>
-                            <td class="col-nombre" style="padding: 2px 6px; line-height: 1.2;">
-                                <input type="text" value="${patient.nombre || ''}" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#312e81; font-weight:700; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'nombre', this.value)" title="Nombre (Editar)">
-                                ${dateStr ? `<span style="font-size:0.6rem; color:#7c3aed; font-weight:bold; display:block; cursor:pointer;" onclick="loadPatient('${patient.id}')">EVA ${dateStr}</span>` : ''}
-                            </td>
-                            <td class="col-edad" style="padding: 6px 10px; text-align: center;">${ageStr}</td>
-                            <td class="col-dx" style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
-                            <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
-                            <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
-                            <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
-                            <td class="col-dieta" style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
-                            <td class="col-obs" style="padding: 2px 4px;"><input type="text" value="${customObs || ''}" placeholder="Observaciones..." style="width:100%; border:none; background:transparent; font-size:0.65rem; color:#64748b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" title="Observaciones (Editar)"></td>
-                            <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
-                            <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || (patient.estatura_m ? Math.round(patient.estatura_m * 100) : '')}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla cm (Editar)"></td>
-                            <td class="col-imc" style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${imcStr}</td>
-                            <td class="col-imc" style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${abbrevStatus}</td>
-                            <td class="col-nrs" style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
-                            <td class="col-lpp" style="padding: 2px; text-align: center;">
-                                <select onchange="window.quickUpdatePatientField('${patient.id}', 'riesgo_lpp', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}; outline:none; cursor:pointer;" title="Riesgo LPP (Editar)">
-                                    <option value="Sin evaluar" ${!patient.metadata?.riesgo_lpp || patient.metadata?.riesgo_lpp === 'Sin evaluar' ? 'selected' : ''}>--</option>
-                                    <option value="Bajo" ${patient.metadata?.riesgo_lpp === 'Bajo' ? 'selected' : ''}>Bajo</option>
-                                    <option value="Medio" ${patient.metadata?.riesgo_lpp === 'Medio' ? 'selected' : ''}>Medio</option>
-                                    <option value="Alto" ${patient.metadata?.riesgo_lpp === 'Alto' ? 'selected' : ''}>Alto</option>
-                                </select>
-                            </td>
-                            <td class="col-eval" style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
-                            <td class="col-edad" style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
-                            <td class="col-eval" style="padding: 6px 10px; text-align: center;">${fIngr}</td>
-                            <td style="padding: 6px 10px; text-align: center;">
-                                <div style="display:flex; gap:4px; justify-content:center;">
-                                    <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">📝</button>
-                                    <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')" style="padding:2px 4px; font-size:0.7rem;">${isCritico ? '↩️' : '🚨'}</button>
-                                    <button class="circle-action-btn" title="Asignar Cama" onclick="window.transferPatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">🚑</button>
-                                    <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">✔️</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
                 }
+            }
 
             tableHTML += `
                         </tbody>
@@ -10944,7 +10883,6 @@ window.renderWardBedsGrid = async function() {
                         <div class="bed-actions-row">
                             <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
                             <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
-                            <button class="circle-action-btn" title="Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
                             <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
                         </div>
                         ${isAdmin ? `<button class="btn-delete-bed-absolute" title="Eliminar Cama del Servicio" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
@@ -10977,7 +10915,7 @@ window.renderWardBedsGrid = async function() {
         floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
         if (floatingPatients.length > 0) {
             const elementId = `room-group-floating`;
-            const isFloatingCollapsed = collapsedRooms.includes('Pacientes sin Cama');
+            const isFloatingCollapsed = collapsedRooms.includes('PACIENTES QUE YA NO ESTÁN EN EL SERVICIO') || collapsedRooms.includes('Pacientes sin Cama');
             const roomGroup = document.createElement('div');
             roomGroup.id = elementId;
             roomGroup.className = `room-group ${isFloatingCollapsed ? 'collapsed' : ''}`;
@@ -10987,14 +10925,14 @@ window.renderWardBedsGrid = async function() {
             `;
             
             const headerHTML = `
-                <div class="room-group-header" onclick="window.toggleRoomCollapse('Pacientes sin Cama', '${elementId}')" style="background: #fdf2f8; border-left: 4px solid #db2777; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <div class="room-group-header" onclick="window.toggleRoomCollapse('PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', '${elementId}')" style="background: #fdf2f8; border-left: 4px solid #db2777; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                     <div class="room-title-container">
                         <span class="room-toggle-icon">▼</span>
-                        <span style="color: #db2777; font-weight: bold;">⚠️ Pacientes sin Cama (Cupos / Tránsito)</span>
+                        <span style="color: #db2777; font-weight: bold;">⚠️ PACIENTES QUE YA NO ESTÁN EN EL SERVICIO</span>
                     </div>
                     <div class="room-badges-container" style="display:flex; align-items:center; gap:10px;">
                         ${summaryHTML}
-                        <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes sin cama en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
+                        <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta masiva a todos los pacientes que ya no están en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
                     </div>
                 </div>
             `;
@@ -11034,7 +10972,6 @@ window.renderWardBedsGrid = async function() {
                     <div class="bed-actions-row">
                         <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
                         <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
-                        <button class="circle-action-btn" title="Asignar / Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
                         <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
                     </div>
                 `;
@@ -11096,6 +11033,26 @@ window.togglePatientStateGrid = async function(id, newState) {
         }
     } catch(e) {}
     showToast("✅ Estado de paciente actualizado.");
+    await window.renderWardBedsGrid();
+};
+
+window.readmitPatientGrid = async function(id) {
+    if (!confirm("¿Desea re-ingresar a este paciente al servicio activo?")) return;
+    
+    const dbId = await resolvePatientDbId(id);
+    if (dbId && typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'activo' }).eq('id', dbId);
+        if (error) console.warn("Supabase readmit error:", error.message);
+    }
+    try {
+        let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        const p = localCache.find(x => x && (x.id === id || x.id === dbId));
+        if (p) {
+            p.estado_sala = 'activo';
+            localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
+        }
+    } catch(e) {}
+    showToast("↩️ Paciente re-ingresado al servicio.");
     await window.renderWardBedsGrid();
 };
 

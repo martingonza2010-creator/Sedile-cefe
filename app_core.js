@@ -10033,6 +10033,11 @@ window.toggleRoomCollapse = function(roomKey, elementId) {
     }
     
     localStorage.setItem(storageKey, JSON.stringify(collapsed));
+
+    const viewMode = localStorage.getItem('wardViewMode') || 'grid';
+    if (viewMode === 'table') {
+        window.renderWardBedsGrid();
+    }
 };
 
 window.scrollToFloatingPatients = function() {
@@ -10043,20 +10048,20 @@ window.scrollToFloatingPatients = function() {
     
     let collapsed = [];
     try {
-        collapsed = JSON.parse(localStorage.getItem(storageKey) || '["Pacientes sin Cama"]');
+        collapsed = JSON.parse(localStorage.getItem(storageKey) || '["PACIENTES QUE YA NO ESTÁN EN EL SERVICIO"]');
     } catch(e) {
-        collapsed = ['Pacientes sin Cama'];
+        collapsed = ['PACIENTES QUE YA NO ESTÁN EN EL SERVICIO'];
     }
 
     const elementId = `room-group-floating`;
     const element = document.getElementById(elementId);
 
-    if (collapsed.includes('Pacientes sin Cama')) {
-        const idx = collapsed.indexOf('Pacientes sin Cama');
+    ['PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', 'Pacientes sin Cama'].forEach(k => {
+        const idx = collapsed.indexOf(k);
         if (idx >= 0) collapsed.splice(idx, 1);
-        localStorage.setItem(storageKey, JSON.stringify(collapsed));
-        if (element) element.classList.remove('collapsed');
-    }
+    });
+    localStorage.setItem(storageKey, JSON.stringify(collapsed));
+    if (element) element.classList.remove('collapsed');
 
     if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -10120,37 +10125,35 @@ window.dischargeAllFloatingPatients = async function(skipConfirm = false) {
 
     const floating = matchedPatients.filter(p => !bedsList.includes(p.cama));
     if (floating.length === 0) {
-        if (!skipConfirm) showToast("ℹ️ No hay pacientes sin cama para dar de alta.");
+        if (!skipConfirm) showToast("ℹ️ No hay pacientes fuera de servicio para dar de alta.");
         return;
     }
 
-    if (!skipConfirm && !confirm(`¿Dar de alta a los ${floating.length} paciente(s) sin cama de este servicio?\n(Quedarán en el historial pero ya no figurarán en la sala).`)) {
+    if (!skipConfirm && !confirm(`¿Dar de alta masiva a los ${floating.length} paciente(s) que ya no están en este servicio?\n(Quedarán guardados en el historial del censo).`)) {
         return;
     }
 
-    const nowIso = new Date().toISOString();
-    let localCache = [];
+    showToast("⏳ Dando de alta masiva...");
+
+    const dbIdsToDischarge = floating.map(p => p.id).filter(id => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+
+    // BULK UPDATE IN SUPABASE (Ultra fast)
+    if (dbIdsToDischarge.length > 0 && typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const { error } = await supabaseClient
+            .from('pacientes')
+            .update({ estado_sala: 'de_alta' })
+            .in('id', dbIdsToDischarge);
+            
+        if (error) console.warn("Bulk discharge error:", error.message);
+    }
+
     try {
-        localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        localCache = localCache.filter(item => item && !floating.some(f => f.id === item.id || f.cama === item.cama));
+        localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
     } catch(e) {}
 
-    let countDischarged = 0;
-    for (const p of floating) {
-        const dbId = await resolvePatientDbId(p.id);
-        if (dbId && typeof supabaseClient !== 'undefined' && supabaseClient) {
-            let meta = p.metadata || {};
-            meta.discharged_at = nowIso;
-            await supabaseClient.from('pacientes').update({
-                estado_sala: 'de_alta',
-                metadata: meta
-            }).eq('id', dbId);
-        }
-        localCache = localCache.filter(item => item && item.id !== p.id && item.id !== dbId);
-        countDischarged++;
-    }
-
-    localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
-    showToast(`🧹 ¡Se dieron de alta ${countDischarged} pacientes sin cama!`);
+    showToast(`🧹 ¡Se dieron de alta ${floating.length} pacientes en 1 segundo!`);
     await window.renderWardBedsGrid();
 };
 
@@ -10418,13 +10421,13 @@ window.renderWardBedsGrid = async function() {
         try {
             const rawStored = localStorage.getItem(storageKey);
             if (rawStored === null) {
-                collapsedRooms = ['Pacientes sin Cama'];
+                collapsedRooms = ['PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', 'Pacientes sin Cama'];
                 localStorage.setItem(storageKey, JSON.stringify(collapsedRooms));
             } else {
                 collapsedRooms = JSON.parse(rawStored);
             }
         } catch(e) {
-            collapsedRooms = ['Pacientes sin Cama'];
+            collapsedRooms = ['PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', 'Pacientes sin Cama'];
         }
 
         const viewMode = localStorage.getItem('wardViewMode') || 'grid';
@@ -10451,12 +10454,12 @@ window.renderWardBedsGrid = async function() {
                 transitAlertContainer.innerHTML = `
                     <div style="display:flex; align-items:center; justify-content:space-between; background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:10px 14px; margin-top:12px; margin-bottom:12px; font-size:0.8rem; color:#be123c; flex-wrap:wrap; gap:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
                         <div style="display:flex; align-items:center; gap:8px; font-weight:700;">
-                            <span>⚠️ Se detectaron ${floatingPatients.length} paciente(s) sin cama asignada (en tránsito).</span>
-                            <button class="btn-micro" onclick="window.scrollToFloatingPatients()" style="background:#be123c; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Ver y desplegar pacientes en tránsito">👇 Ver Pacientes</button>
+                            <span>⚠️ Se detectaron ${floatingPatients.length} paciente(s) que ya no están en cama (fuera de servicio).</span>
+                            <button class="btn-micro" onclick="window.scrollToFloatingPatients()" style="background:#be123c; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Ver pacientes fuera de servicio">👇 Ver Pacientes</button>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <button id="btnToggleTableCols" onclick="window.toggleColumnVisibilityMenu(event)" style="background:#475569; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Personalizar columnas visibles en la vista de tabla">👁️ Columnas</button>
-                            <button onclick="window.dischargeAllFloatingPatients()" style="background:#881337; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes sin cama de este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
+                            <button onclick="window.dischargeAllFloatingPatients()" style="background:#881337; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes fuera de servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
                         </div>
                     </div>
                 `;
@@ -10689,15 +10692,15 @@ window.renderWardBedsGrid = async function() {
 
             // Floating patients at the bottom of the table
             if (floatingPatients.length > 0) {
-                const isFloatingCollapsedTable = collapsedRooms.includes('Pacientes sin Cama');
+                const isFloatingCollapsedTable = collapsedRooms.includes('PACIENTES QUE YA NO ESTÁN EN EL SERVICIO') || collapsedRooms.includes('Pacientes sin Cama');
                 tableHTML += `
-                    <tr style="background: #fdf2f8; font-weight: 800; color: #db2777; border-top: 2px solid #fbcfe8; height: 36px; cursor: pointer;" onclick="window.toggleRoomCollapse('Pacientes sin Cama', 'room-group-floating-table')">
+                    <tr style="background: #fdf2f8; font-weight: 800; color: #db2777; border-top: 2px solid #fbcfe8; height: 36px; cursor: pointer;" onclick="window.toggleRoomCollapse('PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', 'room-group-floating-table')">
                         <td colspan="20" style="padding: 6px 10px; font-size: 0.8rem; border-bottom: 1px solid #fbcfe8; text-transform: uppercase;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <div>
-                                    <span class="room-toggle-icon" style="display:inline-block; transition: transform 0.2s ease; ${isFloatingCollapsedTable ? 'transform: rotate(-90deg);' : ''}">▼</span> ⚠️ Pacientes sin Cama (Cupos / Tránsito) (${floatingPatients.length})
+                                    <span class="room-toggle-icon" style="display:inline-block; transition: transform 0.2s ease; ${isFloatingCollapsedTable ? 'transform: rotate(-90deg);' : ''}">▼</span> ⚠️ PACIENTES QUE YA NO ESTÁN EN EL SERVICIO (${floatingPatients.length})
                                 </div>
-                                <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes sin cama en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
+                                <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta masiva a todos los pacientes que ya no están en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
                             </div>
                         </td>
                     </tr>
@@ -10880,7 +10883,6 @@ window.renderWardBedsGrid = async function() {
                         <div class="bed-actions-row">
                             <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
                             <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
-                            <button class="circle-action-btn" title="Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
                             <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
                         </div>
                         ${isAdmin ? `<button class="btn-delete-bed-absolute" title="Eliminar Cama del Servicio" onclick="window.removeBedFromService('${bedName}')">🗑️</button>` : ''}
@@ -10913,7 +10915,7 @@ window.renderWardBedsGrid = async function() {
         floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
         if (floatingPatients.length > 0) {
             const elementId = `room-group-floating`;
-            const isFloatingCollapsed = collapsedRooms.includes('Pacientes sin Cama');
+            const isFloatingCollapsed = collapsedRooms.includes('PACIENTES QUE YA NO ESTÁN EN EL SERVICIO') || collapsedRooms.includes('Pacientes sin Cama');
             const roomGroup = document.createElement('div');
             roomGroup.id = elementId;
             roomGroup.className = `room-group ${isFloatingCollapsed ? 'collapsed' : ''}`;
@@ -10923,14 +10925,14 @@ window.renderWardBedsGrid = async function() {
             `;
             
             const headerHTML = `
-                <div class="room-group-header" onclick="window.toggleRoomCollapse('Pacientes sin Cama', '${elementId}')" style="background: #fdf2f8; border-left: 4px solid #db2777; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <div class="room-group-header" onclick="window.toggleRoomCollapse('PACIENTES QUE YA NO ESTÁN EN EL SERVICIO', '${elementId}')" style="background: #fdf2f8; border-left: 4px solid #db2777; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                     <div class="room-title-container">
                         <span class="room-toggle-icon">▼</span>
-                        <span style="color: #db2777; font-weight: bold;">⚠️ Pacientes sin Cama (Cupos / Tránsito)</span>
+                        <span style="color: #db2777; font-weight: bold;">⚠️ PACIENTES QUE YA NO ESTÁN EN EL SERVICIO</span>
                     </div>
                     <div class="room-badges-container" style="display:flex; align-items:center; gap:10px;">
                         ${summaryHTML}
-                        <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes sin cama en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
+                        <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta masiva a todos los pacientes que ya no están en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
                     </div>
                 </div>
             `;
@@ -10970,7 +10972,6 @@ window.renderWardBedsGrid = async function() {
                     <div class="bed-actions-row">
                         <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')">📝</button>
                         <button class="circle-action-btn" title="Cambiar Estado" onclick="window.togglePatientStateGrid('${patient.id}', '${isCritico ? 'activo' : 'critico'}')">${isCritico ? '↩️' : '🚨'}</button>
-                        <button class="circle-action-btn" title="Asignar / Trasladar Cama" onclick="window.transferPatientGrid('${patient.id}')">🚑</button>
                         <button class="circle-action-btn success" title="Dar de Alta" onclick="window.dischargePatientGrid('${patient.id}')">✔️</button>
                     </div>
                 `;
@@ -11032,6 +11033,26 @@ window.togglePatientStateGrid = async function(id, newState) {
         }
     } catch(e) {}
     showToast("✅ Estado de paciente actualizado.");
+    await window.renderWardBedsGrid();
+};
+
+window.readmitPatientGrid = async function(id) {
+    if (!confirm("¿Desea re-ingresar a este paciente al servicio activo?")) return;
+    
+    const dbId = await resolvePatientDbId(id);
+    if (dbId && typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const { error } = await supabaseClient.from('pacientes').update({ estado_sala: 'activo' }).eq('id', dbId);
+        if (error) console.warn("Supabase readmit error:", error.message);
+    }
+    try {
+        let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        const p = localCache.find(x => x && (x.id === id || x.id === dbId));
+        if (p) {
+            p.estado_sala = 'activo';
+            localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
+        }
+    } catch(e) {}
+    showToast("↩️ Paciente re-ingresado al servicio.");
     await window.renderWardBedsGrid();
 };
 
