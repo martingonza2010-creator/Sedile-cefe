@@ -2706,16 +2706,17 @@ textarea {
 }
 
 /* =========================================================================
-   COMPACT PRINT ENGINE - FIT CENSO ON 1 SINGLE PAGE (CARTA / OFICIO 8.5)
+   COMPACT PRINT ENGINE - FIT CENSO ON 1-2 PAGES (CARTA / OFICIO 8.5)
    ========================================================================= */
 @media print {
     @page {
         size: letter landscape;
-        margin: 4mm 5mm 4mm 5mm;
+        margin: 3mm 4mm 3mm 4mm;
     }
 
     html, body {
         background: #ffffff !important;
+        background-color: #ffffff !important;
         color: #000000 !important;
         font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
         font-size: 7.5pt !important;
@@ -2725,7 +2726,14 @@ textarea {
         print-color-adjust: exact !important;
     }
 
-    /* Hide UI navigation, buttons, blobs, floating modals and headers */
+    /* Remove background blobs, pink/purple section backgrounds, shadows */
+    body::before, body::after, .bg-blob, #room-group-floating, .room-group-header, .room-group, .dashboard-grid {
+        background: transparent !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
+
+    /* Hide UI navigation, buttons, floating modals and headers */
     header.main-header,
     .app-tabs,
     .logout-btn,
@@ -2743,7 +2751,7 @@ textarea {
         display: none !important;
     }
 
-    /* HIDE EMPTY BEDS AND EMPTY ROOMS IN PRINT TO FIT ON 1 PAGE */
+    /* HIDE EMPTY BEDS AND EMPTY ROOMS IN PRINT TO FIT ON FEWER PAGES */
     .empty-bed-row,
     .empty-room-row {
         display: none !important;
@@ -2767,16 +2775,22 @@ textarea {
         width: 100% !important;
         min-width: 100% !important;
         border-collapse: collapse !important;
-        font-size: 6.5pt !important;
+        font-size: 6.2pt !important;
         line-height: 1.0 !important;
         margin-top: 0 !important;
+        background: #ffffff !important;
+    }
+
+    /* DO NOT REPEAT THEAD ON SUBSEQUENT PAGES: PRINT THEAD ONLY AT THE VERY TOP OF PAGE 1 */
+    .clinical-census-table thead {
+        display: table-row-group !important;
     }
 
     .clinical-census-table th {
         background: #1e293b !important;
         color: #ffffff !important;
         padding: 2px 3px !important;
-        font-size: 6.5pt !important;
+        font-size: 6.2pt !important;
         font-weight: 800 !important;
         border: 1px solid #0f172a !important;
         text-align: center !important;
@@ -2784,11 +2798,12 @@ textarea {
     }
 
     .clinical-census-table td {
-        padding: 1.5px 3px !important;
+        padding: 1px 2.5px !important;
         border: 1px solid #cbd5e1 !important;
-        font-size: 6.5pt !important;
-        height: auto !important;
+        font-size: 6.2pt !important;
+        height: 16px !important;
         color: #000000 !important;
+        background: #ffffff !important;
     }
 
     /* Convert input fields inside table cells to clean plain text in print */
@@ -2800,7 +2815,7 @@ textarea {
         padding: 0 !important;
         margin: 0 !important;
         height: auto !important;
-        font-size: 6.5pt !important;
+        font-size: 6.2pt !important;
         font-weight: 600 !important;
         color: #000000 !important;
         box-shadow: none !important;
@@ -2815,13 +2830,19 @@ textarea {
         display: none !important;
     }
 
-    /* Format Room Headers for Print */
+    /* Format Room Headers for Print (Ultra-Compact) */
+    .room-header-row {
+        height: 16px !important;
+    }
+
     .room-header-row td {
-        background: #f1f5f9 !important;
+        background: #f8fafc !important;
         color: #1e3a8a !important;
         font-weight: 800 !important;
-        font-size: 7pt !important;
-        padding: 2px 4px !important;
-        border-top: 1.5px solid #64748b !important;
+        font-size: 6.5pt !important;
+        padding: 1px 3px !important;
+        height: 16px !important;
+        border-top: 1px solid #64748b !important;
+        border-bottom: 1px solid #cbd5e1 !important;
     }
 }
