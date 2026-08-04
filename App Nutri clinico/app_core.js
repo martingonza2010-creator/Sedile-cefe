@@ -1489,29 +1489,87 @@ window.togglePatientState = async (id, newState) => {
     }
 };
 
+async function resolvePatientDbId(id) {
+    if (!id) return null;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (isUuid) return id;
+
+    let localCache = [];
+    try {
+        localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+    } catch (e) {
+        localCache = [];
+    }
+    const localPat = localCache.find(p => p && p.id === id);
+
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        if (localPat && localPat.cama) {
+            const { data: matchBed } = await supabaseClient
+                .from('pacientes')
+                .select('id')
+                .eq('cama', localPat.cama)
+                .neq('estado_sala', 'de_alta')
+                .neq('estado_sala', 'eliminado')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (matchBed && matchBed.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(matchBed.id)) {
+                return matchBed.id;
+            }
+        }
+        if (localPat && localPat.nombre) {
+            const { data: matchName } = await supabaseClient
+                .from('pacientes')
+                .select('id')
+                .eq('nombre', localPat.nombre)
+                .neq('estado_sala', 'de_alta')
+                .neq('estado_sala', 'eliminado')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (matchName && matchName.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(matchName.id)) {
+                return matchName.id;
+            }
+        }
+    }
+    return null;
+}
+
 window.dischargePatient = async (id) => {
     if (!confirm("¿Dar de alta a este paciente de la sala? Seguirá en tu historial, pero no en este Kanban.")) return;
     
+    const dbId = await resolvePatientDbId(id);
     let currentMeta = {};
-    const { data: p } = await supabaseClient.from('pacientes').select('metadata').eq('id', id).maybeSingle();
-    if (p && p.metadata) {
-        currentMeta = { ...p.metadata };
-    }
-    currentMeta.discharged_at = new Date().toISOString();
-    
-    const { error } = await supabaseClient.from('pacientes').update({ 
-        estado_sala: 'de_alta',
-        metadata: currentMeta
-    }).eq('id', id);
-    
-    if (!error) {
-        if (typeof window.loadHistoryList === 'function') {
-            await window.loadHistoryList(false);
+    const nowIso = new Date().toISOString();
+
+    if (dbId && typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const { data: p } = await supabaseClient.from('pacientes').select('metadata').eq('id', dbId).maybeSingle();
+        if (p && p.metadata) {
+            currentMeta = { ...p.metadata };
         }
-        loadWardKanban();
-    } else {
-        alert("Error al dar de alta: " + error.message);
+        currentMeta.discharged_at = nowIso;
+        
+        const { error } = await supabaseClient.from('pacientes').update({ 
+            estado_sala: 'de_alta',
+            metadata: currentMeta
+        }).eq('id', dbId);
+
+        if (error) {
+            console.warn("Supabase discharge error:", error.message);
+        }
     }
+
+    try {
+        let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        localCache = localCache.filter(p => p && p.id !== id && p.id !== dbId);
+        localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
+    } catch(e) {}
+
+    showToast("✅ Paciente dado de alta.");
+    if (typeof window.loadHistoryList === 'function') {
+        await window.loadHistoryList(false);
+    }
+    if (typeof loadWardKanban === 'function') loadWardKanban();
 };
 
 window.deletePatient = async (id) => {
@@ -1522,53 +1580,36 @@ window.deletePatient = async (id) => {
 
     if (!confirm("¿Mover este paciente a la papelera?")) return;
 
-    // Fetch the patient name to delete ALL their history snapshots
-    const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre, metadata').eq('id', id).single();
-    if (fetchErr || !p) {
-        alert("Error de lectura al buscar paciente: " + (fetchErr?.message || "No encontrado"));
-        return;
-    }
-
-    const { data: records } = await supabaseClient.from('pacientes').select('id, metadata').eq('nombre', p.nombre).eq('user_id', AppState.user.id);
+    const dbId = await resolvePatientDbId(id);
+    const targetId = dbId || id;
     const nowISO = new Date().toISOString();
-    let hasError = false;
-    let errorMsg = null;
 
-    if (records && records.length > 0) {
-        for (let r of records) {
-            let meta = r.metadata || {};
-            meta.deleted_at = nowISO;
-            const { error } = await supabaseClient.from('pacientes').update({
-                estado_sala: 'eliminado',
-                metadata: meta
-            }).eq('id', r.id);
-            if (error) { hasError = true; errorMsg = error.message; }
-        }
-    } else {
-        const { error } = await supabaseClient.from('pacientes').update({
-            estado_sala: 'eliminado'
-        }).eq('nombre', p.nombre).eq('user_id', AppState.user.id);
-        if (error) { hasError = true; errorMsg = error.message; }
-    }
+    const { data: p } = await supabaseClient.from('pacientes').select('nombre, metadata').eq('id', targetId).maybeSingle();
+    let meta = p?.metadata || {};
+    meta.deleted_at = nowISO;
 
-    if (hasError) {
-        console.error("Error API:", errorMsg);
-        alert("Falla de conexión o base de datos. " + errorMsg);
+    const { error } = await supabaseClient.from('pacientes').update({
+        estado_sala: 'eliminado',
+        metadata: meta
+    }).eq('id', targetId);
+
+    if (error) {
+        console.error("Error API:", error.message);
+        alert("Falla de conexión o base de datos: " + error.message);
     } else {
-        showToast("Paciente movido a la papelera");
+        showToast("✅ Paciente movido a la papelera");
         if (typeof window.loadHistoryList === 'function') window.loadHistoryList(false);
         if (typeof loadWardKanban === 'function') loadWardKanban();
 
-        // Deseleccionar paciente de la calculadora activa si coincide el nombre
-        const currentName = document.getElementById('nombre')?.value || "";
-        if (currentName.trim() === p.nombre.trim()) {
-            AppState.patient.id = null;
-            document.getElementById('nombre').value = "";
-            document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
-            const avatar = document.getElementById('currentPatientAvatar');
-            if (avatar) avatar.innerText = "P";
-            const bmi = document.getElementById('valBMI');
-            if (bmi) bmi.innerText = "--";
+        if (p && p.nombre) {
+            const currentName = document.getElementById('nombre')?.value || "";
+            if (currentName.trim() === p.nombre.trim()) {
+                AppState.patient.id = null;
+                document.getElementById('nombre').value = "";
+                document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
+                if (document.getElementById('currentPatientAvatar')) document.getElementById('currentPatientAvatar').innerText = "P";
+                if (document.getElementById('valBMI')) document.getElementById('valBMI').innerText = "--";
+            }
         }
     }
 };
@@ -1579,31 +1620,31 @@ window.hardDeletePatient = async (id, skipConfirm = false) => {
         return;
     }
 
-    if (!skipConfirm && !confirm("¿Eliminar PERMANENTEMENTE a este paciente de la base de dato⚠️")) return;
+    if (!skipConfirm && !confirm("¿Eliminar PERMANENTEMENTE a este registro de paciente de la base de datos?")) return;
 
-    // Fetch the patient name to delete all grouped rows
-    const { data: p, error: fetchErr } = await supabaseClient.from('pacientes').select('nombre').eq('id', id).single();
-    if (fetchErr || !p) {
-        alert("Error buscando el registro para borrado permanente: " + (fetchErr?.message || ""));
-        return;
-    }
+    const dbId = await resolvePatientDbId(id);
+    const targetId = dbId || id;
 
-    const { error } = await supabaseClient.from('pacientes').delete().eq('nombre', p.nombre).eq('user_id', AppState.user.id);
+    const { data: p } = await supabaseClient.from('pacientes').select('nombre').eq('id', targetId).maybeSingle();
+    const { error } = await supabaseClient.from('pacientes').delete().eq('id', targetId);
+
     if (!error) {
-        window.loadHistoryList(false); // Reload normal history instead of jumping to Trash
+        showToast("✅ Registro eliminado permanentemente");
+        if (typeof window.loadHistoryList === 'function') window.loadHistoryList(false);
         if (typeof loadWardKanban === 'function') loadWardKanban();
 
-        // Limpiar visor activo
-        const currentName = document.getElementById('nombre')?.value || "";
-        if (currentName.trim() === p.nombre.trim()) {
-            AppState.patient.id = null;
-            document.getElementById('nombre').value = "";
-            document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
-            if (document.getElementById('currentPatientAvatar')) document.getElementById('currentPatientAvatar').innerText = "P";
-            if (document.getElementById('valBMI')) document.getElementById('valBMI').innerText = "--";
+        if (p && p.nombre) {
+            const currentName = document.getElementById('nombre')?.value || "";
+            if (currentName.trim() === p.nombre.trim()) {
+                AppState.patient.id = null;
+                document.getElementById('nombre').value = "";
+                document.getElementById('currentPatientName').innerText = "Nuevo Paciente";
+                if (document.getElementById('currentPatientAvatar')) document.getElementById('currentPatientAvatar').innerText = "P";
+                if (document.getElementById('valBMI')) document.getElementById('valBMI').innerText = "--";
+            }
         }
     } else {
-        alert("Error de Supabase al Eliminar (probablemente te falta la Política RLS de DELETE): " + error.message);
+        alert("Error de Supabase al eliminar: " + error.message);
     }
 };
 
@@ -9086,7 +9127,19 @@ async function showCensusReviewModal(extracted, bedsList, activeLoc) {
         }
     });
     
-    if (!hasChanges) {
+    const floatingInService = matchedPatients.filter(p => !bedsList.includes(p.cama));
+    if (floatingInService.length > 0) {
+        changesListEl.innerHTML += `
+            <div style="margin-top:12px; background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:10px 12px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; font-weight:700; color:#be123c; cursor:pointer;">
+                    <input type="checkbox" id="chkAutoDischargeFloatingInCensus" checked style="width:16px; height:16px; accent-color:#be123c;">
+                    🧹 Dar de alta automáticamente a los ${floatingInService.length} paciente(s) sin cama al aplicar este censo
+                </label>
+            </div>
+        `;
+    }
+
+    if (!hasChanges && floatingInService.length === 0) {
         const anyExtracted = extracted.some(e => e.nombre && e.nombre.trim() !== '');
         if (!anyExtracted && matchedPatients.length === 0) {
             changesListEl.innerHTML = `
@@ -9105,7 +9158,10 @@ async function showCensusReviewModal(extracted, bedsList, activeLoc) {
 }
 
 window.applyCensusChanges = async function() {
-    if (!window.pendingCensusChanges || window.pendingCensusChanges.length === 0) {
+    const chkAutoDischarge = document.getElementById('chkAutoDischargeFloatingInCensus');
+    const shouldDischargeFloating = chkAutoDischarge && chkAutoDischarge.checked;
+
+    if ((!window.pendingCensusChanges || window.pendingCensusChanges.length === 0) && !shouldDischargeFloating) {
         const modal = document.getElementById('censusReviewModal');
         if (modal) modal.classList.remove('active');
         return;
@@ -9114,6 +9170,14 @@ window.applyCensusChanges = async function() {
     // 1. Close modal instantly!
     const modal = document.getElementById('censusReviewModal');
     if (modal) modal.classList.remove('active');
+
+    if (shouldDischargeFloating) {
+        setTimeout(() => {
+            if (typeof window.dischargeAllFloatingPatients === 'function') {
+                window.dischargeAllFloatingPatients(true);
+            }
+        }, 150);
+    }
 
     const activeLocStr = localStorage.getItem('activeLocation');
     const activeLoc = activeLocStr ? JSON.parse(activeLocStr) : { floor: 7, serviceId: 'ala_d', serviceName: 'Ala D' };
@@ -9971,6 +10035,221 @@ window.toggleRoomCollapse = function(roomKey, elementId) {
     localStorage.setItem(storageKey, JSON.stringify(collapsed));
 };
 
+window.scrollToFloatingPatients = function() {
+    const activeLocStr = localStorage.getItem('activeLocation');
+    const activeLoc = activeLocStr ? JSON.parse(activeLocStr) : { floor: 7, serviceId: 'ala_d' };
+    const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+    const storageKey = `collapsedRooms_${locationKey}`;
+    
+    let collapsed = [];
+    try {
+        collapsed = JSON.parse(localStorage.getItem(storageKey) || '["Pacientes sin Cama"]');
+    } catch(e) {
+        collapsed = ['Pacientes sin Cama'];
+    }
+
+    const elementId = `room-group-floating`;
+    const element = document.getElementById(elementId);
+
+    if (collapsed.includes('Pacientes sin Cama')) {
+        const idx = collapsed.indexOf('Pacientes sin Cama');
+        if (idx >= 0) collapsed.splice(idx, 1);
+        localStorage.setItem(storageKey, JSON.stringify(collapsed));
+        if (element) element.classList.remove('collapsed');
+    }
+
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
+
+window.dischargeAllFloatingPatients = async function(skipConfirm = false) {
+    const activeLocStr = localStorage.getItem('activeLocation');
+    const activeLoc = activeLocStr ? JSON.parse(activeLocStr) : { floor: 7, serviceId: 'ala_d', serviceName: 'Ala D' };
+    const locationKey = `HRA-${activeLoc.floor}-${activeLoc.serviceId}`;
+
+    let bedsList = getDefaultBeds(activeLoc.floor, activeLoc.serviceId);
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const { data: configRecord } = await supabaseClient
+            .from('config_camas')
+            .select('beds')
+            .eq('location_key', locationKey)
+            .maybeSingle();
+        if (configRecord && configRecord.beds) {
+            bedsList = configRecord.beds;
+        }
+    }
+
+    let activePatients = [];
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const { data: patients } = await supabaseClient
+            .from('pacientes')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (patients) {
+            activePatients = patients.filter(p => p.estado_sala !== 'de_alta' && p.estado_sala !== 'eliminado');
+        }
+    }
+
+    try {
+        const localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        localCache.forEach(lp => {
+            if (!lp || lp.estado_sala === 'de_alta') return;
+            const idx = activePatients.findIndex(ap => (ap.id === lp.id) || (ap.cama && lp.cama && ap.cama.trim().toUpperCase() === lp.cama.trim().toUpperCase()));
+            if (idx >= 0) {
+                const realDbId = activePatients[idx].id;
+                activePatients[idx] = {
+                    ...activePatients[idx],
+                    ...lp,
+                    id: (realDbId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(realDbId)) ? realDbId : (lp.id || realDbId)
+                };
+            } else {
+                activePatients.push(lp);
+            }
+        });
+    } catch(e) {}
+
+    const matchedPatients = activePatients.filter(p => {
+        const cleanPBed = p.cama ? p.cama.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() : '';
+        const isBedInService = bedsList.some(b => b.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === cleanPBed || b === p.cama);
+        if (p.metadata && p.metadata.location && p.metadata.location.serviceId) {
+            return p.metadata.location.serviceId === activeLoc.serviceId || isBedInService;
+        }
+        return isBedInService;
+    });
+
+    const floating = matchedPatients.filter(p => !bedsList.includes(p.cama));
+    if (floating.length === 0) {
+        if (!skipConfirm) showToast("ℹ️ No hay pacientes sin cama para dar de alta.");
+        return;
+    }
+
+    if (!skipConfirm && !confirm(`¿Dar de alta a los ${floating.length} paciente(s) sin cama de este servicio?\n(Quedarán en el historial pero ya no figurarán en la sala).`)) {
+        return;
+    }
+
+    const nowIso = new Date().toISOString();
+    let localCache = [];
+    try {
+        localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+    } catch(e) {}
+
+    let countDischarged = 0;
+    for (const p of floating) {
+        const dbId = await resolvePatientDbId(p.id);
+        if (dbId && typeof supabaseClient !== 'undefined' && supabaseClient) {
+            let meta = p.metadata || {};
+            meta.discharged_at = nowIso;
+            await supabaseClient.from('pacientes').update({
+                estado_sala: 'de_alta',
+                metadata: meta
+            }).eq('id', dbId);
+        }
+        localCache = localCache.filter(item => item && item.id !== p.id && item.id !== dbId);
+        countDischarged++;
+    }
+
+    localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
+    showToast(`🧹 ¡Se dieron de alta ${countDischarged} pacientes sin cama!`);
+    await window.renderWardBedsGrid();
+};
+
+window.onAgeInputChanged = function() {
+    const ageInput = document.getElementById('edad');
+    if (!ageInput) return;
+    const ageVal = parseFloat(ageInput.value);
+    if (isNaN(ageVal)) return;
+
+    const hydRadios = document.getElementsByName('hydMethod');
+    if (hydRadios && hydRadios.length > 0) {
+        if (ageVal >= 18) {
+            for (let r of hydRadios) {
+                if (r.value === 'mlkg') r.checked = true;
+            }
+        } else {
+            for (let r of hydRadios) {
+                if (r.value === 'holiday') r.checked = true;
+            }
+        }
+        if (typeof window.toggleHydMethod === 'function') {
+            window.toggleHydMethod();
+        }
+    }
+};
+
+window.toggleColumnVisibilityMenu = function(evt) {
+    if (evt && evt.stopPropagation) evt.stopPropagation();
+    let menu = document.getElementById('tableColumnMenu');
+    if (!menu) {
+        menu = document.createElement('div');
+        menu.id = 'tableColumnMenu';
+        menu.style.cssText = 'position:fixed; z-index:99999; background:white; border:1px solid #cbd5e1; border-radius:10px; padding:12px; box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:8px; width:220px; font-size:0.8rem; font-family:sans-serif;';
+        
+        const cols = [
+            { key: 'col-ficha', label: 'Ficha / RUT' },
+            { key: 'col-edad', label: 'Edad y Sexo' },
+            { key: 'col-patologia', label: 'DM / HTA / ERC' },
+            { key: 'col-obs', label: 'Observaciones' },
+            { key: 'col-antropo', label: 'Peso / Talla' },
+            { key: 'col-imc', label: 'IMC y Clasificación' },
+            { key: 'col-nrs', label: 'NRS / Score' },
+            { key: 'col-lpp', label: 'Riesgo LPP' }
+        ];
+
+        let html = '<div style="font-weight:800; color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:6px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;"><span>👁️ Mostrar Columnas</span><span onclick="document.getElementById(\'tableColumnMenu\').style.display=\'none\'" style="cursor:pointer; font-weight:bold;">✖</span></div>';
+        
+        const hiddenCols = JSON.parse(localStorage.getItem('hiddenTableCols') || '[]');
+
+        cols.forEach(c => {
+            const isChecked = !hiddenCols.includes(c.key);
+            html += `
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:#334155; user-select:none;">
+                    <input type="checkbox" data-col="${c.key}" ${isChecked ? 'checked' : ''} onchange="window.onColumnVisibilityToggle('${c.key}', this.checked)">
+                    ${c.label}
+                </label>
+            `;
+        });
+
+        menu.innerHTML = html;
+        document.body.appendChild(menu);
+    }
+
+    const btn = evt ? evt.currentTarget : document.getElementById('btnToggleTableCols');
+    if (btn) {
+        const rect = btn.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 6) + 'px';
+        menu.style.left = Math.min(rect.left, window.innerWidth - 240) + 'px';
+    }
+    menu.style.display = menu.style.display === 'none' || !menu.style.display ? 'flex' : 'none';
+};
+
+window.onColumnVisibilityToggle = function(colKey, isVisible) {
+    let hiddenCols = JSON.parse(localStorage.getItem('hiddenTableCols') || '[]');
+    if (isVisible) {
+        hiddenCols = hiddenCols.filter(k => k !== colKey);
+    } else {
+        if (!hiddenCols.includes(colKey)) hiddenCols.push(colKey);
+    }
+    localStorage.setItem('hiddenTableCols', JSON.stringify(hiddenCols));
+    window.applyColumnVisibilityStyles();
+};
+
+window.applyColumnVisibilityStyles = function() {
+    let hiddenCols = JSON.parse(localStorage.getItem('hiddenTableCols') || '[]');
+    let styleTag = document.getElementById('dynamicTableColumnStyles');
+    if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'dynamicTableColumnStyles';
+        document.head.appendChild(styleTag);
+    }
+
+    let css = '';
+    hiddenCols.forEach(k => {
+        css += `.clinical-census-table .${k} { display: none !important; }\n`;
+    });
+    styleTag.textContent = css;
+};
+
 window.renderWardBedsGrid = async function() {
     const activeLocStr = localStorage.getItem('activeLocation');
     if (!activeLocStr) return;
@@ -10011,37 +10290,41 @@ window.renderWardBedsGrid = async function() {
             }
         }
         
-        // 2. Fetch active patients
+        // 2. Fetch active patients from DB
         let activePatients = [];
-        if (supabaseClient) {
+        let isDbConnected = false;
+        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
             const { data: patients, error } = await supabaseClient
                 .from('pacientes')
                 .select('*')
                 .order('created_at', { ascending: false });
                 
             if (!error && patients) {
-                // Keep only those that are active (not discharged or deleted)
                 activePatients = patients.filter(p => p.estado_sala !== 'de_alta' && p.estado_sala !== 'eliminado');
+                isDbConnected = true;
             }
         }
 
-        // Merge local storage cache patients if any
+        // Merge local storage cache patients safely
         try {
             const localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
             localCache.forEach(lp => {
-                if (!lp || lp.estado_sala === 'de_alta') return;
+                if (!lp || lp.estado_sala === 'de_alta' || lp.estado_sala === 'eliminado') return;
                 
                 const idx = activePatients.findIndex(ap => (ap.id === lp.id) || (ap.cama && lp.cama && ap.cama.trim().toUpperCase() === lp.cama.trim().toUpperCase()));
                 if (idx >= 0) {
+                    const realDbId = activePatients[idx].id;
                     activePatients[idx] = {
                         ...activePatients[idx],
                         ...lp,
+                        id: (realDbId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(realDbId)) ? realDbId : (lp.id || realDbId),
                         metadata: {
                             ...(activePatients[idx].metadata || {}),
                             ...(lp.metadata || {})
                         }
                     };
-                } else {
+                } else if (!isDbConnected || (lp.id && lp.id.startsWith('pat_'))) {
+                    // Only add local cache items if DB is offline OR if they are unsynced local drafts (pat_...)
                     activePatients.push(lp);
                 }
             });
@@ -10076,13 +10359,19 @@ window.renderWardBedsGrid = async function() {
             groupedBeds[groupKey].push(bedName);
         });
 
-        // Get collapsed rooms for this service
+        // Get collapsed rooms for this service (default Pacientes sin Cama to collapsed)
         const storageKey = `collapsedRooms_${locationKey}`;
         let collapsedRooms = [];
         try {
-            collapsedRooms = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const rawStored = localStorage.getItem(storageKey);
+            if (rawStored === null) {
+                collapsedRooms = ['Pacientes sin Cama'];
+                localStorage.setItem(storageKey, JSON.stringify(collapsedRooms));
+            } else {
+                collapsedRooms = JSON.parse(rawStored);
+            }
         } catch(e) {
-            collapsedRooms = [];
+            collapsedRooms = ['Pacientes sin Cama'];
         }
 
         const viewMode = localStorage.getItem('wardViewMode') || 'grid';
@@ -10090,6 +10379,40 @@ window.renderWardBedsGrid = async function() {
         if (selectMode) selectMode.value = viewMode;
 
         let floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
+
+        window.applyColumnVisibilityStyles();
+
+        // Render top transit alert banner
+        let transitAlertContainer = document.getElementById('wardTransitAlertContainer');
+        if (!transitAlertContainer && grid.parentNode) {
+            transitAlertContainer = document.createElement('div');
+            transitAlertContainer.id = 'wardTransitAlertContainer';
+            grid.parentNode.insertBefore(transitAlertContainer, grid);
+        }
+        if (transitAlertContainer) {
+            if (floatingPatients.length > 0) {
+                transitAlertContainer.style.display = 'block';
+                transitAlertContainer.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:10px 14px; margin-top:12px; margin-bottom:12px; font-size:0.8rem; color:#be123c; flex-wrap:wrap; gap:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+                        <div style="display:flex; align-items:center; gap:8px; font-weight:700;">
+                            <span>⚠️ Se detectaron ${floatingPatients.length} paciente(s) sin cama asignada (en tránsito).</span>
+                            <button class="btn-micro" onclick="window.scrollToFloatingPatients()" style="background:#be123c; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Ver y desplegar pacientes en tránsito">👇 Ver Pacientes</button>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button id="btnToggleTableCols" onclick="window.toggleColumnVisibilityMenu(event)" style="background:#475569; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Personalizar columnas visibles en la vista de tabla">👁️ Columnas</button>
+                            <button onclick="window.dischargeAllFloatingPatients()" style="background:#881337; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes sin cama de este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                transitAlertContainer.style.display = 'block';
+                transitAlertContainer.innerHTML = `
+                    <div style="display:flex; justify-content:flex-end; margin-top:8px; margin-bottom:8px;">
+                        <button id="btnToggleTableCols" onclick="window.toggleColumnVisibilityMenu(event)" style="background:#475569; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Personalizar columnas visibles en la vista de tabla">👁️ Columnas Visibles</button>
+                    </div>
+                `;
+            }
+        }
 
         if (viewMode === 'table') {
             grid.style.display = 'block';
@@ -10099,25 +10422,25 @@ window.renderWardBedsGrid = async function() {
                     <table class="clinical-census-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.75rem; font-family: sans-serif; min-width: 1400px; line-height: 1.2;">
                         <thead style="background: #f1f5f9; position: sticky; top: 0; z-index: 10;">
                             <tr style="border-bottom: 2px solid #cbd5e1; height: 38px; background: #e2e8f0;">
-                                <th style="color: #1e293b; font-weight: 800; width: 85px; padding: 0;"><div class="resizable-th" style="width: 85px;">CAMA</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 100px; padding: 0;"><div class="resizable-th" style="width: 100px;">FICHA/RUT</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 220px; padding: 0;"><div class="resizable-th" style="width: 220px;">NOMBRE</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 45px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 45px;">EDAD</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 220px; padding: 0;"><div class="resizable-th" style="width: 220px;">DIAGNÓSTICO</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-left:1px solid #cbd5e1; border-right:1px solid #cbd5e1; padding: 0;"><div class="resizable-th" style="width: 35px;">DM</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1; padding: 0;"><div class="resizable-th" style="width: 35px;">HTA</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1; padding: 0;"><div class="resizable-th" style="width: 35px;">ERC</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 140px; padding: 0;"><div class="resizable-th" style="width: 140px;">DIETOTERAPIA</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 260px; padding: 0;"><div class="resizable-th" style="width: 260px;">OBSERVACIONES GENERALES</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 70px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 70px;">PESO</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 60px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 60px;">TALLA</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 55px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 55px;">IMC</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 75px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 75px;">EST NUT</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 50px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 50px;">SCRG</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 80px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 80px;">RIESGO LPP</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 65px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 65px;">EVAL</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 45px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 45px;">SEXO</div></th>
-                                <th style="color: #1e293b; font-weight: 800; width: 95px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 95px;">FECHA INGR</div></th>
+                                <th class="col-cama" style="color: #1e293b; font-weight: 800; width: 85px; padding: 0;"><div class="resizable-th" style="width: 85px;">CAMA</div></th>
+                                <th class="col-ficha" style="color: #1e293b; font-weight: 800; width: 100px; padding: 0;"><div class="resizable-th" style="width: 100px;">FICHA/RUT</div></th>
+                                <th class="col-nombre" style="color: #1e293b; font-weight: 800; width: 220px; padding: 0;"><div class="resizable-th" style="width: 220px;">NOMBRE</div></th>
+                                <th class="col-edad" style="color: #1e293b; font-weight: 800; width: 45px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 45px;">EDAD</div></th>
+                                <th class="col-dx" style="color: #1e293b; font-weight: 800; width: 220px; padding: 0;"><div class="resizable-th" style="width: 220px;">DIAGNÓSTICO</div></th>
+                                <th class="col-patologia" style="color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-left:1px solid #cbd5e1; border-right:1px solid #cbd5e1; padding: 0;"><div class="resizable-th" style="width: 35px;">DM</div></th>
+                                <th class="col-patologia" style="color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1; padding: 0;"><div class="resizable-th" style="width: 35px;">HTA</div></th>
+                                <th class="col-patologia" style="color: #1e293b; font-weight: 800; width: 35px; text-align: center; background:#edf2f7; border-right:1px solid #cbd5e1; padding: 0;"><div class="resizable-th" style="width: 35px;">ERC</div></th>
+                                <th class="col-dieta" style="color: #1e293b; font-weight: 800; width: 140px; padding: 0;"><div class="resizable-th" style="width: 140px;">DIETOTERAPIA</div></th>
+                                <th class="col-obs" style="color: #1e293b; font-weight: 800; width: 260px; padding: 0;"><div class="resizable-th" style="width: 260px;">OBSERVACIONES GENERALES</div></th>
+                                <th class="col-antropo" style="color: #1e293b; font-weight: 800; width: 70px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 70px;">PESO</div></th>
+                                <th class="col-antropo" style="color: #1e293b; font-weight: 800; width: 60px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 60px;">TALLA</div></th>
+                                <th class="col-imc" style="color: #1e293b; font-weight: 800; width: 55px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 55px;">IMC</div></th>
+                                <th class="col-imc" style="color: #1e293b; font-weight: 800; width: 75px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 75px;">EST NUT</div></th>
+                                <th class="col-nrs" style="color: #1e293b; font-weight: 800; width: 50px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 50px;">SCRG</div></th>
+                                <th class="col-lpp" style="color: #1e293b; font-weight: 800; width: 80px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 80px;">RIESGO LPP</div></th>
+                                <th class="col-eval" style="color: #1e293b; font-weight: 800; width: 65px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 65px;">EVAL</div></th>
+                                <th class="col-edad" style="color: #1e293b; font-weight: 800; width: 45px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 45px;">SEXO</div></th>
+                                <th class="col-eval" style="color: #1e293b; font-weight: 800; width: 95px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 95px;">FECHA INGR</div></th>
                                 <th style="color: #1e293b; font-weight: 800; width: 110px; text-align: center; padding: 0;"><div class="resizable-th" style="width: 110px;">ACCIONES</div></th>
                             </tr>
                         </thead>
@@ -10217,11 +10540,6 @@ window.renderWardBedsGrid = async function() {
                             }
                         }
 
-                        // DM, HTA, ERC flags
-                        const dmCheck = patient.metadata?.patologia_dm ? 'X' : '';
-                        const htaCheck = patient.metadata?.patologia_hta ? 'X' : '';
-                        const ercCheck = patient.metadata?.patologia_erc ? 'X' : '';
-
                         // Dietoterapia text (Régimen FIRST)
                         const regimenVal = patient.metadata?.regimen || '';
                         let dietDetail = '';
@@ -10260,25 +10578,25 @@ window.renderWardBedsGrid = async function() {
 
                         tableHTML += `
                             <tr style="${rowStyle} height: 42px;">
-                                <td style="color: #475569; padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
-                                <td style="padding: 2px 4px;"><input type="text" value="${patient.metadata?.num_ficha || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-family:monospace; font-size:0.75rem; color:#334155; font-weight:600; outline:none; text-align:center;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Ficha/RUT (Editar)"></td>
-                                <td style="padding: 2px 6px; line-height: 1.2;">
+                                <td class="col-cama" style="color: #475569; padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
+                                <td class="col-ficha" style="padding: 2px 4px;"><input type="text" value="${patient.metadata?.num_ficha || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-family:monospace; font-size:0.75rem; color:#334155; font-weight:600; outline:none; text-align:center;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Ficha/RUT (Editar)"></td>
+                                <td class="col-nombre" style="padding: 2px 6px; line-height: 1.2;">
                                     <input type="text" value="${patient.nombre || ''}" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#312e81; font-weight:700; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'nombre', this.value)" title="Nombre (Editar)">
                                     ${dateStr ? `<span style="font-size:0.6rem; color:#7c3aed; font-weight:bold; display:block; cursor:pointer;" onclick="loadPatient('${patient.id}')">EVA ${dateStr}</span>` : ''}
                                 </td>
-                                <td style="padding: 2px; text-align: center;"><input type="number" min="0" max="120" value="${patient.edad || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#1e293b; font-weight:600; text-align:center; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'edad', this.value)" title="Edad (Editar)"></td>
-                                <td style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
-                                <td style="padding: 2px; text-align: center; background:#f8fafc; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
-                                <td style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
-                                <td style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
-                                <td style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
-                                <td style="padding: 2px 4px; vertical-align: middle;"><textarea placeholder="Observaciones..." style="width:100%; height:34px; min-height:30px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; font-size:0.68rem; font-family:inherit; color:#334155; padding:3px 5px; outline:none; resize:vertical; line-height:1.2; box-shadow:inset 0 1px 2px rgba(0,0,0,0.03);" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" onkeydown="if(event.altKey && event.key === 'Enter'){ event.preventDefault(); const s=this.selectionStart; this.value = this.value.substring(0, s) + '\n' + this.value.substring(this.selectionEnd); this.selectionStart = this.selectionEnd = s + 1; this.dispatchEvent(new Event('change')); }" title="Observaciones (Usar Alt + Enter para salto de línea)">${patient.metadata?.observaciones_generales || customObs || ''}</textarea></td>
-                                <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
-                                <td style="padding: 2px; text-align: center;"><input type="text" value="${tallaDisplay}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:600; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla (m o cm)"></td>
-                                <td id="imcCell_${patient.id}" style="padding: 6px 10px; text-align: center; font-weight: 700; color: #1e293b; background: #ffffff;">${imcStr}</td>
-                                <td id="estNutCell_${patient.id}" style="padding: 6px 10px; text-align: center; ${statusBgStyle}">${abbrevStatus}</td>
-                                <td style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
-                                <td style="padding: 2px; text-align: center;">
+                                <td class="col-edad" style="padding: 2px; text-align: center;"><input type="number" min="0" max="120" value="${patient.edad || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#1e293b; font-weight:600; text-align:center; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'edad', this.value)" title="Edad (Editar)"></td>
+                                <td class="col-dx" style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
+                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#f8fafc; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
+                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
+                                <td class="col-patologia" style="padding: 2px; text-align: center; background:#f8fafc; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
+                                <td class="col-dieta" style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
+                                <td class="col-obs" style="padding: 2px 4px; vertical-align: middle;"><textarea placeholder="Observaciones..." style="width:100%; height:34px; min-height:30px; border:1px solid #cbd5e1; border-radius:6px; background:#ffffff; font-size:0.68rem; font-family:inherit; color:#334155; padding:3px 5px; outline:none; resize:vertical; line-height:1.2; box-shadow:inset 0 1px 2px rgba(0,0,0,0.03);" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" onkeydown="if(event.altKey && event.key === 'Enter'){ event.preventDefault(); const s=this.selectionStart; this.value = this.value.substring(0, s) + '\n' + this.value.substring(this.selectionEnd); this.selectionStart = this.selectionEnd = s + 1; this.dispatchEvent(new Event('change')); }" title="Observaciones (Usar Alt + Enter para salto de línea)">${patient.metadata?.observaciones_generales || customObs || ''}</textarea></td>
+                                <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
+                                <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="text" value="${tallaDisplay}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:600; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla (m o cm)"></td>
+                                <td class="col-imc" id="imcCell_${patient.id}" style="padding: 6px 10px; text-align: center; font-weight: 700; color: #1e293b; background: #ffffff;">${imcStr}</td>
+                                <td class="col-imc" id="estNutCell_${patient.id}" style="padding: 6px 10px; text-align: center; ${statusBgStyle}">${abbrevStatus}</td>
+                                <td class="col-nrs" style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
+                                <td class="col-lpp" style="padding: 2px; text-align: center;">
                                     <select onchange="window.quickUpdatePatientField('${patient.id}', 'riesgo_lpp', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}; outline:none; cursor:pointer;" title="Riesgo LPP (Editar)">
                                         <option value="Sin evaluar" ${!patient.metadata?.riesgo_lpp || patient.metadata?.riesgo_lpp === 'Sin evaluar' ? 'selected' : ''}>--</option>
                                         <option value="Bajo" ${patient.metadata?.riesgo_lpp === 'Bajo' ? 'selected' : ''}>Bajo</option>
@@ -10286,9 +10604,9 @@ window.renderWardBedsGrid = async function() {
                                         <option value="Alto" ${patient.metadata?.riesgo_lpp === 'Alto' ? 'selected' : ''}>Alto</option>
                                     </select>
                                 </td>
-                                <td style="padding: 2px; text-align: center;"><select onchange="window.quickUpdatePatientField('${patient.id}', 'eval_tipo', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:#312e81; outline:none; cursor:pointer;" title="Tipo Evaluación (Editar)"><option value="VGO" ${patient.metadata?.eval_tipo === 'VGO' || !patient.metadata?.eval_tipo ? 'selected' : ''}>VGO</option><option value="VI" ${patient.metadata?.eval_tipo === 'VI' ? 'selected' : ''}>VI</option><option value="S/E" ${patient.metadata?.eval_tipo === 'S/E' ? 'selected' : ''}>S/E</option><option value="RE-EVAL" ${patient.metadata?.eval_tipo === 'RE-EVAL' ? 'selected' : ''}>RE-EVAL</option></select></td>
-                                <td style="padding: 2px; text-align: center;"><select onchange="window.quickUpdatePatientField('${patient.id}', 'sexo', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none; cursor:pointer;" title="Sexo (Editar)"><option value="m" ${patient.sexo === 'm' || !patient.sexo ? 'selected' : ''}>M</option><option value="f" ${patient.sexo === 'f' ? 'selected' : ''}>F</option></select></td>
-                                <td style="padding: 2px; text-align: center;"><input type="text" value="${patient.metadata?.fecha_ingreso_servicio || ''}" placeholder="DD/MM" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#334155; font-weight:600; text-align:center; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'fecha_ingreso_servicio', this.value)" title="Fecha Ingreso (Editar)"></td>
+                                <td class="col-eval" style="padding: 2px; text-align: center;"><select onchange="window.quickUpdatePatientField('${patient.id}', 'eval_tipo', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:#312e81; outline:none; cursor:pointer;" title="Tipo Evaluación (Editar)"><option value="VGO" ${patient.metadata?.eval_tipo === 'VGO' || !patient.metadata?.eval_tipo ? 'selected' : ''}>VGO</option><option value="VI" ${patient.metadata?.eval_tipo === 'VI' ? 'selected' : ''}>VI</option><option value="S/E" ${patient.metadata?.eval_tipo === 'S/E' ? 'selected' : ''}>S/E</option><option value="RE-EVAL" ${patient.metadata?.eval_tipo === 'RE-EVAL' ? 'selected' : ''}>RE-EVAL</option></select></td>
+                                <td class="col-edad" style="padding: 2px; text-align: center;"><select onchange="window.quickUpdatePatientField('${patient.id}', 'sexo', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none; cursor:pointer;" title="Sexo (Editar)"><option value="m" ${patient.sexo === 'm' || !patient.sexo ? 'selected' : ''}>M</option><option value="f" ${patient.sexo === 'f' ? 'selected' : ''}>F</option></select></td>
+                                <td class="col-eval" style="padding: 2px; text-align: center;"><input type="text" value="${patient.metadata?.fecha_ingreso_servicio || ''}" placeholder="DD/MM" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#334155; font-weight:600; text-align:center; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'fecha_ingreso_servicio', this.value)" title="Fecha Ingreso (Editar)"></td>
                                 <td style="padding: 6px 10px; text-align: center;">
                                     <div style="display:flex; gap:4px; justify-content:center;">
                                         <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">📝</button>
@@ -10302,7 +10620,7 @@ window.renderWardBedsGrid = async function() {
                     } else {
                         tableHTML += `
                             <tr style="border-bottom: 1px solid #e2e8f0; height: 42px; background: #fafafa;">
-                                <td style="color: #94a3b8; padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
+                                <td class="col-cama" style="color: #94a3b8; padding: 0;"><div class="resizable-tr">🛏️ ${bedName}</div></td>
                                 <td colspan="18" style="padding: 6px 10px; text-align: left; color: #94a3b8;">
                                     <span style="font-size:0.7rem; font-weight:700; background:#e2e8f0; color:#475569; padding:2px 6px; border-radius:4px; margin-right: 15px;">DISPONIBLE</span>
                                     <button class="btn-register-patient" onclick="window.registerPatientInBed('${bedName}')" style="padding: 2px 8px; font-size: 0.65rem;">
@@ -10320,13 +10638,21 @@ window.renderWardBedsGrid = async function() {
 
             // Floating patients at the bottom of the table
             if (floatingPatients.length > 0) {
+                const isFloatingCollapsedTable = collapsedRooms.includes('Pacientes sin Cama');
                 tableHTML += `
-                    <tr style="background: #fdf2f8; font-weight: 800; color: #db2777; border-top: 2px solid #fbcfe8; height: 32px;">
-                        <td colspan="20" style="padding: 8px 10px; font-size: 0.8rem; border-bottom: 1px solid #fbcfe8; text-transform: uppercase;">
-                            ⚠️ Pacientes sin Cama (Cupos / Tránsito)
+                    <tr style="background: #fdf2f8; font-weight: 800; color: #db2777; border-top: 2px solid #fbcfe8; height: 36px; cursor: pointer;" onclick="window.toggleRoomCollapse('Pacientes sin Cama', 'room-group-floating-table')">
+                        <td colspan="20" style="padding: 6px 10px; font-size: 0.8rem; border-bottom: 1px solid #fbcfe8; text-transform: uppercase;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <span class="room-toggle-icon" style="display:inline-block; transition: transform 0.2s ease; ${isFloatingCollapsedTable ? 'transform: rotate(-90deg);' : ''}">▼</span> ⚠️ Pacientes sin Cama (Cupos / Tránsito) (${floatingPatients.length})
+                                </div>
+                                <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes sin cama en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
+                            </div>
                         </td>
                     </tr>
                 `;
+
+                if (!isFloatingCollapsedTable) {
 
                 floatingPatients.forEach(patient => {
                     const isCritico = patient.estado_sala === 'critico' || patient.requiere_atencion;
@@ -10407,25 +10733,25 @@ window.renderWardBedsGrid = async function() {
 
                     tableHTML += `
                         <tr style="${rowStyle} height: 42px;">
-                            <td style="color: #db2777; padding: 0;"><div class="resizable-tr">📋 Sin Cama</div></td>
-                            <td style="padding: 2px 4px;"><input type="text" value="${patient.metadata?.num_ficha || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-family:monospace; font-size:0.75rem; color:#334155; font-weight:600; outline:none; text-align:center;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Ficha/RUT (Editar)"></td>
-                            <td style="padding: 2px 6px; line-height: 1.2;">
+                            <td class="col-cama" style="color: #db2777; padding: 0;"><div class="resizable-tr">📋 Sin Cama</div></td>
+                            <td class="col-ficha" style="padding: 2px 4px;"><input type="text" value="${patient.metadata?.num_ficha || ''}" placeholder="--" style="width:100%; border:none; background:transparent; font-family:monospace; font-size:0.75rem; color:#334155; font-weight:600; outline:none; text-align:center;" onchange="window.quickUpdatePatientField('${patient.id}', 'num_ficha', this.value)" title="Ficha/RUT (Editar)"></td>
+                            <td class="col-nombre" style="padding: 2px 6px; line-height: 1.2;">
                                 <input type="text" value="${patient.nombre || ''}" style="width:100%; border:none; background:transparent; font-size:0.75rem; color:#312e81; font-weight:700; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'nombre', this.value)" title="Nombre (Editar)">
                                 ${dateStr ? `<span style="font-size:0.6rem; color:#7c3aed; font-weight:bold; display:block; cursor:pointer;" onclick="loadPatient('${patient.id}')">EVA ${dateStr}</span>` : ''}
                             </td>
-                            <td style="padding: 6px 10px; text-align: center;">${ageStr}</td>
-                            <td style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
-                            <td style="padding: 2px; text-align: center; background:#fdf2f8; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
-                            <td style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
-                            <td style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
-                            <td style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
-                            <td style="padding: 2px 4px;"><input type="text" value="${customObs || ''}" placeholder="Observaciones..." style="width:100%; border:none; background:transparent; font-size:0.65rem; color:#64748b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" title="Observaciones (Editar)"></td>
-                            <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
-                            <td style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || (patient.estatura_m ? Math.round(patient.estatura_m * 100) : '')}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla cm (Editar)"></td>
-                            <td style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${imcStr}</td>
-                            <td style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${abbrevStatus}</td>
-                            <td style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
-                            <td style="padding: 2px; text-align: center;">
+                            <td class="col-edad" style="padding: 6px 10px; text-align: center;">${ageStr}</td>
+                            <td class="col-dx" style="padding: 2px 4px;"><input type="text" value="${patient.diagnostico || ''}" placeholder="Diagnóstico" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#475569; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'diagnostico', this.value)" title="Diagnóstico (Editar)"></td>
+                            <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_dm ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_dm', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="DM (Marcar/Desmarcar)"></td>
+                            <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_hta ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_hta', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="HTA (Marcar/Desmarcar)"></td>
+                            <td class="col-patologia" style="padding: 2px; text-align: center; background:#fdf2f8; border-right:1px solid #e2e8f0;"><input type="checkbox" ${patient.metadata?.patologia_erc ? 'checked' : ''} onchange="window.quickUpdatePatientField('${patient.id}', 'patologia_erc', this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#dc2626;" title="ERC (Marcar/Desmarcar)"></td>
+                            <td class="col-dieta" style="padding: 2px 4px;"><input type="text" value="${dietText}" placeholder="Régimen / Dietoterapia" style="width:100%; border:none; background:transparent; font-size:0.7rem; color:#0f766e; font-weight:600; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'regimen', this.value)" title="Dietoterapia (Editar)"></td>
+                            <td class="col-obs" style="padding: 2px 4px;"><input type="text" value="${customObs || ''}" placeholder="Observaciones..." style="width:100%; border:none; background:transparent; font-size:0.65rem; color:#64748b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'obs_generales', this.value)" title="Observaciones (Editar)"></td>
+                            <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.peso_kg || ''}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-weight:700; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'peso_kg', this.value)" title="Peso (Editar)"></td>
+                            <td class="col-antropo" style="padding: 2px; text-align: center;"><input type="number" step="0.1" value="${patient.talla_cm || (patient.estatura_m ? Math.round(patient.estatura_m * 100) : '')}" placeholder="--" style="width:100%; border:none; background:transparent; text-align:center; font-size:0.75rem; color:#1e293b; outline:none;" onchange="window.quickUpdatePatientField('${patient.id}', 'talla_cm', this.value)" title="Talla cm (Editar)"></td>
+                            <td class="col-imc" style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${imcStr}</td>
+                            <td class="col-imc" style="padding: 6px 10px; text-align: center; background:#fbcfe8; font-weight:700; color:#9d174d;">${abbrevStatus}</td>
+                            <td class="col-nrs" style="padding: 6px 10px; text-align: center;">${nrsVal}</td>
+                            <td class="col-lpp" style="padding: 2px; text-align: center;">
                                 <select onchange="window.quickUpdatePatientField('${patient.id}', 'riesgo_lpp', this.value)" style="border:none; background:transparent; font-weight:700; font-size:0.7rem; color:${patient.metadata?.riesgo_lpp === 'Alto' ? '#ef4444' : (patient.metadata?.riesgo_lpp === 'Medio' ? '#f59e0b' : '#10b981')}; outline:none; cursor:pointer;" title="Riesgo LPP (Editar)">
                                     <option value="Sin evaluar" ${!patient.metadata?.riesgo_lpp || patient.metadata?.riesgo_lpp === 'Sin evaluar' ? 'selected' : ''}>--</option>
                                     <option value="Bajo" ${patient.metadata?.riesgo_lpp === 'Bajo' ? 'selected' : ''}>Bajo</option>
@@ -10433,9 +10759,9 @@ window.renderWardBedsGrid = async function() {
                                     <option value="Alto" ${patient.metadata?.riesgo_lpp === 'Alto' ? 'selected' : ''}>Alto</option>
                                 </select>
                             </td>
-                            <td style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
-                            <td style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
-                            <td style="padding: 6px 10px; text-align: center;">${fIngr}</td>
+                            <td class="col-eval" style="padding: 6px 10px; text-align: center; font-weight:600;">${evalType}</td>
+                            <td class="col-edad" style="padding: 6px 10px; text-align: center;">${sexLetter}</td>
+                            <td class="col-eval" style="padding: 6px 10px; text-align: center;">${fIngr}</td>
                             <td style="padding: 6px 10px; text-align: center;">
                                 <div style="display:flex; gap:4px; justify-content:center;">
                                     <button class="circle-action-btn" title="Editar Ficha" onclick="loadPatient('${patient.id}')" style="padding:2px 4px; font-size:0.7rem;">📝</button>
@@ -10448,6 +10774,7 @@ window.renderWardBedsGrid = async function() {
                     `;
                 });
             }
+                }
 
             tableHTML += `
                         </tbody>
@@ -10594,22 +10921,24 @@ window.renderWardBedsGrid = async function() {
         floatingPatients = matchedPatients.filter(p => !bedsList.includes(p.cama));
         if (floatingPatients.length > 0) {
             const elementId = `room-group-floating`;
+            const isFloatingCollapsed = collapsedRooms.includes('Pacientes sin Cama');
             const roomGroup = document.createElement('div');
             roomGroup.id = elementId;
-            roomGroup.className = `room-group`;
+            roomGroup.className = `room-group ${isFloatingCollapsed ? 'collapsed' : ''}`;
             
             let summaryHTML = `
                 <span class="room-summary-badge occupied">${floatingPatients.length} ${floatingPatients.length === 1 ? 'paciente' : 'pacientes'}</span>
             `;
             
             const headerHTML = `
-                <div class="room-group-header" style="background: #fdf2f8; border-left: 4px solid #db2777; cursor: default;">
+                <div class="room-group-header" onclick="window.toggleRoomCollapse('Pacientes sin Cama', '${elementId}')" style="background: #fdf2f8; border-left: 4px solid #db2777; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                     <div class="room-title-container">
                         <span class="room-toggle-icon">▼</span>
                         <span style="color: #db2777; font-weight: bold;">⚠️ Pacientes sin Cama (Cupos / Tránsito)</span>
                     </div>
-                    <div class="room-badges-container">
+                    <div class="room-badges-container" style="display:flex; align-items:center; gap:10px;">
                         ${summaryHTML}
+                        <button onclick="event.stopPropagation(); window.dischargeAllFloatingPatients();" style="background:#be123c; color:white; border:none; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes sin cama en este servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
                     </div>
                 </div>
             `;
@@ -10697,46 +11026,64 @@ window.registerPatientInBed = async function(bedName) {
 };
 
 window.togglePatientStateGrid = async function(id, newState) {
-    const { error } = await supabaseClient.from('pacientes').update({ estado_sala: newState }).eq('id', id);
-    if (!error) {
-        showToast("✅ Estado de paciente actualizado.");
-        await window.renderWardBedsGrid();
-    } else {
-        alert("Error al actualizar estado: " + error.message);
+    const dbId = await resolvePatientDbId(id);
+    if (dbId && typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const { error } = await supabaseClient.from('pacientes').update({ estado_sala: newState }).eq('id', dbId);
+        if (error) console.warn("Supabase update state error:", error.message);
     }
+    try {
+        let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        const p = localCache.find(x => x && (x.id === id || x.id === dbId));
+        if (p) {
+            p.estado_sala = newState;
+            localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
+        }
+    } catch(e) {}
+    showToast("✅ Estado de paciente actualizado.");
+    await window.renderWardBedsGrid();
 };
 
 window.dischargePatientGrid = async function(id) {
     if (!confirm("¿Está seguro de dar de alta a este paciente?")) return;
     
+    const dbId = await resolvePatientDbId(id);
     let currentMeta = {};
-    const { data: p } = await supabaseClient.from('pacientes').select('metadata, created_at').eq('id', id).maybeSingle();
-    if (p && p.metadata) {
-        currentMeta = { ...p.metadata };
-    }
     const nowIso = new Date().toISOString();
-    currentMeta.discharged_at = nowIso;
-    if (!currentMeta.first_hospital_admitted_at) {
-        currentMeta.first_hospital_admitted_at = currentMeta.fecha_ingreso_servicio || p?.created_at || nowIso;
-    }
-    if (!currentMeta.service_admitted_at) {
-        currentMeta.service_admitted_at = currentMeta.fecha_ingreso_servicio || p?.created_at || nowIso;
-    }
-    
-    const { error } = await supabaseClient.from('pacientes').update({ 
-        estado_sala: 'de_alta',
-        metadata: currentMeta
-    }).eq('id', id);
-    
-    if (!error) {
-        showToast("✅ Paciente dado de alta.");
-        if (typeof window.loadHistoryList === 'function') {
-            await window.loadHistoryList(false);
+
+    if (dbId && typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const { data: p } = await supabaseClient.from('pacientes').select('metadata, created_at').eq('id', dbId).maybeSingle();
+        if (p && p.metadata) {
+            currentMeta = { ...p.metadata };
         }
-        await window.renderWardBedsGrid();
-    } else {
-        alert("Error al dar de alta: " + error.message);
+        currentMeta.discharged_at = nowIso;
+        if (!currentMeta.first_hospital_admitted_at) {
+            currentMeta.first_hospital_admitted_at = currentMeta.fecha_ingreso_servicio || p?.created_at || nowIso;
+        }
+        if (!currentMeta.service_admitted_at) {
+            currentMeta.service_admitted_at = currentMeta.fecha_ingreso_servicio || p?.created_at || nowIso;
+        }
+        
+        const { error } = await supabaseClient.from('pacientes').update({ 
+            estado_sala: 'de_alta',
+            metadata: currentMeta
+        }).eq('id', dbId);
+        
+        if (error) {
+            console.warn("Supabase discharge error:", error.message);
+        }
     }
+
+    try {
+        let localCache = JSON.parse(localStorage.getItem('local_ward_patients') || '[]');
+        localCache = localCache.filter(p => p && p.id !== id && p.id !== dbId);
+        localStorage.setItem('local_ward_patients', JSON.stringify(localCache));
+    } catch(e) {}
+
+    showToast("✅ Paciente dado de alta.");
+    if (typeof window.loadHistoryList === 'function') {
+        await window.loadHistoryList(false);
+    }
+    await window.renderWardBedsGrid();
 };
 
 let currentTransferringPatientId = null;
