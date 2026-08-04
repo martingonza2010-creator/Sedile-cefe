@@ -5552,7 +5552,7 @@ export default function App() {
         {/* Adorno de fondo médico/digital */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#c084fc_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
         
-        <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+        <div className="max-w-7xl 2xl:max-w-[96vw] mx-auto px-4 py-5 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
           
           {/* Lado Izquierdo: Título */}
           <div className="flex items-center gap-4 text-center md:text-left w-full md:w-1/3">
@@ -5684,7 +5684,7 @@ export default function App() {
       </header>
 
       {/* --- PANEL DE ACCIÓN Y DATOS RÁPIDOS --- */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-6">
+      <main className="flex-1 max-w-7xl 2xl:max-w-[96vw] w-full mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-6">
         
         {/* --- DASHBOARD ADMIN RESUMEN (Visible para Admin) --- */}
         {isAdmin && (
@@ -7444,7 +7444,7 @@ export default function App() {
 
       {/* --- BOTÓN ESTÁTICO: ENTREGA DE PEG - PEDIATRÍA --- */}
       {!isAdmin && (
-        <div className="max-w-7xl w-full mx-auto px-4 pb-8 sm:px-6 lg:px-8 flex justify-center mt-6">
+        <div className="max-w-7xl 2xl:max-w-[96vw] w-full mx-auto px-4 pb-8 sm:px-6 lg:px-8 flex justify-center mt-6">
           <button
             onClick={() => setShowPegPinModal(true)}
             className="flex items-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-md border border-purple-400/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
@@ -7502,8 +7502,8 @@ export default function App() {
 
       {/* --- MODAL DE GESTIÓN DE ENTREGAS DE PEG - PEDIATRÍA --- */}
       {showPegModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto md:overflow-y-hidden shadow-2xl border border-slate-200 flex flex-col animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-[94vw] 2xl:max-w-[96vw] max-h-[92vh] xl:max-h-[96vh] overflow-y-auto md:overflow-y-hidden shadow-2xl border border-slate-200 flex flex-col animate-scale-in transition-all duration-300">
             {/* Cabecera */}
             <div className="bg-gradient-to-r from-purple-700 to-indigo-900 text-white px-6 py-4 flex items-center justify-between shrink-0 relative">
               <div className="flex items-center gap-3">
@@ -7779,9 +7779,9 @@ export default function App() {
             </div>
 
             {/* Contenido dividido */}
-            <div className="p-6 overflow-y-visible md:overflow-hidden bg-slate-50 flex-1 flex flex-col md:flex-row gap-6">
+            <div className="p-4 sm:p-5 lg:p-6 xl:p-7 overflow-y-visible md:overflow-hidden bg-slate-50 flex-1 flex flex-col md:flex-row gap-5 xl:gap-7">
               {/* Columna Izquierda: Formulario */}
-              <div className="w-full md:w-1/3 bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col gap-3 shrink-0 md:max-h-full md:overflow-y-auto md:pr-3">
+              <div className="w-full md:w-1/3 lg:w-1/3 xl:w-[360px] 2xl:w-[400px] bg-white p-4 lg:p-5 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col gap-3 shrink-0 md:max-h-full md:overflow-y-auto md:pr-3">
                 <h4 className="font-bold text-xs text-slate-700 uppercase tracking-tight border-b border-slate-100 pb-2">
                   {editingPeg ? '✏️ Editar Entrega' : '➕ Registrar Entrega'}
                 </h4>
@@ -8423,7 +8423,7 @@ export default function App() {
       )}
       {/* --- FOOTER GENERAL --- */}
       <footer className="bg-slate-900 text-slate-400 text-center py-6 mt-10 border-t border-slate-800 text-xs">
-        <div className="max-w-7xl mx-auto px-4 space-y-2">
+        <div className="max-w-7xl 2xl:max-w-[96vw] mx-auto px-4 space-y-2">
           <p>© 2026 Hospital Regional de Antofagasta - Todos los derechos reservados.</p>
           <p>Pagina web creada e impulsada por Equipo de nutricionistas clinicos HRA para el control de bodega STOCK</p>
           <p className="font-black text-slate-500 uppercase tracking-widest">STOCK SEDILE 2026 • Control Institucional de Fórmulas y Suministros</p>
