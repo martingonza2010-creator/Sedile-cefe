@@ -10459,6 +10459,7 @@ window.renderWardBedsGrid = async function() {
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <button id="btnToggleTableCols" onclick="window.toggleColumnVisibilityMenu(event)" style="background:#475569; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Personalizar columnas visibles en la vista de tabla">👁️ Columnas</button>
+                            <button onclick="window.print()" style="background:#0284c7; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Imprimir o exportar censo a PDF en 1 página (Carta/Oficio)">🖨️ Imprimir 1 Pág</button>
                             <button onclick="window.dischargeAllFloatingPatients()" style="background:#881337; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Dar de alta a todos los pacientes fuera de servicio">🧹 Dar de alta a todos (${floatingPatients.length})</button>
                         </div>
                     </div>
@@ -10466,8 +10467,9 @@ window.renderWardBedsGrid = async function() {
             } else {
                 transitAlertContainer.style.display = 'block';
                 transitAlertContainer.innerHTML = `
-                    <div style="display:flex; justify-content:flex-end; margin-top:8px; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px; margin-bottom:8px;">
                         <button id="btnToggleTableCols" onclick="window.toggleColumnVisibilityMenu(event)" style="background:#475569; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Personalizar columnas visibles en la vista de tabla">👁️ Columnas Visibles</button>
+                        <button onclick="window.print()" style="background:#0284c7; color:white; border:none; padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Imprimir o exportar censo a PDF en 1 página (Carta/Oficio)">🖨️ Imprimir 1 Pág</button>
                     </div>
                 `;
             }
@@ -10508,9 +10510,10 @@ window.renderWardBedsGrid = async function() {
 
             groupOrder.forEach((roomName, roomIndex) => {
                 const bedsInRoom = groupedBeds[roomName];
+                const occupiedInRoom = bedsInRoom.filter(b => matchedPatients.some(p => p.cama === b)).length;
                 
                 tableHTML += `
-                    <tr style="background: #f8fafc; font-weight: 800; color: #1e3a8a; border-top: 2px solid #cbd5e1; height: 32px;">
+                    <tr class="room-header-row ${occupiedInRoom === 0 ? 'empty-room-row' : ''}" style="background: #f8fafc; font-weight: 800; color: #1e3a8a; border-top: 2px solid #cbd5e1; height: 32px;">
                         <td colspan="20" style="padding: 8px 10px; font-size: 0.8rem; border-bottom: 1px solid #cbd5e1; text-transform: uppercase;">
                             🏢 ${roomName === 'Cupos del Servicio' ? 'Área / Cupos del Servicio' : roomName}
                         </td>
@@ -10676,14 +10679,13 @@ window.renderWardBedsGrid = async function() {
                         `;
                     } else {
                         tableHTML += `
-                            <tr style="border-bottom: 1px solid #e2e8f0; height: 42px; background: #fafafa;">
+                            <tr class="empty-bed-row" style="border-bottom: 1px solid #e2e8f0; height: 42px; background: #fafafa;">
                                 <td colspan="20" style="padding: 6px 10px; text-align: left; color: #94a3b8;">
                                     <span style="font-size:0.7rem; font-weight:700; background:#e2e8f0; color:#475569; padding:2px 6px; border-radius:4px; margin-right: 15px;">${bedName}</span>
                                     <span style="font-size:0.7rem;">DISPONIBLE</span>
                                     <button class="btn-register-patient" onclick="window.registerPatientInBed('${bedName}')" style="padding: 2px 8px; font-size: 0.65rem; margin-left:10px;">
                                         ➕ Registrar Paciente
                                     </button>
-                                </td>
                             </tr>
                         `;
                     }
