@@ -211,7 +211,11 @@ const LOCAL_FORMULAS = [
     { cat: "Botellines", id: "glucerna_shake", name: "Glucerna Shake", type: "l", isBotellin: true, volUnit: 237, k: 93.0, p: 4.6, c: 11.0, f: 3.4, minerals: {} },
     { cat: "Botellines", id: "supportan_drink", name: "Supportan Drink", type: "l", isBotellin: true, volUnit: 200, k: 150.0, p: 10.0, c: 12.4, f: 6.7, minerals: {} },
     { cat: "Botellines", id: "ensure_compact", name: "Ensure Compact", type: "l", isBotellin: true, volUnit: 125, k: 240.0, p: 10.2, c: 28.7, f: 9.4, minerals: {} },
-    { cat: "Botellines", id: "pediasure_drink", name: "Pediasure Drink", type: "l", isBotellin: true, volUnit: 200, k: 100.0, p: 3.0, c: 13.1, f: 3.9, minerals: {} }
+    { cat: "Botellines", id: "pediasure_drink", name: "Pediasure Drink", type: "l", isBotellin: true, volUnit: 200, k: 100.0, p: 3.0, c: 13.1, f: 3.9, minerals: {} },
+    { cat: "Botellines", id: "fresubin_renal", name: "Fresubin Renal", type: "l", isBotellin: true, volUnit: 200, k: 200.0, p: 3.0, c: 26.4, f: 8.9, minerals: { na: 68, k: 100, cl: 62, ca: 84, p: 55, mg: 20, fe: 2.0, zn: 1.8, cu: 0.20, mn: 0.4, i: 0.02, se: 0.01, cr: 0.003, mo: 0.007 } },
+    { cat: "Botellines", id: "fresubin_hepa", name: "Fresubin Hepa Drink", type: "l", isBotellin: true, volUnit: 200, k: 130.0, p: 4.0, c: 17.4, f: 4.7, minerals: { na: 75, k: 120, cl: 71.5, ca: 80, p: 53, mg: 27, fe: 1.33, zn: 1.2, cu: 0.13, mn: 0.27, i: 0.0133, se: 0.00667, cr: 0.00667, mo: 0.01 } },
+    { cat: "Botellines", id: "fresubin_2kcal_drink", name: "Fresubin 2.0 kcal Drink", type: "l", isBotellin: true, volUnit: 200, k: 200.0, p: 10.0, c: 22.5, f: 7.8, minerals: { na: 60, k: 160, cl: 80, ca: 205, p: 120, mg: 16, fe: 2.5, zn: 1.6, cu: 0.38, mn: 0.5, i: 0.0375, se: 0.0135, cr: 0.0125, mo: 0.0188 } },
+    { cat: "Botellines", id: "nepro_dialysis", name: "Nepro (Diálisis)", type: "l", isBotellin: true, volUnit: 220, k: 180.0, p: 8.1, c: 14.7, f: 9.6, minerals: { na: 106, k: 106, cl: 84, ca: 106, p: 72, mg: 21, fe: 1.9, zn: 2.7, cu: 0.21, mn: 0.21, i: 0.016, se: 0.0074, cr: 0.0125, mo: 0.0079 } }
 ];
 
 // --- 3. GLOBAL STATE ---
