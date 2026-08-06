@@ -2809,7 +2809,8 @@ textarea {
     /* Convert input fields inside table cells to clean plain text in print */
     .clinical-census-table input[type="text"],
     .clinical-census-table input[type="number"],
-    .clinical-census-table select {
+    .clinical-census-table select,
+    .clinical-census-table textarea {
         border: none !important;
         background: transparent !important;
         padding: 0 !important;
@@ -2822,6 +2823,9 @@ textarea {
         outline: none !important;
         appearance: none !important;
         -webkit-appearance: none !important;
+        resize: none !important;
+        overflow: hidden !important;
+        font-family: inherit !important;
     }
 
     /* Remove column resize handles in print */
